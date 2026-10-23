@@ -1,6 +1,10 @@
 # Windows 版开发任务
 
-状态：待实现和 Windows 实机验收。现有 macOS 应用与 Windows 版共用 Electron / React / TypeScript 工程；不修改 Penumbra。
+状态：交接给 Dot 的开发任务，尚未派发或实现，仍需 Windows 实机验收。现有 macOS 应用与 Windows 版共用 Electron / React / TypeScript 工程；不修改 Penumbra。
+
+## 已有可复用基础
+
+[Penumbra](https://github.com/seihn2/penumbra) 已有 `resources/native/windows/SystemAudioCapture.cpp`、`AudioFrame.h`，以及 `scripts/build-windows-wheel-monitor.cjs`、`scripts/verify-windows-system-audio.cjs`。可按 CC BY-NC 4.0 引入音频相关部分并记录具体来源提交，不带入无关的鼠标组件。现有实现采用 WASAPI loopback，帧协议与本项目一致；但已有源码不能作为 Windows 编译或实机验收通过的证据，仍需完整验证。
 
 ## 用户体验
 
