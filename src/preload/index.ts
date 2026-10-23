@@ -1,0 +1,32 @@
+import { contextBridge, ipcRenderer } from 'electron'
+import type { LingoAPI, Snapshot } from '../shared/types'
+const api: LingoAPI = {
+  getSnapshot: () => ipcRenderer.invoke('lingo:snapshot'),
+  saveSettings: input => ipcRenderer.invoke('lingo:settings', input),
+  start: () => ipcRenderer.invoke('lingo:start'),
+  stop: () => ipcRenderer.invoke('lingo:stop'),
+  pushMicrophone: (chunk, run) => ipcRenderer.send('lingo:pcm', chunk, run),
+  microphoneFailed: (message, run) => ipcRenderer.send('lingo:microphone-failed', message, run),
+  microphoneReady: run => ipcRenderer.send('lingo:microphone-ready', run),
+  translateText: text => ipcRenderer.invoke('lingo:text', text),
+  retry: id => ipcRenderer.invoke('lingo:retry', id),
+  toggleSaved: id => ipcRenderer.invoke('lingo:save-caption', id),
+  exportSaved: () => ipcRenderer.invoke('lingo:export'),
+  copyText: text => ipcRenderer.invoke('lingo:copy', text),
+  importLocalKey: () => ipcRenderer.invoke('lingo:import-local-key'),
+  setCollapsed: value => ipcRenderer.invoke('lingo:collapse', value),
+  setCompactHeight: height => ipcRenderer.invoke('lingo:compact-height', height),
+  hide: () => ipcRenderer.invoke('lingo:hide'),
+  quit: () => ipcRenderer.invoke('lingo:quit'),
+  onSnapshot: callback => {
+    const listener = (_event: unknown, snapshot: Snapshot) => callback(snapshot)
+    ipcRenderer.on('lingo:changed', listener)
+    return () => ipcRenderer.removeListener('lingo:changed', listener)
+  },
+  onMicrophone: callback => {
+    const listener = (_event: unknown, enabled: boolean, run: number) => callback(enabled, run)
+    ipcRenderer.on('lingo:microphone', listener)
+    return () => ipcRenderer.removeListener('lingo:microphone', listener)
+  }
+}
+contextBridge.exposeInMainWorld('lingo', api)

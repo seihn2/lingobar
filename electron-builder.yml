@@ -1,0 +1,33 @@
+appId: com.lingobar.app
+productName: LingoBar
+directories:
+  buildResources: build
+files:
+  - out/**/*
+  - package.json
+  - LICENSE
+  - NOTICE.md
+  - licenses/**/*
+  - '!**/*.map'
+afterPack: scripts/sign-mac.cjs
+mac:
+  category: public.app-category.education
+  target:
+    - target: dir
+      arch: arm64
+  icon: build/icon.icns
+  identity: null
+  minimumSystemVersion: '14.2'
+  extraResources:
+    - from: resources/native/system-audio-capture
+      to: native/system-audio-capture
+    - from: node_modules/electron/dist/LICENSE
+      to: licenses/electron/LICENSE
+    - from: node_modules/electron/dist/LICENSES.chromium.html
+      to: licenses/electron/LICENSES.chromium.html
+  extendInfo:
+    NSMicrophoneUsageDescription: LingoBar 将你选择的麦克风语音识别为原文，并翻译成你勾选的目标语言。
+    NSAudioCaptureUsageDescription: LingoBar 将你选择的电脑声音识别为字幕，用于多语对照学习。
+  notarize: false
+npmRebuild: false
+publish: null
