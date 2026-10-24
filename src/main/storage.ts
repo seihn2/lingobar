@@ -4,10 +4,11 @@ import { join } from 'node:path'
 import type { Caption, Preferences, Settings, SettingsInput } from '../shared/types'
 import { DEFAULT_TRANSLATION_BASE_URL, DEFAULT_TRANSLATION_MODEL, validateJapaneseSegments } from './translation'
 import { DEFAULT_LANGUAGES, LANGUAGES, isTargetLanguage, validTargetLanguages, type TargetLanguage } from '../shared/languages'
+import { validMicrophoneDeviceId } from '../shared/platform'
 
 export const defaults: Preferences = {
   targetLanguages: [...DEFAULT_LANGUAGES], showOriginal: true, showFurigana: true,
-  captureMode: 'system', alwaysOnTop: true, opacity: 0.94, fontSize: 16,
+  captureMode: 'system', microphoneDeviceId: 'default', alwaysOnTop: true, opacity: 0.94, fontSize: 16,
   launchAtLogin: false, asrModel: 'qwen-audio-3.1-asr-flash-streaming',
   asrEndpoint: 'wss://dashscope.aliyuncs.com/api-ws/v1/inference',
   translationBaseUrl: DEFAULT_TRANSLATION_BASE_URL,
@@ -45,6 +46,7 @@ function storedPreferences(value: unknown): Preferences {
   if (!record(value)) return result
   if (validTargetLanguages(value.targetLanguages)) result.targetLanguages = [...value.targetLanguages]
   if (value.captureMode === 'system' || value.captureMode === 'microphone' || value.captureMode === 'both') result.captureMode = value.captureMode
+  if (validMicrophoneDeviceId(value.microphoneDeviceId)) result.microphoneDeviceId = value.microphoneDeviceId
   for (const key of booleanKeys) if (typeof value[key] === 'boolean') result[key] = value[key]
   for (const key of numberKeys) {
     if (typeof value[key] === 'number' && Number.isFinite(value[key])) result[key] = bounded(key, value[key])
@@ -129,6 +131,7 @@ export class Storage {
   key(kind: 'asr' | 'translation'): string {
     const value = kind === 'asr' ? this.data.asrKey : this.data.translationKey
     if (!value) return ''
+    if (!this.encryptionAvailable()) throw new Error('系统密钥加密服务当前不可用，无法解锁密钥。请检查系统账户后重试。')
     try { return safeStorage.decryptString(Buffer.from(value, 'base64')) }
     catch { throw new Error('无法解锁已保存的密钥，请在设置中重新输入。') }
   }
@@ -143,6 +146,10 @@ export class Storage {
     if (input.captureMode !== undefined) {
       if (input.captureMode !== 'system' && input.captureMode !== 'microphone' && input.captureMode !== 'both') throw new Error('请选择有效的声音来源。')
       p.captureMode = input.captureMode
+    }
+    if (input.microphoneDeviceId !== undefined) {
+      if (!validMicrophoneDeviceId(input.microphoneDeviceId)) throw new Error('请选择有效的麦克风设备。')
+      p.microphoneDeviceId = input.microphoneDeviceId
     }
     for (const key of booleanKeys) {
       if (input[key] !== undefined) {
@@ -168,13 +175,21 @@ export class Storage {
       if (value === undefined) continue
       if (typeof value !== 'string' || value.length > 4096 || /[\u0000-\u001f\u007f]/u.test(value.trim())) throw new Error('密钥格式不正确。')
       if (!value.trim()) continue
-      if (!safeStorage.isEncryptionAvailable()) throw new Error('系统钥匙串当前不可用，密钥尚未保存。')
+      if (!this.encryptionAvailable()) throw new Error('系统密钥加密服务当前不可用，密钥尚未保存。')
       try { next[storedKey] = safeStorage.encryptString(value.trim()).toString('base64') }
-      catch { throw new Error('系统钥匙串无法加密密钥，请稍后重试。') }
+      catch { throw new Error('系统无法加密密钥，密钥尚未保存，请稍后重试。') }
     }
     this.write('settings.json', next)
     this.data = next
     return this.settings()
+  }
+  private encryptionAvailable(): boolean {
+    // Electron can offer a plaintext backend on Linux. Never accept that fallback,
+    // including when a settings directory is moved between platforms.
+    try {
+      return safeStorage.isEncryptionAvailable() &&
+        (process.platform !== 'linux' || safeStorage.getSelectedStorageBackend?.() !== 'basic_text')
+    } catch { return false }
   }
   saved(): Caption[] {
     return savedCaptions(this.read('saved.json'))

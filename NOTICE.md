@@ -24,6 +24,22 @@ The complete license terms are available at
 This attribution identifies the source and modifications; it does not imply
 endorsement by the upstream project. LingoBar is built and packaged independently.
 
+### Windows audio port
+
+The Windows audio-only files are adapted from Penumbra commit
+[`1b023aad26fc601045fc7948fe16666272d37661`](https://github.com/seihn2/penumbra/commit/1b023aad26fc601045fc7948fe16666272d37661),
+under the same CC BY-NC 4.0 notice preserved above:
+
+| LingoBar file | Upstream file | Adaptation |
+| --- | --- | --- |
+| `resources/native/windows/SystemAudioCapture.cpp` | `resources/native/windows/SystemAudioCapture.cpp` | Renamed namespace to LingoBar; retained audio-only WASAPI, lifetime guard, bounded PCM1 transport and offline fixtures; added explicit backpressure failure and expanded synthetic self-test. |
+| `resources/native/windows/AudioFrame.h` | `resources/native/windows/AudioFrame.h` | Renamed namespace; retained bounded little-endian PCM1 framing. |
+| `scripts/build-windows-native.cjs` | audio portion of `scripts/build-windows-wheel-monitor.cjs` and `resources/native/windows/CMakeLists.txt` | Builds only LingoBar's x64 audio helper, with static MSVC runtime. No wheel/input helper or unrelated source is included. |
+| `scripts/verify-windows-system-audio.cjs` | `scripts/verify-windows-system-audio.cjs` | Restricted to x64; verifies development and packaged binary equality, rejects invalid arguments, and adds restart, broken-pipe and explicit backpressure checks. |
+
+No additional private repository content is included. Windows icon assets are
+repackaged from the existing LingoBar artwork in `build/icon.iconset/`.
+
 ## JavaScript included in application bundles
 
 The versions below are the installed versions recorded for this release.
@@ -62,6 +78,12 @@ These are copied from `node_modules/electron/dist/` during packaging. The full
 in this source repository. It contains the upstream notices for Chromium and the
 other components covered by that file. The project's `LICENSE`, this `NOTICE.md`,
 and the `licenses/` directory are also included in the application's `app.asar`.
+
+The Windows installer retains the corresponding runtime notices at
+`resources/licenses/electron/LICENSE` and
+`resources/licenses/electron/LICENSES.chromium.html` beneath its installation
+directory. Project notices and component licenses are included in
+`resources/app.asar`, as on macOS.
 
 When updating dependencies or producing another platform's package, retain the
 notices supplied with the actual runtime and update this inventory and its

@@ -2,6 +2,7 @@ const { execFileSync } = require('node:child_process')
 const { readdirSync } = require('node:fs')
 const { join } = require('node:path')
 exports.default = async ({ appOutDir, packager }) => {
+  if (packager.platform.name !== 'mac') return
   const app = join(appOutDir, 'LingoBar.app')
   const frameworks = join(app, 'Contents', 'Frameworks')
   const entitlements = join(packager.projectDir, 'build', 'entitlements.mac.plist')

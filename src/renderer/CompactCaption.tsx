@@ -112,7 +112,7 @@ export default function CompactCaption({ captions, settings, preview, readingSes
 
   return <section className="compact-caption" aria-label="小窗多语对照">
     <div ref={dragEdge} className="compact-drag-edge" aria-hidden="true" title="拖动悬浮窗" />
-    <div ref={viewport} className="compact-viewport" tabIndex={0} aria-label="原文与所选语言，滚动回看后可返回实时" onWheel={event => { if (event.deltaY) pause() }} onPointerUp={event => { const selection = window.getSelection(); if (selection && !selection.isCollapsed && selection.anchorNode && event.currentTarget.contains(selection.anchorNode)) pause() }} onKeyDown={event => { if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End'].includes(event.key)) pause() }}>
+    <div ref={viewport} className="compact-viewport" tabIndex={0} aria-label="原文与所选语言，滚动回看后可返回实时" onPointerDown={event => { const surface = event.currentTarget; const gutter = surface.offsetWidth - surface.clientWidth; if (event.target === surface && gutter > 0 && event.clientX >= surface.getBoundingClientRect().right - gutter) pause() }} onWheel={event => { if (event.deltaY) pause() }} onPointerUp={event => { const selection = window.getSelection(); if (selection && !selection.isCollapsed && selection.anchorNode && event.currentTarget.contains(selection.anchorNode)) pause() }} onKeyDown={event => { if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End'].includes(event.key)) pause() }}>
       <div ref={content} className="compact-content">
         <div className="compact-rows" data-caption-id={caption?.id}>
           {rows.map((row, rowIndex) => {

@@ -1,6 +1,6 @@
 # Windows 版开发任务
 
-状态：交接给 Dot 的开发任务，尚未派发或实现，仍需 Windows 实机验收。现有 macOS 应用与 Windows 版共用 Electron / React / TypeScript 工程；不修改 Penumbra。
+状态：Windows x64 实现已在 `codex/windows` 分支落地，包含原生 helper、平台适配、NSIS 安装包和合成 CI；仍需 Windows 实机验收。实际证据和未验证项见 [测试矩阵](windows-validation.md)。现有 macOS 应用与 Windows 版共用 Electron / React / TypeScript 工程；不修改 Penumbra。
 
 ## 已有可复用基础
 
@@ -32,3 +32,14 @@
 - 密钥和真实语音、字幕、个人设置不写入仓库、CI 日志或安装包。CI 成功不能替代实机验收；没有实机环境时必须标明未验证项目。
 
 在独立 `codex/windows` 分支提交并开 PR，说明实际完成范围、构建结果和仍需实机验证的事项。保留 CC BY-NC 4.0 及第三方许可声明。
+
+
+## 当前实现约定
+
+- 最低目标为 Windows 10 x64；Windows 11 x64 共用安装包。Electron 运行时不支持 Windows 7/8，尚不提供 Windows ARM64。
+- helper 只采集系统默认 **输出** 设备的 shared-mode mix，不混入麦克风、不采屏幕。默认输出变化、设备失效或访问被拒时返回受限错误码并终止本次聆听；用户确认设备后重新开始，不自动跨物理设备继续收音。
+- 麦克风在设置的“服务连接”中选择设备；更改设置立即使旧 run 失效。默认设备变化或所选设备拔出会暂停，晚到的授权结果释放所有 tracks。双音源保持独立 ASR 会话，任一路失败会同时结束两路。
+- `ready` 是 helper 已启动设备的控制消息；`activate` 是主进程在识别会话就绪后释放有界缓存的方法，不是 stdin 文本命令。stdin 关闭是停止信号；父进程退出和管道背压都有独立 watchdog，强制退役有界。
+- Windows 托盘使用现有 LingoBar 图形，快捷键 Ctrl+Alt+L；密钥由系统 DPAPI 提供的 safeStorage 加密，无法加密时拒绝保存。钥匙串导入仅在 macOS 可用。
+- 原生构建需要 CMake 3.24+、Visual Studio C++ tools 与 Windows SDK。详细命令及安装包位置见 README。
+- 安装包为未签名的 PR 测试版本，未设置自动更新或正式 release；不会合并、部署或升级付费 runner。

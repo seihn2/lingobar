@@ -1,0 +1,20 @@
+// Synthetic fixture run only in a fresh CI/temp Electron profile. No real keys.
+const { app, safeStorage } = require('electron')
+const assert = require('node:assert/strict')
+const { mkdtempSync, rmSync } = require('node:fs')
+const { tmpdir } = require('node:os')
+const { join } = require('node:path')
+const directory = mkdtempSync(join(tmpdir(), 'lingobar-dpapi-'))
+app.setPath('userData', directory)
+app.whenReady().then(() => {
+  assert.equal(process.platform, 'win32')
+  assert.equal(safeStorage.isEncryptionAvailable(), true)
+  const fixture = 'lingobar-synthetic-fixture-not-a-service-key'
+  const encrypted = safeStorage.encryptString(fixture)
+  assert.ok(Buffer.isBuffer(encrypted) && encrypted.length > 0)
+  assert.ok(!encrypted.includes(Buffer.from(fixture)))
+  assert.equal(safeStorage.decryptString(encrypted), fixture)
+  console.log('WINDOWS_DPAPI_SYNTHETIC_OK')
+  app.quit()
+}).catch(() => { console.error('Windows safeStorage synthetic round trip failed.'); process.exitCode = 1; app.quit() })
+app.on('will-quit', () => { try { rmSync(directory, { recursive: true, force: true }) } catch {} })

@@ -2,15 +2,17 @@ import { app, BrowserWindow, clipboard, dialog, globalShortcut, ipcMain, Menu, n
 import { execFile } from 'node:child_process'
 import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import type { AudioSource, ListeningState, Snapshot, SettingsInput } from '../shared/types'
 import { Storage } from './storage'
 import { CaptionQueue } from './captions'
 import { AudioEngine } from './audio'
 import { isTargetLanguage, languageInfo } from '../shared/languages'
 import { trace } from './diagnostics'
+import { desktopPlatform, platformLabels } from '../shared/platform'
+import { mayCaptureMicrophone, mayUseLocalKeyImport, trustedRendererUrl } from './ipc-security'
 
 app.setName('LingoBar')
+if (process.platform === 'win32') app.setAppUserModelId('com.lingobar.app')
 app.setPath('userData', process.env.LINGOBAR_TEST_DATA || join(app.getPath('appData'), 'LingoBar'))
 let window: BrowserWindow | null = null
 let tray: Tray | null = null
@@ -26,6 +28,9 @@ let collapsed = false
 let startGeneration = 0
 let microphoneRun: number | null = null
 let expandedBounds: Electron.Rectangle | null = null
+const platform = desktopPlatform(process.platform)
+const labels = platformLabels(platform)
+const rendererLocation = () => ({ packaged: app.isPackaged, htmlPath: join(__dirname, '../renderer/index.html'), developmentUrl: process.env.ELECTRON_RENDERER_URL })
 
 function snapshot(): Snapshot {
   return { settings: storage.settings(), state, message, captions: queue.captions, partial, collapsed }
@@ -34,7 +39,7 @@ function publish(): void {
   if (window && !window.isDestroyed()) window.webContents.send('lingo:changed', snapshot())
 }
 function microphone(enabled: boolean, run = startGeneration): void {
-  if (window && !window.isDestroyed()) window.webContents.send('lingo:microphone', enabled, run)
+  if (window && !window.isDestroyed()) window.webContents.send('lingo:microphone', enabled, run, storage.settings().microphoneDeviceId)
 }
 function stop(): void {
   startGeneration++
@@ -102,11 +107,13 @@ function createWindow(): void {
     minWidth: 600, minHeight: 420, maxHeight: 1000,
     frame: false, transparent: true, backgroundColor: '#00000000', hasShadow: true,
     resizable: true, roundedCorners: true, show: false, title: 'LingoBar · 语伴',
+    ...(platform === 'win32' ? { icon: app.isPackaged ? join(process.resourcesPath, 'icon.ico') : join(app.getAppPath(), 'build/icon.ico') } : {}),
     webPreferences: { preload: join(__dirname, '../preload/index.js'), sandbox: true, contextIsolation: true, nodeIntegration: false, spellcheck: false }
   })
-  window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+  if (platform === 'darwin') window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
   window.webContents.on('will-navigate', event => event.preventDefault())
+  window.webContents.on('will-attach-webview', event => event.preventDefault())
   window.webContents.on('render-process-gone', () => stop())
   window.on('close', event => { if (!quitting) { event.preventDefault(); window?.hide() } })
   window.once('ready-to-show', () => { applyPreferences(); show() })
@@ -116,9 +123,7 @@ function createWindow(): void {
 
 function trusted(event: Electron.IpcMainInvokeEvent | Electron.IpcMainEvent): boolean {
   if (!window || event.sender !== window.webContents || event.senderFrame !== window.webContents.mainFrame) return false
-  const url = event.senderFrame?.url || ''
-  if (!app.isPackaged && process.env.ELECTRON_RENDERER_URL) return url.startsWith(process.env.ELECTRON_RENDERER_URL + '/') || url === process.env.ELECTRON_RENDERER_URL
-  try { return fileURLToPath(url) === join(__dirname, '../renderer/index.html') } catch { return false }
+  return trustedRendererUrl(event.senderFrame?.url || '', rendererLocation())
 }
 function handle(channel: string, handler: (...args: any[]) => unknown): void {
   ipcMain.handle(channel, (event, ...args) => {
@@ -129,8 +134,9 @@ function handle(channel: string, handler: (...args: any[]) => unknown): void {
 function wireIPC(): void {
   handle('lingo:snapshot', snapshot)
   handle('lingo:settings', (input: SettingsInput) => {
+    if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('设置格式不正确。')
     if (state === 'starting' || state === 'listening') {
-      const serviceKeys: (keyof SettingsInput)[] = ['captureMode', 'asrEndpoint', 'asrModel', 'asrApiKey', 'translationBaseUrl', 'translationModel', 'translationApiKey']
+      const serviceKeys: (keyof SettingsInput)[] = ['captureMode', 'microphoneDeviceId', 'asrEndpoint', 'asrModel', 'asrApiKey', 'translationBaseUrl', 'translationModel', 'translationApiKey']
       const current = storage.settings()
       if (serviceKeys.some(key => input[key] !== undefined && input[key] !== '' && input[key] !== current[key as keyof typeof current])) stop()
     }
@@ -195,6 +201,7 @@ function wireIPC(): void {
     return true
   })
   handle('lingo:import-local-key', async () => {
+    if (!mayUseLocalKeyImport(process.platform)) throw new Error('此平台不支持本机钥匙串导入，请手动填写服务密钥。')
     stop()
     const key = await new Promise<string>((resolve, reject) => {
       execFile('/usr/bin/security', ['find-generic-password', '-s', 'com.penumbra.rokid-translator.dashscope', '-a', 'cn', '-w'], { encoding: 'utf8', timeout: 15000, maxBuffer: 8192 }, (error, stdout) => {
@@ -259,18 +266,26 @@ else {
       onError(error) { fail(error) }
     })
     session.defaultSession.setPermissionRequestHandler((contents, permission, callback, details) => {
-      callback(contents === window?.webContents && permission === 'media' && 'mediaTypes' in details && details.mediaTypes?.length === 1 && details.mediaTypes[0] === 'audio' && (state === 'starting' || state === 'listening'))
+      callback(mayCaptureMicrophone({ sameContents: contents === window?.webContents,
+        mainFrame: details.isMainFrame, trustedUrl: trustedRendererUrl(details.requestingUrl, rendererLocation()),
+        permission, audioOnly: 'mediaTypes' in details && details.mediaTypes?.length === 1 && details.mediaTypes[0] === 'audio', microphoneRun, state }))
     })
-    session.defaultSession.setPermissionCheckHandler((contents, permission) => contents === window?.webContents && permission === 'media')
+    session.defaultSession.setPermissionCheckHandler((contents, permission, _origin, details) => mayCaptureMicrophone({
+      sameContents: contents === window?.webContents, mainFrame: details.isMainFrame,
+      trustedUrl: trustedRendererUrl(details.requestingUrl || '', rendererLocation()),
+      permission, audioOnly: details.mediaType === 'audio', microphoneRun, state
+    }))
     createWindow()
     wireIPC()
-    const icon = nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAANUlEQVQ4T2NkoDJgpLJ5DKMGUh6hhv0H4v9ExQzDCBNoODAwMKwYNAyDiWBoKmDUsIEDhQoALbYP5wrmTn0AAAAASUVORK5CYII=')
-    icon.setTemplateImage(true)
+    const icon = platform === 'win32'
+      ? nativeImage.createFromPath(app.isPackaged ? join(process.resourcesPath, 'tray.png') : join(app.getAppPath(), 'build/tray.png'))
+      : nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAANUlEQVQ4T2NkoDJgpLJ5DKMGUh6hhv0H4v9ExQzDCBNoODAwMKwYNAyDiWBoKmDUsIEDhQoALbYP5wrmTn0AAAAASUVORK5CYII=')
+    if (platform === 'darwin') icon.setTemplateImage(true)
     tray = new Tray(icon)
-    tray.setTitle('語')
+    if (platform === 'darwin') tray.setTitle('語')
     tray.setToolTip('LingoBar · 语伴')
     tray.setContextMenu(Menu.buildFromTemplate([
-      { label: '显示翻译条  ⌘⌥L', click: show },
+      { label: `显示翻译条  ${labels.shortcut}`, click: show },
       { label: '开始 / 暂停聆听', click: () => { if (state === 'listening' || state === 'starting') stop(); else void start().catch(() => { /* start handles only its current generation. */ }) } },
       { type: 'separator' }, { label: '退出 LingoBar', click: () => app.quit() }
     ]))
@@ -279,9 +294,13 @@ else {
       { label: 'LingoBar', submenu: [{ role: 'about' }, { type: 'separator' }, { label: '显示翻译条', click: show }, { role: 'quit' }] },
       { label: '编辑', submenu: [{ role: 'undo' }, { role: 'redo' }, { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }] }
     ]))
-    globalShortcut.register('CommandOrControl+Alt+L', () => { if (window?.isVisible()) window.hide(); else show() })
+    const registered = globalShortcut.register('CommandOrControl+Alt+L', () => { if (window?.isVisible()) window.hide(); else show() })
+    if (!registered) {
+      message = `${labels.shortcut} 已被其他应用占用，可以从${labels.residentArea}显示翻译条。`
+      publish()
+    }
     app.on('activate', show)
   })
-  app.on('window-all-closed', () => { /* The menu bar keeps the app resident. */ })
+  app.on('window-all-closed', () => { /* The tray/menu bar keeps the app resident. */ })
   app.on('before-quit', () => { quitting = true; audio?.stop(); queue?.close(); globalShortcut.unregisterAll(); tray?.destroy() })
 }

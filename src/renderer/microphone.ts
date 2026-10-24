@@ -1,3 +1,5 @@
+import { platformLabels, validMicrophoneDeviceId, type DesktopPlatform } from '../shared/platform'
+
 /** PCM16 mono capture, with stateful resampling when a device ignores 16 kHz. */
 export const MICROPHONE_WORKLET = `
 class LingoMicrophone extends AudioWorkletProcessor {
@@ -40,17 +42,36 @@ class LingoMicrophone extends AudioWorkletProcessor {
 registerProcessor('lingobar-microphone', LingoMicrophone)
 `
 
-function captureMessage(error: unknown): string {
+function captureMessage(error: unknown, platform: DesktopPlatform): string {
   if (error instanceof DOMException && ['NotAllowedError', 'PermissionDeniedError'].includes(error.name))
-    return '请在系统设置 → 隐私与安全性 → 麦克风中允许 LingoBar 使用麦克风。'
-  if (error instanceof DOMException && error.name === 'NotFoundError') return '没有找到可用的麦克风。'
+    return platformLabels(platform).microphonePermission
+  if (error instanceof DOMException && ['NotFoundError', 'OverconstrainedError'].includes(error.name)) return '没有找到所选麦克风，请连接设备或改选默认麦克风。'
+  if (error instanceof DOMException && ['NotReadableError', 'AbortError'].includes(error.name)) return '麦克风不可用，可能被其他应用占用或已断开，请检查后重新开始。'
   return error instanceof Error ? error.message : '麦克风启动失败，请检查设备和权限。'
+}
+
+export interface MicrophoneOptions { deviceId?: string; platform?: DesktopPlatform; signal?: AbortSignal }
+export interface MicrophoneDevice { deviceId: string; label: string }
+
+/** Lists metadata only; this never asks for access or starts recording. */
+export async function listMicrophones(): Promise<MicrophoneDevice[]> {
+  if (!navigator.mediaDevices?.enumerateDevices) throw new Error('当前环境无法列出麦克风设备。')
+  const devices = await navigator.mediaDevices.enumerateDevices()
+  return devices.filter(device => device.kind === 'audioinput' && !['default', 'communications'].includes(device.deviceId))
+    .map((device, index) => ({ deviceId: device.deviceId, label: device.label || `麦克风 ${index + 1}（授权后显示名称）` }))
+    .filter(device => validMicrophoneDeviceId(device.deviceId))
 }
 
 export async function startMicrophone(
   onChunk: (chunk: ArrayBuffer) => void,
-  onError: (message: string) => void
+  onError: (message: string) => void,
+  options: MicrophoneOptions = {}
 ): Promise<() => void> {
+  const deviceId = options.deviceId || 'default'
+  if (!validMicrophoneDeviceId(deviceId)) throw new Error('请选择有效的麦克风设备。')
+  const platform = options.platform || 'other'
+  if (options.signal?.aborted) throw new Error('已取消麦克风启动。')
+  if (!navigator.mediaDevices?.getUserMedia) throw new Error('当前环境不支持麦克风，请在 LingoBar 应用中使用。')
   let stream: MediaStream | undefined
   let context: AudioContext | undefined
   let source: MediaStreamAudioSourceNode | undefined
@@ -60,10 +81,14 @@ export async function startMicrophone(
   let stopped = false
   let started = false
   let timer: ReturnType<typeof setTimeout> | undefined
+  let deviceChange: (() => void) | undefined
+  let abort: (() => void) | undefined
   const stop = (): void => {
     if (stopped) return
     stopped = true
     if (timer) clearTimeout(timer)
+    if (deviceChange) navigator.mediaDevices.removeEventListener?.('devicechange', deviceChange)
+    if (abort) options.signal?.removeEventListener('abort', abort)
     for (const track of stream?.getTracks() || []) { track.onended = null; track.stop() }
     if (worklet) { worklet.port.onmessage = null; worklet.onprocessorerror = null; worklet.disconnect() }
     source?.disconnect()
@@ -74,13 +99,15 @@ export async function startMicrophone(
   const fail = (message: string): void => { if (stopped) return; stop(); onError(message) }
   let rejectTimeout!: (error: Error) => void
   const deadline = new Promise<never>((_, reject) => { rejectTimeout = reject })
+  abort = () => { stop(); rejectTimeout(new Error('已取消麦克风启动。')) }
+  options.signal?.addEventListener('abort', abort, { once: true })
   timer = setTimeout(() => { stop(); rejectTimeout(new Error('麦克风启动超时，请检查权限后重新开始。')) }, 30_000)
 
   const startup = async (): Promise<void> => {
     // getUserMedia cannot be aborted; late permission grants still release their tracks.
     const acquired = await navigator.mediaDevices.getUserMedia({
       video: false,
-      audio: { channelCount: 1, sampleRate: 16000, echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+      audio: { ...(deviceId === 'default' ? {} : { deviceId: { exact: deviceId } }), channelCount: 1, sampleRate: 16000, echoCancellation: true, noiseSuppression: true, autoGainControl: true }
     })
     if (stopped) { acquired.getTracks().forEach((track) => track.stop()); throw new Error('已取消麦克风启动。') }
     stream = acquired
@@ -109,6 +136,17 @@ export async function startMicrophone(
     if (stopped) throw new Error('已取消麦克风启动。')
     if (context.state !== 'running') throw new Error('麦克风未能启动，请重新开始。')
     started = true
+    deviceChange = () => {
+      if (stopped) return
+      // A default stream can be rerouted by Chromium without ending its track.
+      // Stop explicitly so the user chooses when a new physical device is used.
+      if (deviceId === 'default') { fail('系统音频设备发生变化，请重新开始以使用当前默认麦克风。'); return }
+      void navigator.mediaDevices.enumerateDevices().then(devices => {
+        if (!stopped && !devices.some(device => device.kind === 'audioinput' && device.deviceId === deviceId))
+          fail('所选麦克风已断开，请连接设备或选择其他麦克风后重新开始。')
+      }).catch(() => { if (!stopped) fail('无法检查麦克风设备，请重新开始。') })
+    }
+    navigator.mediaDevices.addEventListener?.('devicechange', deviceChange)
   }
   try {
     await Promise.race([startup(), deadline])
@@ -116,6 +154,6 @@ export async function startMicrophone(
     return stop
   } catch (error) {
     stop()
-    throw new Error(captureMessage(error))
+    throw new Error(captureMessage(error, platform))
   }
 }

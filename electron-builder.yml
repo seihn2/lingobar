@@ -31,3 +31,28 @@ mac:
   notarize: false
 npmRebuild: false
 publish: null
+win:
+  target:
+    - target: nsis
+      arch: x64
+  icon: build/icon.ico
+  artifactName: LingoBar-${version}-windows-${arch}-setup.${ext}
+  extraResources:
+    - from: resources/native/win-x64/system-audio-capture.exe
+      to: native/system-audio-capture.exe
+    - from: build/tray.png
+      to: tray.png
+    - from: build/icon.ico
+      to: icon.ico
+    - from: node_modules/electron/dist/LICENSE
+      to: licenses/electron/LICENSE
+    - from: node_modules/electron/dist/LICENSES.chromium.html
+      to: licenses/electron/LICENSES.chromium.html
+nsis:
+  oneClick: false
+  perMachine: false
+  allowElevation: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  shortcutName: LingoBar · 语伴
+  deleteAppDataOnUninstall: false
