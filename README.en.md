@@ -78,7 +78,7 @@ See the [service configuration guide](docs/usage.en.md#services) for all fields,
 | English | [Installation, configuration and everyday use](docs/usage.en.md) |
 | 日本語 | [インストール・設定・使い方](docs/usage.ja.md) |
 
-Developer and platform references: [Windows port notes](docs/windows-port.md) · [Test matrix, known limitations, and build records](docs/windows-validation.md) · [Third-party sources](NOTICE.md).
+Developer and platform references: [Windows port notes](docs/windows-port.md) · [Test matrix, known limitations, and build records](docs/windows-validation.md) · [Mac physical UI subset and pending checks](docs/macos-validation.md) · [Third-party sources](NOTICE.md).
 
 <a id="development"></a>
 ## Development and builds

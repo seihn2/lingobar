@@ -64,7 +64,7 @@ third-party provenance remains in [NOTICE.md](../NOTICE.md).
 ## Verification and limits
 
 Run `npm test`, `npm run build`, `npm run test:ui` and
-`npm run test:media-permissions`. The browser suite now executes 58 checks at
+`npm run test:media-permissions`. The original browser suite executes 58 checks at
 each emulated scale 1 / 1.5 / 2, including local search and the existing reading,
 furigana, transparency and compact-window regressions. The actual Electron
 permission-chain suite still executes 25 checks with two fake devices and no
@@ -104,3 +104,22 @@ The report retains these limits and all results instead of adopting a new
 protocol on this evidence. No new dependency, external code, audio or API
 call is introduced. This is Linux synthetic transport validation, not React
 painting, provider/network latency or Windows/macOS hardware acceptance.
+
+## Physical Mac evidence and visibility checkpoint
+
+The [Mac validation record](macos-validation.md) now records the authorized
+physical PR3 `796a1aa` synthetic-history checks, including search, reading,
+opacity and archive verification, and separately lists uncertain/pending
+visibility, native input and audio checks. It contains no private paths or
+identities and makes no claim for PR4 or Windows hardware.
+
+The reported visibility observation did not reproduce as a source defect.
+Production hide/show code remains unchanged. Five installed-main-handler tests
+cover trusted hide, security, active capture continuity, repeated shortcut
+toggle, hidden partial/settings/stop updates and explicit redisplay inputs.
+Four browser checks per scale use actual DevTools pointer input for expanded
+and compact hide targets; the UI suite is now 62 per scale. These original
+CC BY-NC 4.0 tests and the Electron API contract linked in the record support
+routing checks only, not native Mac visibility acceptance. No third-party code
+or new dependency is incorporated, and no further performance experiment is
+added in this checkpoint.

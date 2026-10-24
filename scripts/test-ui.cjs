@@ -81,6 +81,20 @@ async function main() {
       assert.ok(ready, 'Renderer fixture startup timed out')
       const result = await send('Runtime.evaluate', { expression: 'window.__lingobarUiTest.run()', awaitPromise: true, returnByValue: true })
       if (result.exceptionDetails) throw new Error(`UI scale ${scale}: ${result.exceptionDetails.exception?.description || result.exceptionDetails.text}`)
+      for (const mode of ['expanded', 'compact']) {
+        const prepared = await send('Runtime.evaluate', { expression: `window.__lingobarUiTest.prepareHide('${mode}')`, awaitPromise: true, returnByValue: true })
+        if (prepared.exceptionDetails) throw new Error(`Hide preparation: ${prepared.exceptionDetails.exception?.description}`)
+        const { x, y, calls } = prepared.result.value
+        // Real browser input activates :hover; programmatic focus after a mouse
+        // action need not match :focus-visible and cannot prove pointer access.
+        await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y })
+        await pause()
+        await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 })
+        await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 })
+        const checked = await send('Runtime.evaluate', { expression: `window.__lingobarUiTest.verifyHide('${mode}', ${calls})`, awaitPromise: true, returnByValue: true })
+        if (checked.exceptionDetails) throw new Error(`UI scale ${scale}: ${checked.exceptionDetails.exception?.description}`)
+        result.result.value.checks.push(...checked.result.value)
+      }
       results.push(result.result.value)
       console.log(`UI synthetic regression: ${result.result.value.checks.length} checks at Chromium scale ${scale}`)
     }

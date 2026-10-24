@@ -78,7 +78,7 @@ Windows x64 支持已合并到 `main`；此前已验证测试包与校验记录�
 | English | [Installation, configuration and everyday use](docs/usage.en.md) |
 | 日本語 | [インストール・設定・使い方](docs/usage.ja.md) |
 
-开发与平台资料：[Windows 移植说明](docs/windows-port.md) · [测试矩阵、已知限制与构建记录](docs/windows-validation.md) · [第三方来源](NOTICE.md)。
+开发与平台资料：[Windows 移植说明](docs/windows-port.md) · [测试矩阵、已知限制与构建记录](docs/windows-validation.md) · [Mac 实机 UI 子集与待验收项](docs/macos-validation.md) · [第三方来源](NOTICE.md)。
 
 <a id="development"></a>
 ## 开发与构建

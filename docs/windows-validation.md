@@ -1,8 +1,10 @@
 # Windows port — validation record
 
 This record separates synthetic automation from Windows hardware acceptance.
-No test uses personal audio, real service keys, paid ASR/translation calls, or a
-user's computer. The Windows implementation for issue #1 was merged into `main`
+Its automated tests use no personal audio, real service keys or paid
+ASR/translation calls. A separate [Mac physical UI record](macos-validation.md)
+reports only its confirmed synthetic-data subset; it is not Windows acceptance.
+The Windows implementation for issue #1 was merged into `main`
 through [PR #2](https://github.com/seihn2/lingobar/pull/2). It remains a
 development preview; a successful build does not establish that real capture or
 translation works on hardware.
@@ -17,7 +19,8 @@ translation works on hardware.
 | Permissions and IPC | Platform/security tests | Reject other pages, frames, non-audio requests and idle/cancelled runs; Windows cannot invoke macOS key import |
 | Microphone and device changes | Mocked microphone tests | Resampling, exact device selection, no device, denied permission, unplug/default change, cancellation/late grant, cleanup; no real microphone |
 | Real Electron microphone permission chain | `npm run test:media-permissions` | Electron 43.8.3 / Chromium 150.0.7871.250 with two fake devices, real App/preload/production permission handlers: 25 checks for idle settings selection, exact-device start, pause/reopen/refresh, cancelled late grant, denied request, camera/mixed requests, same-URL subframe, other window and navigated page. No fake UI or real audio device; executed on Linux locally and in all three platform CI jobs |
-| UI reading and learning | `npm run test:ui` | Linux Chromium, 58 checks at each device scale 1 / 1.5 / 2: partial updates, source alignment, latest translation, history/selection pause, return to live, cross-mode anchor, 1–8 languages, matching ruby above kanji, drag/no-drag regions, opacity persistence and opaque text; local search, keyboard/IME, stable selection/scroll through 100 arrivals and late translations, Unicode, safe text, saved filtering, empty history and focus restoration |
+| UI reading and learning | `npm run test:ui` | Linux Chromium, 62 checks at each device scale 1 / 1.5 / 2: partial updates, source alignment, latest translation, history/selection pause, return to live, cross-mode anchor, 1–8 languages, matching ruby above kanji, drag/no-drag regions, opacity persistence and opaque text; local search, keyboard/IME, stable selection/scroll through 100 arrivals and late translations, Unicode, safe text, saved filtering, empty history and focus restoration; real browser pointer input on expanded/compact hide targets with one API call, not native window visibility |
+| Window visibility routing | Installed main-process IPC tests in `npm test` | Mocked Electron window/global shortcut/activation/tray callbacks; trusted hide retains capture, foreign IPC rejected, partial/settings/stop publishing stays hidden, explicit show inputs restore it. Does not establish native Mac shortcut/hide behavior |
 | Production bundles | `npm run build` / `npm run typecheck` | Shared Electron/React/TypeScript builds |
 | Windows packaging | `npm run package:win`, `npm run verify:package`, `npm run checksums:win` | Standard Windows CI; x64 NSIS, fixed helper/icon/notice resources, app.asar data exclusions, SHA-256 manifest |
 | macOS regression | `npm test`, `npm run package:mac`, native `--self-test`, package inspection | Standard macOS arm64 CI; synthetic-only, no permissions or audio devices |

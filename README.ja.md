@@ -78,7 +78,7 @@ Windows x64 対応は `main` にマージ済みです。それ以前に検証し
 | English | [Installation, configuration and everyday use](docs/usage.en.md) |
 | 日本語 | [インストール・設定・使い方](docs/usage.ja.md) |
 
-開発とプラットフォームに関する資料：[Windows 移植の説明](docs/windows-port.md) · [テストマトリクス、既知の制限、ビルド記録](docs/windows-validation.md) · [第三者の出典](NOTICE.md)。
+開発とプラットフォームに関する資料：[Windows 移植の説明](docs/windows-port.md) · [テストマトリクス、既知の制限、ビルド記録](docs/windows-validation.md) · [Mac 実機 UI の確認済み範囲と未検証項目](docs/macos-validation.md) · [第三者の出典](NOTICE.md)。
 
 <a id="development"></a>
 ## 開発とビルド

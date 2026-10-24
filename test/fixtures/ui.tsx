@@ -16,6 +16,7 @@ const listeners = new Set<(snapshot: Snapshot) => void>()
 const saves: Array<Partial<Settings>> = []
 let audioStarts = 0
 let providerCalls = 0
+let hideCalls = 0
 const emit = (next: Partial<Snapshot>) => {
   snapshot = structuredClone({ ...snapshot, ...next })
   for (const listener of listeners) listener(snapshot)
@@ -32,7 +33,7 @@ const api = {
   retry: async () => {}, toggleSaved: async () => {}, exportSaved: async () => false,
   copyText: async () => {}, importLocalKey: async () => { throw new Error('No keys in UI tests') },
   setCollapsed: async (collapsed: boolean) => { emit({ collapsed }) },
-  setCompactHeight: async () => {}, hide: async () => {}, quit: async () => {},
+  setCompactHeight: async () => {}, hide: async () => { hideCalls++ }, quit: async () => {},
   onSnapshot: (listener: (snapshot: Snapshot) => void) => { listeners.add(listener); return () => listeners.delete(listener) },
   onMicrophone: () => () => {},
 } as LingoAPI
@@ -261,5 +262,18 @@ async function preview(mode: 'expanded' | 'compact') {
   ] })
   await frame()
 }
-;(window as unknown as { __lingobarUiTest: { run: typeof run; preview: typeof preview } }).__lingobarUiTest = { run, preview }
+async function prepareHide(mode: 'expanded' | 'compact') {
+  await preview(mode)
+  const bounds = query('[aria-label="隐藏到系统托盘"]').getBoundingClientRect()
+  return { calls: hideCalls, x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 }
+}
+async function verifyHide(mode: 'expanded' | 'compact', before: number) {
+  await frame()
+  const button = query('[aria-label="隐藏到系统托盘"]'), bounds = button.getBoundingClientRect()
+  const hit = document.elementFromPoint(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2)
+  assert(hit && button.contains(hit) && getComputedStyle(button).getPropertyValue('-webkit-app-region') === 'no-drag', `${mode} hide button is pointer-accessible outside native drag regions`)
+  assert(hideCalls === before + 1 && snapshot.state === 'listening' && audioStarts === 0 && providerCalls === 0, `${mode} real browser pointer click forwards one hide call without changing capture or contacting services`)
+  return [`${mode} hide button is pointer-accessible outside native drag regions`, `${mode} real browser pointer click forwards one hide call without changing capture or contacting services`]
+}
+;(window as unknown as { __lingobarUiTest: { run: typeof run; preview: typeof preview; prepareHide: typeof prepareHide; verifyHide: typeof verifyHide } }).__lingobarUiTest = { run, preview, prepareHide, verifyHide }
 createRoot(document.getElementById('root')!).render(<App />)
