@@ -77,14 +77,13 @@ acceptance. The installer remains unsigned, no formal release/auto-update is
 published, and no user computer is accessed. Outstanding hardware and provider
 acceptance is listed in [windows-validation.md](windows-validation.md).
 
-## Next executable batch
+## Backlog measurement
 
-Under sustained backlog, a queued draft can become outdated before dispatch if
-new recognition arrives before its next coalescing timer. The published pair
-stays correct, but that obsolete request can add cost and latency. Reproduce
-with two blocked slots, queued draft A, newer A text and a slot release before
-the timer; then refresh only the still-queued draft snapshot, preserving finals,
-configuration snapshots, the per-caption throttle and cancellation. Validate
-bounded concurrency, final fairness, 100 rapid revisions and stop/late callbacks
-with synthetic providers before considering a change. This is an optimization
-opportunity, not a claim of source/translation misalignment.
+The proposed queued-draft refresh was subsequently measured in a
+[reproducible offline comparison](draft-backlog-benchmark.md): 54 runs compare
+the pinned baseline with snapshot-only and snapshot-plus-timer experiments.
+Some cases catch up to current speech sooner with fewer requests, but others
+delay the first readable prefix, final translation or newly selected language;
+the snapshot-only variant can also duplicate a revision. Production scheduling
+therefore remains unchanged. The report separates character/byte counts from
+model tokens and billing, and records the full positive and negative results.

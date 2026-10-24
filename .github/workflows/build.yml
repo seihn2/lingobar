@@ -71,6 +71,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      # Keep the offline baseline available even after a squash merge/branch deletion.
+      - run: git fetch --no-tags --depth=1 origin 2a42a485ec177f320823773afdd2bf13b03770f1
+      - run: node scripts/benchmark-captions.cjs
       - run: npm run test:ui
       - run: npm run test:media-permissions
       - uses: actions/upload-artifact@v4
@@ -80,5 +83,11 @@ jobs:
           path: |
             artifacts/ui-regression/
             artifacts/media-permissions/results.json
+            artifacts/caption-benchmark/manifest.json
+            artifacts/caption-benchmark/results.json
+            artifacts/caption-benchmark/results.csv
+            artifacts/caption-benchmark/tables.md
+            artifacts/caption-benchmark/LICENSE
+            artifacts/caption-benchmark/NOTICE.md
           if-no-files-found: warn
           retention-days: 14

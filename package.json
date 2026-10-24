@@ -10,6 +10,7 @@
     "dev": "electron-vite dev",
     "typecheck": "tsc --noEmit",
     "test": "vitest run && node --test src/renderer/reading-schedule.test.mjs",
+    "benchmark:captions": "node scripts/benchmark-captions.cjs",
     "test:ui": "node scripts/test-ui.cjs",
     "test:media-permissions": "node scripts/test-media-permissions.cjs",
     "test:windows-native": "node scripts/verify-windows-system-audio.cjs",
