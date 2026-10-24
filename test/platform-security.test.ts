@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { desktopPlatform, platformLabels, validMicrophoneDeviceId } from '../src/shared/platform'
-import { mayCaptureMicrophone, mayUseLocalKeyImport, trustedRendererUrl } from '../src/main/ipc-security'
+import { mayCaptureMicrophone, mayQueryMicrophone, mayUseLocalKeyImport, trustedRendererUrl } from '../src/main/ipc-security'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
@@ -42,6 +42,13 @@ describe('renderer IPC and microphone permission policy', () => {
   })
 
   const allowed = { sameContents: true, mainFrame: true, trustedUrl: true, permission: 'media', audioOnly: true, microphoneRun: 12, state: 'starting' }
+  it('allows trusted audio metadata while idle without authorizing a capture request', () => {
+    const idle = { ...allowed, microphoneRun: null, state: 'idle' }
+    expect(mayQueryMicrophone(idle)).toBe(true)
+    expect(mayCaptureMicrophone(idle)).toBe(false)
+    for (const denied of [{ sameContents: false }, { mainFrame: false }, { trustedUrl: false }, { permission: 'camera' }, { audioOnly: false }])
+      expect(mayQueryMicrophone({ ...idle, ...denied })).toBe(false)
+  })
   it('grants audio only to the active, trusted main frame during an explicit microphone run', () => {
     expect(mayCaptureMicrophone(allowed)).toBe(true)
     expect(mayCaptureMicrophone({ ...allowed, state: 'listening' })).toBe(true)

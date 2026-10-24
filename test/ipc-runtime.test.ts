@@ -82,6 +82,7 @@ describe('installed main-process IPC and permission handlers', () => {
     const details = { isMainFrame: true, requestingUrl: f.frame.url, mediaTypes: ['audio'] }
     request(f.webContents, 'media', callback, details)
     expect(callback).toHaveBeenLastCalledWith(false)
+    expect(check(f.webContents, 'media', '', { isMainFrame: true, requestingUrl: f.frame.url, mediaType: 'audio' })).toBe(true)
     await invoke('lingo:start')
     request(f.webContents, 'media', callback, details)
     expect(callback).toHaveBeenLastCalledWith(true)
@@ -94,6 +95,7 @@ describe('installed main-process IPC and permission handlers', () => {
     invoke('lingo:stop')
     request(f.webContents, 'media', callback, details)
     expect(callback).toHaveBeenLastCalledWith(false)
+    expect(check(f.webContents, 'media', '', { isMainFrame: true, requestingUrl: f.frame.url, mediaType: 'audio' })).toBe(true)
   })
 
   it('binds PCM to the current microphone run and ignores old, malformed or foreign messages', async () => {

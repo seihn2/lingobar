@@ -9,7 +9,8 @@ import { AudioEngine } from './audio'
 import { isTargetLanguage, languageInfo } from '../shared/languages'
 import { trace } from './diagnostics'
 import { desktopPlatform, platformLabels } from '../shared/platform'
-import { mayCaptureMicrophone, mayUseLocalKeyImport, trustedRendererUrl } from './ipc-security'
+import { mayUseLocalKeyImport, trustedRendererUrl } from './ipc-security'
+import { installMediaPermissions } from './media-permissions'
 
 app.setName('LingoBar')
 if (process.platform === 'win32') app.setAppUserModelId('com.lingobar.app')
@@ -265,15 +266,8 @@ else {
       },
       onError(error) { fail(error) }
     })
-    session.defaultSession.setPermissionRequestHandler((contents, permission, callback, details) => {
-      callback(mayCaptureMicrophone({ sameContents: contents === window?.webContents,
-        mainFrame: details.isMainFrame, trustedUrl: trustedRendererUrl(details.requestingUrl, rendererLocation()),
-        permission, audioOnly: 'mediaTypes' in details && details.mediaTypes?.length === 1 && details.mediaTypes[0] === 'audio', microphoneRun, state }))
-    })
-    session.defaultSession.setPermissionCheckHandler((contents, permission, _origin, details) => mayCaptureMicrophone({
-      sameContents: contents === window?.webContents, mainFrame: details.isMainFrame,
-      trustedUrl: trustedRendererUrl(details.requestingUrl || '', rendererLocation()),
-      permission, audioOnly: details.mediaType === 'audio', microphoneRun, state
+    installMediaPermissions(session.defaultSession, () => ({
+      contents: window?.webContents || null, location: rendererLocation(), microphoneRun, state
     }))
     createWindow()
     wireIPC()

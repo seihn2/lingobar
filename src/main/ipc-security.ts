@@ -15,17 +15,28 @@ export function trustedRendererUrl(value: string, location: RendererLocation): b
   } catch { return false }
 }
 
-export function mayCaptureMicrophone(input: {
+interface MicrophoneIdentity {
   sameContents: boolean
   mainFrame: boolean
   trustedUrl: boolean
   permission: string
   audioOnly: boolean
+}
+
+/** Audio permission status also controls input/output device metadata in Chromium.
+ * Checking status does not authorize getUserMedia: its request is gated below.
+ * Keep this restricted to the app's trusted main frame, including while idle.
+ */
+export function mayQueryMicrophone(input: MicrophoneIdentity): boolean {
+  return input.sameContents && input.mainFrame && input.trustedUrl &&
+    input.permission === 'media' && input.audioOnly
+}
+
+export function mayCaptureMicrophone(input: MicrophoneIdentity & {
   microphoneRun: number | null
   state: string
 }): boolean {
-  return input.sameContents && input.mainFrame && input.trustedUrl &&
-    input.permission === 'media' && input.audioOnly && input.microphoneRun !== null &&
+  return mayQueryMicrophone(input) && input.microphoneRun !== null &&
     (input.state === 'starting' || input.state === 'listening')
 }
 
