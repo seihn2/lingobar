@@ -29,17 +29,22 @@ async function main() {
   try {
     await server.listen()
     const origin = `http://127.0.0.1:${server.httpServer.address().port}`
-    child = spawn(executable, ['--headless', '--disable-gpu', '--no-sandbox', '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--window-size=860,560', 'about:blank'], { stdio: 'ignore', windowsHide: true, shell: false })
+    child = spawn(executable, ['--headless', '--disable-gpu', '--no-sandbox', '--no-first-run', '--no-default-browser-check', '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--window-size=860,560', 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe'], windowsHide: true, shell: false })
+    let browserDiagnostics = ''
+    child.stderr.setEncoding('utf8')
+    child.stderr.on('data', chunk => { browserDiagnostics = (browserDiagnostics + chunk).slice(-8192) })
     let launchError
     child.once('error', error => { launchError = error })
     const deadline = Date.now() + 15_000
     let port
     while (!port && Date.now() < deadline) {
       if (launchError) throw launchError
-      if (child.exitCode !== null) throw new Error(`Browser exited before startup (${child.exitCode})`)
+      if (child.exitCode !== null) throw new Error(`Browser exited before startup (${child.exitCode}): ${browserDiagnostics}`)
       try { port = Number(readFileSync(join(profile, 'DevToolsActivePort'), 'utf8').split('\n')[0]) } catch { await pause() }
+      // Some installed browser wrappers put their profile in another location.
+      if (!port) port = Number(/DevTools listening on ws:\/\/127\.0\.0\.1:(\d+)\//.exec(browserDiagnostics)?.[1])
     }
-    assert.ok(port, 'Browser DevTools startup timed out')
+    assert.ok(port, `Browser DevTools startup timed out: ${browserDiagnostics}`)
     const targets = await fetch(`http://127.0.0.1:${port}/json/list`).then(response => response.json())
     const page = targets.find(target => target.type === 'page')
     assert.ok(page?.webSocketDebuggerUrl, 'No browser page target')
