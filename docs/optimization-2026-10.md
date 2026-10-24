@@ -87,3 +87,20 @@ delay the first readable prefix, final translation or newly selected language;
 the snapshot-only variant can also duplicate a revision. Production scheduling
 therefore remains unchanged. The report separates character/byte counts from
 model tokens and billing, and records the full positive and negative results.
+
+## Snapshot and IPC measurement
+
+The [snapshot report](snapshot-benchmark.md) pins this PR's `c7d737b` source and
+predeclares engineering budgets before collecting synthetic measurements.
+It separates Node encoding/clone proxies from real Electron main IPC and the
+production preload/contextBridge callback, across 0/150/1150 history entries,
+1/3/8 languages and 5/20/60 partials per second. A benchmark-only single-publish
+control is compared without changing `src/`. Ordinary reference traffic fits
+the first matrix's budget; large-history pressure and shared-container tails
+do not, and the control has negative cases. Four additional windows check
+final/status/error observation without first draining pending partials.
+All issued messages are counted; producer stalls are not labelled IPC loss.
+The report retains these limits and all results instead of adopting a new
+protocol on this evidence. No new dependency, external code, audio or API
+call is introduced. This is Linux synthetic transport validation, not React
+painting, provider/network latency or Windows/macOS hardware acceptance.

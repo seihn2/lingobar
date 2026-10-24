@@ -72,8 +72,12 @@ jobs:
       - run: npm ci
       - run: npm run build
       # Keep the offline baseline available even after a squash merge/branch deletion.
-      - run: git fetch --no-tags --depth=1 origin 2a42a485ec177f320823773afdd2bf13b03770f1
+      - run: git fetch --no-tags --depth=1 origin 2a42a485ec177f320823773afdd2bf13b03770f1 c7d737bdfdb8592f8fae18eb64f3ef06712f620b
       - run: node scripts/benchmark-captions.cjs
+      - run: npm run benchmark:snapshot:serialization
+      - run: npm run benchmark:snapshot:ipc
+      - run: npm run benchmark:snapshot:ipc -- --critical-under-load --output artifacts/snapshot-benchmark/critical
+      - run: npm run benchmark:snapshot:ipc -- --case reference --repeat 3 --output artifacts/snapshot-benchmark/reference-repeat
       - run: npm run test:ui
       - run: npm run test:media-permissions
       - uses: actions/upload-artifact@v4
@@ -89,5 +93,14 @@ jobs:
             artifacts/caption-benchmark/tables.md
             artifacts/caption-benchmark/LICENSE
             artifacts/caption-benchmark/NOTICE.md
+            artifacts/snapshot-benchmark/*.json
+            artifacts/snapshot-benchmark/*.csv
+            artifacts/snapshot-benchmark/*.md
+            artifacts/snapshot-benchmark/LICENSE
+            artifacts/snapshot-benchmark/NOTICE.md
+            artifacts/snapshot-benchmark/critical/*.json
+            artifacts/snapshot-benchmark/critical/*.csv
+            artifacts/snapshot-benchmark/reference-repeat/*.json
+            artifacts/snapshot-benchmark/reference-repeat/*.csv
           if-no-files-found: warn
           retention-days: 14
