@@ -6,6 +6,7 @@ export interface Preferences {
   showOriginal: boolean
   showFurigana: boolean
   captureMode: CaptureMode
+  microphoneDeviceId: string
   alwaysOnTop: boolean
   opacity: number
   fontSize: number
@@ -50,6 +51,7 @@ export interface Snapshot {
   collapsed: boolean
 }
 export interface LingoAPI {
+  readonly platform: import('./platform').DesktopPlatform
   getSnapshot(): Promise<Snapshot>
   saveSettings(input: SettingsInput): Promise<Settings>
   start(): Promise<void>
@@ -68,7 +70,7 @@ export interface LingoAPI {
   hide(): Promise<void>
   quit(): Promise<void>
   onSnapshot(callback: (snapshot: Snapshot) => void): () => void
-  onMicrophone(callback: (enabled: boolean, run: number) => void): () => void
+  onMicrophone(callback: (enabled: boolean, run: number, deviceId: string) => void): () => void
 }
 declare global { interface Window { lingo: LingoAPI } }
 import type { TargetLanguage } from './languages'

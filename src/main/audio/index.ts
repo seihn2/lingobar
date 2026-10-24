@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import type { AudioSource, CaptureMode, ListeningState } from '../../shared/types'
 import { NativeSystemAudioCapture, type NativeSystemAudioCallbacks } from './native-capture'
 import { QwenAsrSession, type AsrCallbacks, type AsrOptions, type AsrSession } from './qwen'
+import { desktopPlatform, platformLabels } from '../../shared/platform'
 
 export interface AudioCallbacks {
   onPartial(source: AudioSource, text: string, utteranceId?: string): void
@@ -21,9 +22,11 @@ interface Dependencies {
 }
 interface Run { id: string; sessions: Partial<Record<AudioSource, AsrSession>> }
 
+const platform = desktopPlatform(process.platform)
+const labels = platformLabels(platform)
 const nativeErrors: Record<string, string> = {
-  unsupported: '电脑声音需要 macOS 14.2 或更新版本，可以改用麦克风。',
-  'permission-denied': '请在系统设置 → 隐私与安全性 → 屏幕与系统音频录制中允许 LingoBar 录制系统声音。',
+  unsupported: labels.unsupportedAudio,
+  'permission-denied': labels.systemPermission,
   'device-unavailable': '声音输出设备发生变化或不可用，请重新开始。',
   'format-unsupported': '当前声音设备的音频格式不受支持。',
   'helper-missing': '系统声音组件缺失，请重新安装 LingoBar。',
@@ -65,7 +68,7 @@ export class AudioEngine {
       await Promise.all(sources.map((source) => owner.sessions[source]!.start(options)))
       if (!this.owns(owner)) throw new Error('已取消启动。')
       if (sources.includes('system')) {
-        this.callbacks.onState('starting', '正在启动电脑声音，请允许系统音频录制…')
+        this.callbacks.onState('starting', platform === 'win32' ? '正在启动电脑声音（WASAPI）…' : '正在启动电脑声音，请允许系统音频录制…')
         await this.dependencies.capture.start(owner.id, {
           onAudio: (chunk) => { if (this.owns(owner)) owner.sessions.system?.push(chunk) },
           onError: (code) => this.fail(owner, nativeErrors[code] || '系统声音采集已中断，请重新开始。')

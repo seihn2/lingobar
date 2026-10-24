@@ -7,6 +7,7 @@ import { DEFAULT_LANGUAGES, type TargetLanguage } from '../src/shared/languages'
 
 const encryption = vi.hoisted(() => ({
   isEncryptionAvailable: vi.fn(() => true),
+  getSelectedStorageBackend: vi.fn(() => 'unknown'),
   encryptString: vi.fn((value: string) => Buffer.from(`encrypted:${value}`)),
   decryptString: vi.fn((value: Buffer) => {
     const text = value.toString()
@@ -28,6 +29,7 @@ beforeEach(() => {
   directory = mkdtempSync(join(tmpdir(), 'lingobar-storage-'))
   vi.clearAllMocks()
   encryption.isEncryptionAvailable.mockReturnValue(true)
+  encryption.getSelectedStorageBackend.mockReturnValue('unknown')
 })
 afterEach(() => rmSync(directory, { recursive: true, force: true }))
 
@@ -77,7 +79,7 @@ describe('Storage', () => {
     const disk = readFileSync(join(directory, 'settings.json'), 'utf8')
     expect(disk).not.toContain('asr-secret-123')
     expect(disk).not.toContain('translation-secret-456')
-    expect(statSync(join(directory, 'settings.json')).mode & 0o777).toBe(0o600)
+    if (process.platform !== 'win32') expect(statSync(join(directory, 'settings.json')).mode & 0o777).toBe(0o600)
     const reloaded = new Storage(directory)
     expect(reloaded.key('asr')).toBe('asr-secret-123')
     expect(reloaded.key('translation')).toBe('translation-secret-456')
@@ -98,7 +100,7 @@ describe('Storage', () => {
     storage.save({ fontSize: 18, asrApiKey: 'previous-key' })
     const previous = readFileSync(join(directory, 'settings.json'), 'utf8')
     encryption.isEncryptionAvailable.mockReturnValue(false)
-    expect(() => storage.save({ fontSize: 24, asrApiKey: 'do-not-store' })).toThrow('钥匙串当前不可用')
+    expect(() => storage.save({ fontSize: 24, asrApiKey: 'do-not-store' })).toThrow('系统密钥加密服务当前不可用')
     expect(storage.settings().fontSize).toBe(18)
     expect(readFileSync(join(directory, 'settings.json'), 'utf8')).toBe(previous)
   })
@@ -110,6 +112,51 @@ describe('Storage', () => {
     expect(() => storage.save({ alwaysOnTop: false, fontSize: Number.NaN })).toThrow('有效数值')
     expect(storage.settings()).toEqual(before)
     expect(new Storage(directory).settings()).toEqual(before)
+  })
+
+  it('keeps both previous keys and preferences when encrypting the second replacement fails', () => {
+    const storage = new Storage(directory)
+    storage.save({ asrApiKey: 'synthetic-old-asr', translationApiKey: 'synthetic-old-translation' })
+    const before = readFileSync(join(directory, 'settings.json'), 'utf8')
+    encryption.encryptString.mockImplementationOnce(value => Buffer.from(`encrypted:${value}`))
+      .mockImplementationOnce(() => { throw new Error('unredacted backend detail') })
+    expect(() => storage.save({ asrApiKey: 'synthetic-new-asr', translationApiKey: 'synthetic-new-translation', fontSize: 23 })).toThrow('系统无法加密密钥')
+    expect(readFileSync(join(directory, 'settings.json'), 'utf8')).toBe(before)
+    expect(storage.key('asr')).toBe('synthetic-old-asr')
+    expect(storage.key('translation')).toBe('synthetic-old-translation')
+    expect(storage.settings().fontSize).toBe(defaults.fontSize)
+  })
+
+  it('does not decrypt saved keys while the operating system encryption service is unavailable', () => {
+    const storage = new Storage(directory)
+    storage.save({ asrApiKey: 'synthetic-secret' })
+    encryption.decryptString.mockClear()
+    encryption.isEncryptionAvailable.mockReturnValue(false)
+    expect(() => storage.key('asr')).toThrow('无法解锁密钥')
+    expect(encryption.decryptString).not.toHaveBeenCalled()
+  })
+
+  it.runIf(process.platform === 'linux')('rejects Electron plaintext fallback without writing a key', () => {
+    const storage = new Storage(directory)
+    storage.save({ fontSize: 19 })
+    const before = readFileSync(join(directory, 'settings.json'), 'utf8')
+    encryption.getSelectedStorageBackend.mockReturnValue('basic_text')
+    expect(() => storage.save({ asrApiKey: 'synthetic-key', fontSize: 23 })).toThrow('加密服务当前不可用')
+    expect(readFileSync(join(directory, 'settings.json'), 'utf8')).toBe(before)
+    expect(encryption.encryptString).not.toHaveBeenCalled()
+  })
+
+  it('restores and validates a microphone device independently of capture mode', () => {
+    const storage = new Storage(directory)
+    storage.save({ captureMode: 'both', microphoneDeviceId: 'synthetic-device-123' })
+    expect(new Storage(directory).settings()).toMatchObject({ captureMode: 'both', microphoneDeviceId: 'synthetic-device-123' })
+    const before = readFileSync(join(directory, 'settings.json'), 'utf8')
+    for (const device of ['', 'contains whitespace', 'invalid\u0000value', 'a'.repeat(513)]) {
+      expect(() => storage.save({ microphoneDeviceId: device })).toThrow('麦克风设备')
+      expect(readFileSync(join(directory, 'settings.json'), 'utf8')).toBe(before)
+    }
+    writeFileSync(join(directory, 'settings.json'), JSON.stringify({ preferences: { microphoneDeviceId: { invalid: true } } }))
+    expect(new Storage(directory).settings().microphoneDeviceId).toBe('default')
   })
 
   it('returns a safe error when encrypted key data cannot be decrypted', () => {
@@ -182,7 +229,7 @@ describe('Storage', () => {
     const saved = caption('saved')
     storage.saveCaptions([saved, caption('unsaved', false), { ...caption('failed'), zh: '', en: '', ja: '', status: 'error' }, { ...caption('pending'), zh: '', en: '', ja: '', status: 'translating' }])
     expect(new Storage(directory).saved()).toEqual([migrated(saved)])
-    expect(statSync(join(directory, 'saved.json')).mode & 0o777).toBe(0o600)
+    if (process.platform !== 'win32') expect(statSync(join(directory, 'saved.json')).mode & 0o777).toBe(0o600)
     storage.saveCaptions([{ ...saved, saved: false }])
     expect(new Storage(directory).saved()).toEqual([])
   })

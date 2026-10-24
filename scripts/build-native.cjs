@@ -3,6 +3,9 @@ const { chmodSync, mkdtempSync, writeFileSync, rmSync } = require('node:fs')
 const { tmpdir } = require('node:os')
 const { join, resolve } = require('node:path')
 
+if (process.platform === 'win32') require('./build-windows-native.cjs')
+else if (process.platform !== 'darwin') throw new Error('Native audio builds require macOS or Windows x64.')
+
 if (process.platform === 'darwin') {
   const projectDir = resolve(__dirname, '..')
   const source = join(projectDir, 'resources/native/SystemAudioCapture.swift')

@@ -1,62 +1,130 @@
-# LingoBar · 语伴
+<div align="center">
+  <img src="build/icon.png" width="104" alt="LingoBar 图标">
+  <h1>LingoBar · 语伴</h1>
+  <p><strong>把正在听的内容，变成可对照、可回看的多语字幕。</strong></p>
+  <p>
+    <a href="https://github.com/seihn2/lingobar/actions/workflows/build.yml?query=branch%3Acodex%2Fwindows"><img src="https://github.com/seihn2/lingobar/actions/workflows/build.yml/badge.svg?branch=codex%2Fwindows&amp;event=pull_request" alt="构建与合成测试"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/license-CC%20BY--NC%204.0-blue.svg" alt="CC BY-NC 4.0"></a>
+    <a href="package.json"><img src="https://img.shields.io/badge/version-0.1.5-6f42c1.svg" alt="版本 0.1.5"></a>
+    <a href="package-lock.json"><img src="https://img.shields.io/badge/Electron-43.8.3-47848F.svg?logo=electron" alt="Electron 43.8.3"></a>
+    <a href="package-lock.json"><img src="https://img.shields.io/badge/React-19.1.1-61DAFB.svg?logo=react&amp;logoColor=111" alt="React 19.1.1"></a>
+  </p>
+  <p><strong>简体中文</strong> · <a href="README.en.md">English</a> · <a href="README.ja.md">日本語</a></p>
+</div>
 
-独立的 macOS 常驻桌面翻译条。将电脑声音、麦克风或手动输入的句子翻译为用户选择的语言，帮助逐句对照学习。默认中文、英文和日语，可从 20 种语言中选择 1–8 种并调整顺序，也可隐藏展开视图中的原文或关闭日语注音。视觉参考 Penumbra，应用、配置、收藏和安装包均独立。
+[使用指南](docs/usage.zh-CN.md) · [安装](#install) · [快速上手](#quick-start) · [参与贡献](#contributing)
 
-当前可用平台为 macOS（Apple Silicon）。Windows 版正在准备移植，尚未提供可用安装包；范围与验收要求见 [Windows 开发任务](docs/windows-port.md)。
+LingoBar 是面向语言学习的桌面字幕工具。它将电脑声音、麦克风或手动输入的文字翻译为所选语言，在轻量悬浮窗中并排呈现原文、译文和日语读音，方便边听边读、逐句复习。
 
-## 使用
+项目基于 Electron、React 和 TypeScript，以 **CC BY-NC 4.0 非商业许可公开源码（source-available）**。应用界面目前主要为简体中文；中、英、日文档与可选的字幕输出语言是独立的。
 
-1. 打开 `LingoBar.app`，进入右上角设置。
-2. 配置语音识别与翻译服务。语音识别默认使用北京区 DashScope 的 `qwen-audio-3.1-asr-flash-streaming`；翻译默认使用 DeepSeek 的 `deepseek-flash`，关闭思考模式以减少字幕等待时间。两个服务分别填写各自的 API Key。也可以点击“导入语音识别密钥”，读取此前为本机 Rokid 翻译器保存的 DashScope 密钥；此操作只配置语音识别，不改变翻译服务。已有自定义配置会保留。
-3. 选择电脑声音、麦克风或双音源，点击“开始聆听”。首次使用时需要在 macOS 中授予对应的音频权限。系统声音使用音频专用 Core Audio 采集，不采集画面。
-4. 在“字幕语言”中选择目标语言与显示顺序。只翻译勾选的语言。原文识别出一部分就开始翻译，同一语段的译文随讲话持续补全，说完后再校正最终版本。连续的识别更新会合并处理，避免每个字都调用翻译；网络尚未返回时保留已经能读的译文。选中日语时，先显示译文，再由同一个翻译模型结合语境补上振假名。汉字位置由程序固定，模型只返回对应读音；注音失败不会撤掉译文。多音词及人名的读音仍需结合语境核对。历史语段可以按当前语言组合重新翻译，已有翻译保留。
-5. 新语段按顺序追加，增量译文在同一位置更新，原文与译文始终对应同一版识别片段。默认立即跟随最新已有译文的段落，不等待旧段注音或额外停留时间；当前段落说话过程中持续更新译文。滚动或选中文字可暂停跟随，点击“回到实时”继续接收最新译文；历史段落与尚未译出的新内容分别保留。收藏的语段可以从“历史与收藏”导出 Markdown 学习笔记。悬停小窗可直接调节背景不透明度（45–100%），文字保持清晰，设置自动保存。
-6. 收起后是轻量字幕窗，平时只显示原文和勾选的全部语言，并保留日语注音；鼠标移入或键盘聚焦后显示控制按钮。字幕字号和间距更紧凑，窗口按内容调整高度；长内容可滚动阅读。展开与收起切换时继续阅读同一语段。
+<a id="validation"></a>
+> [!IMPORTANT]
+> **当前为开发预览，通过源码和 CI 测试包分发，尚无正式 release。** Windows 包未签名，Windows 10/11 的真实音频、设备和 DPI 体验仍待实机验收。构建通过不等于完成实机验证，详见 [验证范围](docs/windows-validation.md)。
 
-小窗顶部整条 20px 区域和两侧、底部的 8px 空白可拖动窗口；字幕正文仍支持选择和滚动。鼠标移入时顶部显示淡淡的抓取提示。
+![LingoBar 多语字幕界面](docs/images/expanded.png)
 
-关闭按钮隐藏到菜单栏；菜单栏“語”可再次打开。全局快捷键 **⌘⌥L** 显示或隐藏翻译条。应用支持置顶、跨桌面显示、拖动、调整大小、收起、背景透明度、字号和可选开机启动。
+*当前界面的合成字幕示例，实际捕获于 Linux Chromium；不是 Windows 实机收音截图。[截图来源](docs/images/README.md)*
 
-首次打开不会自动收音。“看看示例”只演示布局，不调用服务。识别范围取决于所选 ASR 模型支持的语言，并非承诺识别世界上所有语言。默认模型省略语言提示，以便自动识别。双音源时建议使用耳机，减少电脑扬声器被麦克风重复收录。
+<a id="overview"></a>
+## 功能概览
 
-## 数据与服务
+- **边听边对照。** 支持电脑声音、麦克风和双音源。长句识别到中途片段即开始翻译，在同一语段持续补全，适合课程、视频和口语练习。
+- **按学习目标选择语言。** 从 20 种语言中选择 1–8 种并调整顺序，默认中文、英文、日语；只翻译所选语言。
+- **把日语读音放回文字中。** 译文先显示，再由翻译模型结合语境补振假名，标在对应汉字上方；注音不阻塞阅读。
+- **实时跟随，也能停下来读。** 默认显示最新已有译文；滚动或选择文字即可回看，点击“回到实时”继续跟随。
+- **留下值得复习的句子。** 使用小窗、置顶、调节背景透明度和字号；收藏完成的语段，导出为 Markdown 学习笔记。
 
-- 语音通过加密连接发送到配置的识别服务；原文发送到翻译服务，服务可能产生 API 费用。
-- 密钥使用 macOS 支持的 Electron safeStorage 加密，只在主进程解密，不回传给界面。
-- 不保存录音。普通会话仅保存在内存中（最近约 150 句）；主动收藏的内容本地保存，上限 1000 句。
-- 数据目录：`~/Library/Application Support/LingoBar`。应用标识：`com.lingobar.app`。
-- 暂停会立即结束采集与识别，保留已识别的未完片段并完成它的翻译；已经提交的翻译和注音可继续完成。重新启动不会自动恢复收音。
-- 本机密钥导入仅在主动点击时读取固定的钥匙串项目，不扫描其他应用配置。
+<a id="install"></a>
+## 安装
 
+| 平台 | 系统要求 | 获取方式 |
+| --- | --- | --- |
+| Windows | Windows 10/11，**x64** | [测试包与校验值](https://github.com/seihn2/lingobar/pull/2)：在对应成功构建的 Artifacts 中下载 ZIP，解压后运行安装程序。 |
+| macOS | macOS 14.2+，Apple Silicon | [从源码构建](#development)，生成 `dist/mac-arm64/LingoBar.app`。本地包采用 ad-hoc 签名，未经 Apple 公证。 |
+
+Windows 暂不提供 ARM64 包。CI artifact 下载需要登录 GitHub，保留 14 天，过期后请使用新的成功构建或自行构建。安装前核对包内 `SHA256SUMS.txt`；具体安装、升级和系统授权步骤见 [使用指南](docs/usage.zh-CN.md#install)。
+
+<a id="quick-start"></a>
+## 快速上手
+
+1. 打开 LingoBar，点击 **看看示例** 熟悉阅读方式。示例不收音、不调用服务。
+2. 进入 **设置 → 服务连接**，分别配置语音识别与翻译服务，然后点击 **保存设置**。
+3. 选择电脑声音、麦克风或双音源；需要时在设置中预选具体麦克风并保存。
+4. 在 **设置 → 字幕语言** 中选择和排序语言，可开启 **日语汉字注音**，然后保存设置。
+5. 点击 **开始聆听**。回看后用 **回到实时** 恢复跟随；结束收音请点击 **暂停**，隐藏窗口不会暂停。
+
+全局快捷键：Windows **`Ctrl+Alt+L`**、Mac **`⌘⌥L`** 显示或隐藏翻译条。窗口的拖动区域、透明度、手动文字翻译和收藏操作见 [完整指南](docs/usage.zh-CN.md)。
+
+<a id="configuration"></a>
+## 服务配置
+
+| 用途 | 默认服务与模型 |
+| --- | --- |
+| 实时语音识别 | DashScope 北京区，`qwen-audio-3.1-asr-flash-streaming` |
+| 字幕翻译与可选日语注音 | DeepSeek，`deepseek-flash` |
+
+两项服务分别填写 API Key，账户需有对应模型的使用权限。**在线识别、翻译和注音可能产生 API 费用。** 字幕语言选择不等于 ASR 能识别同样的全部语言，延迟与识别范围取决于网络、设备和模型。
+
+完整字段、接入协议和权限说明见 [服务配置指南](docs/usage.zh-CN.md#services)。设备切换或连接故障可先查看 [排错表](docs/usage.zh-CN.md#troubleshooting)。
+
+<a id="documentation"></a>
+## 文档
+
+| 语言 | 使用指南 |
+| --- | --- |
+| 简体中文 | [安装、配置与日常使用](docs/usage.zh-CN.md) |
+| English | [Installation, configuration and everyday use](docs/usage.en.md) |
+| 日本語 | [インストール・設定・使い方](docs/usage.ja.md) |
+
+开发与平台资料：[Windows 移植说明](docs/windows-port.md) · [测试矩阵、已知限制与构建记录](docs/windows-validation.md) · [第三方来源](NOTICE.md)。
+
+<a id="development"></a>
 ## 开发与构建
 
-需要 Apple Silicon Mac、macOS 14.2 或更新版本、Node.js 22+、Xcode Command Line Tools。
+需要 Node.js **22.18+** 和 npm。原生组件在目标平台构建：
+
+| 平台 | 额外工具 |
+| --- | --- |
+| macOS | Apple Silicon、macOS 14.2+、Xcode Command Line Tools |
+| Windows x64 | CMake 3.24+、Visual Studio 2022 C++ Desktop tools、Windows SDK |
+
+当前 Windows 开发位于 `codex/windows` 分支。使用锁定依赖启动本地工程：
 
 ```sh
+git clone https://github.com/seihn2/lingobar.git
+cd lingobar
+git switch codex/windows
 npm ci
+npm run build:icons
 npm run build:native
 npm run dev
 ```
 
-```sh
-npm test
-npm run package:mac
-```
+| 命令 | 用途 |
+| --- | --- |
+| `npm run typecheck` | TypeScript 类型检查 |
+| `npm test` | 核心逻辑与状态回归 |
+| `npm run build` | 类型检查与生产构建 |
+| `npm run test:media-permissions` | 实际 Electron 的合成设备权限检查 |
+| `npm run test:ui` | 已安装 Chromium 浏览器中的合成字幕交互检查 |
+| `npm run package:mac` | 构建 Mac 应用目录 |
+| `npm run package:win` | 构建 Windows x64 NSIS 安装包 |
 
-应用输出到 `dist/mac-arm64/LingoBar.app`。本地版本使用 ad-hoc 签名，未经 Apple 公证；重新构建后系统可能需要重新授权。
+输出位于 `dist/`。原生 helper、包内容和校验清单的检查命令见 [构建与验证](docs/windows-validation.md)。
 
-## 验证边界
+<a id="contributing"></a>
+## 参与贡献
 
-自动测试覆盖翻译 JSON 校验、取消与超时、音频会话生命周期、PCM 分帧、麦克风重采样、队列乱序、收藏保存失败和设置恢复。原生组件的 `--self-test` 使用合成数据，不录音。界面示例和这些测试均不能代替真实账户、系统授权及实际音源的端到端验收。
+欢迎提交功能明确的修复、设备兼容性反馈、无障碍改进、测试和文档翻译。报告问题时，请提供提交号、系统版本、音源或设备、显示缩放、复现步骤，以及预期与实际表现：[GitHub Issues](https://github.com/seihn2/lingobar/issues)。
 
-接口依据：[Qwen 实时识别](https://help.aliyun.com/en/model-studio/real-time-speech-recognition-user-guide)、[DeepSeek 接口](https://api-docs.deepseek.com/api/create-chat-completion/)、[DeepSeek 模型与价格](https://api-docs.deepseek.com/zh-cn/quick_start/pricing/)。
+提交 PR 前运行 `npm run typecheck`、`npm test` 和 `npm run build`；行为变更请补充有意义的测试，并说明实际验证的平台。真实设备结果与合成测试应分开记录。截图、日志和测试 fixture 中不要包含密钥、录音或个人字幕。
 
-## 来源
+<a id="privacy-license"></a>
+## 隐私与许可
 
-系统音频采集组件、帧协议与相关生命周期处理改编自 [Penumbra](https://github.com/seihn2/penumbra)，遵循仓库提供的 CC BY-NC 4.0 许可。LingoBar 的界面、多语翻译和学习收藏在本工程独立实现。改编范围与第三方声明见 [NOTICE.md](NOTICE.md)。
+应用不会在首次打开时自动收音，也不保存录音。开始聆听后，音频通过加密连接发送到配置的识别服务；原文或手动文字发送到翻译服务。密钥由主进程通过 Electron `safeStorage` 加密，加密不可用或失败时拒绝保存，不退回明文。具体数据保留、系统权限与服务商边界见 [隐私说明](docs/usage.zh-CN.md#privacy)。
 
-## 许可
+项目采用 [CC BY-NC 4.0](LICENSE)：允许在署名、保留许可并注明修改的前提下进行非商业使用、修改和分享；商业用途需另行授权。这是源码公开项目，并非 OSI 定义的开源软件。第三方依赖保留各自许可。
 
-本项目以 [CC BY-NC 4.0](LICENSE) 公开源码：允许在署名、保留许可及注明修改的前提下进行非商业使用、修改和分享。商业用途需另行取得相应权利人的授权。第三方依赖保留各自许可。
-
-由于限制商业用途，本项目属于非商业许可的源码公开项目，不属于 [OSI 定义的开源许可](https://opensource.org/osd)。公开仓库不附带 API 密钥、录音、个人字幕或收藏；使用者需要自行配置服务账户。
+音频组件、帧协议及部分生命周期处理改编自 [Penumbra](https://github.com/seihn2/penumbra)。LingoBar 的多语学习界面与收藏独立实现，来源提交及修改范围见 [NOTICE.md](NOTICE.md)。

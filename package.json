@@ -2,7 +2,7 @@
   "name": "lingobar",
   "version": "0.1.5",
   "private": true,
-  "description": "A floating multilingual caption bar for macOS.",
+  "description": "A floating multilingual caption bar for macOS and Windows.",
   "author": "LingoBar",
   "license": "CC-BY-NC-4.0",
   "main": "out/main/index.js",
@@ -10,9 +10,16 @@
     "dev": "electron-vite dev",
     "typecheck": "tsc --noEmit",
     "test": "vitest run && node --test src/renderer/reading-schedule.test.mjs",
+    "test:ui": "node scripts/test-ui.cjs",
+    "test:media-permissions": "node scripts/test-media-permissions.cjs",
+    "test:windows-native": "node scripts/verify-windows-system-audio.cjs",
+    "build:icons": "node scripts/make-windows-icons.cjs",
     "build:native": "node scripts/build-native.cjs",
     "build": "npm run typecheck && electron-vite build",
-    "package:mac": "npm run build:native && npm run build && electron-builder --mac --dir --publish never"
+    "package:mac": "npm run build:native && npm run build && electron-builder --mac --dir --publish never",
+    "package:win": "npm run build:icons && npm run build:native && npm run build && electron-builder --win --x64 --publish never",
+    "verify:package": "node scripts/verify-package.cjs",
+    "checksums:win": "node scripts/checksums-windows.cjs"
   },
   "devDependencies": {
     "@types/node": "22.17.2",

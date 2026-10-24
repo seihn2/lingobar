@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { LingoAPI, Snapshot } from '../shared/types'
 const api: LingoAPI = {
+  platform: process.platform === 'win32' || process.platform === 'darwin' ? process.platform : 'other',
   getSnapshot: () => ipcRenderer.invoke('lingo:snapshot'),
   saveSettings: input => ipcRenderer.invoke('lingo:settings', input),
   start: () => ipcRenderer.invoke('lingo:start'),
@@ -24,7 +25,7 @@ const api: LingoAPI = {
     return () => ipcRenderer.removeListener('lingo:changed', listener)
   },
   onMicrophone: callback => {
-    const listener = (_event: unknown, enabled: boolean, run: number) => callback(enabled, run)
+    const listener = (_event: unknown, enabled: boolean, run: number, deviceId: string) => callback(enabled, run, deviceId)
     ipcRenderer.on('lingo:microphone', listener)
     return () => ipcRenderer.removeListener('lingo:microphone', listener)
   }
