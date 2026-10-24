@@ -210,10 +210,11 @@ void syntheticStream(Lifetime& lifetime) {
 }
 
 int selfTest() {
-    const auto small = lingobar::audioFrameHeader(2);
-    const auto large = lingobar::audioFrameHeader(8192);
-    if (small != std::array<std::uint8_t, 8>{'P', 'C', 'M', '1', 2, 0, 0, 0} ||
-        large[4] != 0 || large[5] != 32) return 1;
+    // Windows SDK RPC headers define `small` as a macro; use explicit names.
+    const auto smallHeader = lingobar::audioFrameHeader(2);
+    const auto largeHeader = lingobar::audioFrameHeader(8192);
+    if (smallHeader != std::array<std::uint8_t, 8>{'P', 'C', 'M', '1', 2, 0, 0, 0} ||
+        largeHeader[4] != 0 || largeHeader[5] != 32) return 1;
     for (const auto invalid : {0U, 1U, 3U, 8193U, 0xffffffffU}) {
         try { lingobar::audioFrameHeader(invalid); return 1; }
         catch (const std::invalid_argument&) { }
