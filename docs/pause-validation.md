@@ -70,3 +70,27 @@ claimed. Hardware limits remain in [windows-validation.md](windows-validation.md
 Exact CI, head, installer artifact and SHA-256 are recorded in the corresponding
 draft PR after the run reaches a terminal state. No merge or formal release is
 performed.
+
+## Follow-up: scope pause messages to their capture run
+
+The follow-up starts from PR #4 head
+`4cc3e0ba50900f79a98cc7f25f480a321c48c5e0`. A synthetic Chromium cross-review
+reproduced this sequence: pause, open history before the reply, receive a timeout,
+restart through a tray-style snapshot, then receive a new capture error. The old
+timeout remained in the history panel and obscured the new failure. No actual
+tray, audio device or provider was used in that reproduction.
+
+The renderer now invalidates an old pause message when a new run or new capture
+error arrives; delayed pause success and rejection replies also check that capture epoch. Compact,
+expanded and panel views share the same current message fallback. Repeated
+snapshots of an unchanged capture error preserve a newer local action error,
+such as a failed copy, so this correction does not hide later user actions.
+This is an original LingoBar correction under the existing license, based on
+local review rather than copied upstream code. Audio/IPC permissions and the
+recognition finish protocol are unchanged.
+
+Nine additional browser assertions cover restart/error visibility, an open
+history panel, a late pause reply, compact mode and newer local errors. The
+standalone suite has 41 checks at each emulated scale. This follow-up contains
+PR #4; it does not silently add PR #3's separate local-search feature. Combined
+validation is reported with its exact parent heads in the PR.

@@ -84,6 +84,7 @@ export default function App() {
   const opacityRevision = useRef(0)
   const microphoneStop = useRef<(() => void) | null>(null)
   const microphoneGeneration = useRef(0)
+  const captureEpoch = useRef(0)
   const microphoneAbort = useRef<AbortController | null>(null)
   const captureOperation = useRef(0)
   const readingSession = useRef<ReadingSession>({ clock: null, following: true, anchor: null })
@@ -103,9 +104,16 @@ export default function App() {
     let active = true
     let receivedSnapshot = false
     let captureActive = false
+    let captureError: string | null = null
     const apply = (next: Snapshot) => {
       if (!active) return
       const nextCaptureActive = next.state === 'starting' || next.state === 'listening'
+      const nextError = next.state === 'error' ? next.message : null
+      if ((nextCaptureActive && !captureActive) || (nextError !== null && nextError !== captureError)) {
+        captureEpoch.current++
+        setNotice('')
+      }
+      captureError = nextError
       if (nextCaptureActive && !captureActive) {
         readingSession.current = { clock: null, following: true, anchor: null }
         setReadingEpoch(value => value + 1)
@@ -224,6 +232,7 @@ export default function App() {
       setPanel('settings'); setNotice('先连接语音识别和翻译服务，就可以开始实时字幕。'); return
     }
     const operation = ++captureOperation.current
+    const epoch = captureEpoch.current
     const shouldStop = listening || starting
     setCaptureAction(shouldStop ? 'stop' : 'start')
     setNotice('')
@@ -239,10 +248,10 @@ export default function App() {
     try {
       if (shouldStop) {
         const result = await api.stop()
-        if (operation === captureOperation.current && result === 'timeout') setNotice('已暂停收音；末句收尾等待超时，已保留已识别的内容。')
+        if (operation === captureOperation.current && epoch === captureEpoch.current && result === 'timeout') setNotice('已暂停收音；末句收尾等待超时，已保留已识别的内容。')
       } else await api.start()
     }
-    catch (error) { if (operation === captureOperation.current) setNotice(errorText(error)) }
+    catch (error) { if (operation === captureOperation.current && (!shouldStop || epoch === captureEpoch.current)) setNotice(errorText(error)) }
     finally { if (operation === captureOperation.current) setCaptureAction(null) }
   }
   async function copyCaption(current: Caption) {
@@ -292,6 +301,7 @@ export default function App() {
     opacityTimer.current = setTimeout(commitOpacity, 180)
   }
   const displayedOpacity = opacityPreview ?? snapshot.settings.opacity
+  const noticeText = notice || (snapshot.state === 'error' ? snapshot.message : '')
 
   const windowControls = <div className="titlebar-actions">
         <label className="quick-opacity" title="透明度调节：向左更透明，松开后自动保存"><Contrast size={12} /><input type="range" aria-label="背景不透明度，越低越透明" min="0.45" max="1" step="0.01" value={displayedOpacity} onChange={event => adjustOpacity(Number(event.target.value))} onPointerUp={commitOpacity} onKeyUp={commitOpacity} onBlur={commitOpacity} /><output>{Math.round(displayedOpacity * 100)}%</output></label>
@@ -311,7 +321,7 @@ export default function App() {
       {windowControls}
     </header>}
 
-    {snapshot.collapsed && <CompactCaption controls={windowControls} key={`${preview ? 'preview' : 'live'}:${readingEpoch}`} captions={streamCaptions} settings={snapshot.settings} preview={preview} readingSession={readingSession.current} partial={partial} listening={listening} notice={notice || (snapshot.state === 'error' ? snapshot.message : '')} onRetry={caption => api && void run(() => api.retry(caption.id))} onReturnLive={() => setSelectedId(null)} />}
+    {snapshot.collapsed && <CompactCaption controls={windowControls} key={`${preview ? 'preview' : 'live'}:${readingEpoch}`} captions={streamCaptions} settings={snapshot.settings} preview={preview} readingSession={readingSession.current} partial={partial} listening={listening} notice={noticeText} onRetry={caption => api && void run(() => api.retry(caption.id))} onReturnLive={() => setSelectedId(null)} />}
 
     {!snapshot.collapsed && <>
       <div className="capture-toolbar" inert={panel !== null}>
@@ -325,7 +335,7 @@ export default function App() {
       </section>
       {snapshot.settings.showOriginal && !preview && expandedPartial.length > 0 && <div className="partial-caption live-partial" inert={panel !== null} aria-live="off"><span className="partial-indicator" /><span className="partial-stage-label">正在听</span>{expandedPartial.map(item => <span key={item.source}><b>{item.source === 'microphone' ? '麦克风' : '电脑'}</b>{item.text}</span>)}</div>}
 
-      {(notice || (snapshot.state === 'error' && snapshot.message)) && !panel && <div className="inline-notice" role="alert"><span>{notice || snapshot.message}</span><button aria-label="关闭提示" onClick={() => setNotice('')}><X size={12} /></button></div>}
+      {noticeText && !panel && <div className="inline-notice" role="alert"><span>{noticeText}</span><button aria-label="关闭提示" onClick={() => setNotice('')}><X size={12} /></button></div>}
       <footer className="bottom-bar" inert={panel !== null}>
         <div className="stream-footer-note">{preview ? <button className="text-button" onClick={() => { setPreview(false); setSelectedId(null) }}>退出示例预览</button> : <><span className="small-dot" />{snapshot.captions.length ? '段落持续保留 · 向上滚动回看' : '实时译文持续更新，旧内容留在这里'}</>}</div>
         <div className="footer-actions"><IconButton title="输入文字翻译" onClick={() => { setNotice(''); setPanel('text') }}><Keyboard size={15} /></IconButton><IconButton title="历史与收藏" active={panel === 'history'} onClick={() => { setNotice(''); setPanel('history') }}><History size={15} /></IconButton></div>
@@ -335,7 +345,7 @@ export default function App() {
     {toast && <div className="toast" role="status"><Check size={12} />{toast}</div>}
     {panel && !snapshot.collapsed && <div className="panel-backdrop"><section className={`panel panel-${panel}`} role="dialog" aria-modal="true" aria-label={panel === 'settings' ? '设置' : panel === 'history' ? '历史与收藏' : '文字翻译'}>
       <div className="panel-heading"><div><span className="panel-kicker">{panel === 'settings' ? 'PREFERENCES' : panel === 'history' ? 'YOUR LANGUAGE NOTES' : 'TEXT TRANSLATION'}</span><h2>{panel === 'settings' ? '让语伴适合你' : panel === 'history' ? '听过的，留下来' : '从一句话开始'}</h2></div><IconButton title="关闭面板" onClick={() => { setPanel(null); setNotice('') }}><X size={17} /></IconButton></div>
-      {notice && <div className="panel-notice" role="alert">{notice}</div>}
+      {noticeText && <div className="panel-notice" role="alert">{noticeText}</div>}
       {panel === 'settings' && <SettingsPanel platform={platform} settings={snapshot.settings} listening={listening || starting} saveSettings={saveSettings} onSaved={() => { setNotice(''); setToast('设置已保存'); setPanel(null) }} onError={setNotice} onImport={async () => { if (!api) throw new Error('请在应用中导入本机密钥。'); const settings = await api.importLocalKey(); setSnapshot(value => ({ ...value, settings })); setToast('本机语音识别密钥已安全导入'); return settings }} />}
       {panel === 'text' && <form className="text-form" onSubmit={event => void submitText(event)}><label htmlFor="translation-input">输入或粘贴任何语言，翻译为你在设置中选择的字幕语言。</label><textarea id="translation-input" value={input} autoFocus onChange={event => setInput(event.target.value)} placeholder="例如：You don't have to be perfect to make progress." maxLength={5000} /><div className="text-form-footer"><span>{input.length} / 5000 · {labels.submitShortcut} 翻译</span><button className="primary-button" disabled={busy || !input.trim()} type="submit" onKeyDown={event => event.stopPropagation()}>{busy ? <LoaderCircle size={13} className="spin" /> : <ArrowRight size={13} />}翻译这句</button></div></form>}
       {panel === 'history' && <><div className="history-toolbar"><div className="history-tabs"><button className={historyFilter === 'all' ? 'selected' : ''} onClick={() => setHistoryFilter('all')}>全部 <span>{snapshot.captions.length}</span></button><button className={historyFilter === 'saved' ? 'selected' : ''} onClick={() => setHistoryFilter('saved')}>学习收藏 <span>{snapshot.captions.filter(caption => caption.saved).length}</span></button></div><button className="text-button" disabled={!snapshot.captions.some(caption => caption.saved)} onClick={() => api && void run(async () => { if (await api.exportSaved()) setToast('收藏已导出') })}><ArrowDownToLine size={13} />导出收藏</button></div><div className="history-list">{snapshot.captions.filter(caption => historyFilter === 'all' || caption.saved).slice().reverse().map(caption => <div className="history-item" key={caption.id}><button className="history-select" onClick={() => { setSelectedId(caption.id); setFocusVersion(value => value + 1); setPreview(false); setPanel(null) }}><span className="history-item-meta">{timeText(caption.createdAt)} · {sourceNames[caption.source]}{caption.live || caption.translationPending ? ' · 实时更新' : caption.status === 'translating' ? ' · 翻译中' : caption.status === 'error' ? ' · 待重试' : ''}</span><span className="history-original" dir="auto">{preferredTranslation(caption, targets) || (snapshot.settings.showOriginal ? alignedOriginal(caption) : '所选语言尚未生成')}</span>{snapshot.settings.showOriginal && preferredTranslation(caption, targets) && <span className="history-translation" dir="auto">{alignedOriginal(caption)}</span>}</button><IconButton title={caption.saved ? '取消收藏' : '收藏'} active={caption.saved} disabled={caption.status !== 'ready' || caption.live || caption.translationPending} onClick={() => api && void run(() => api.toggleSaved(caption.id))}><Bookmark size={14} fill={caption.saved ? 'currentColor' : 'none'} /></IconButton></div>)}{!snapshot.captions.some(caption => historyFilter === 'all' || caption.saved) && <div className="empty-history"><Bookmark size={24} strokeWidth={1.3} /><p>{historyFilter === 'saved' ? '值得再读一遍的句子，就收藏在这里。' : '开始聆听或输入文字后，对照字幕会出现在这里。'}</p></div>}</div></>}
