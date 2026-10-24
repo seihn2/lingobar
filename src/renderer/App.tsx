@@ -236,7 +236,12 @@ export default function App() {
       microphoneStop.current?.()
       microphoneStop.current = null
     }
-    try { if (shouldStop) await api.stop(); else await api.start() }
+    try {
+      if (shouldStop) {
+        const result = await api.stop()
+        if (operation === captureOperation.current && result === 'timeout') setNotice('已暂停收音；末句收尾等待超时，已保留已识别的内容。')
+      } else await api.start()
+    }
     catch (error) { if (operation === captureOperation.current) setNotice(errorText(error)) }
     finally { if (operation === captureOperation.current) setCaptureAction(null) }
   }

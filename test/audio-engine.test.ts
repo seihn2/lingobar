@@ -16,7 +16,7 @@ function fixture() {
   const engine = new AudioEngine(callbacks, {
     capture,
     createAsr: (callbacks) => {
-      const session = { callbacks, start: vi.fn(async () => {}), stop: vi.fn(), push: vi.fn() }
+      const session = { callbacks, start: vi.fn(async () => {}), stop: vi.fn(), push: vi.fn(), finish: vi.fn(async () => 'finished' as const) }
       sessions.push(session)
       return session
     }
@@ -96,5 +96,82 @@ describe('audio engine', () => {
     await expect(f.engine.start({ ...options, apiKey: '' })).rejects.toThrow('API Key')
     expect(f.sessions).toHaveLength(0)
     expect(f.capture.start).not.toHaveBeenCalled()
+  })
+  it('stops both device inputs immediately while allowing their already-sent tail results', async () => {
+    const f = fixture()
+    await f.engine.start(options)
+    let finishSystem!: (value: 'finished') => void
+    let finishMic!: (value: 'finished') => void
+    vi.mocked(f.sessions[0].finish).mockImplementation(() => new Promise(resolve => { finishSystem = resolve }))
+    vi.mocked(f.sessions[1].finish).mockImplementation(() => new Promise(resolve => { finishMic = resolve }))
+    const stopping = f.engine.pause()
+    expect(f.engine.pause()).toBe(stopping)
+    expect(f.capture.stop).toHaveBeenCalledTimes(2) // Initial cleanup, then pause.
+    expect(f.callbacks.onState).toHaveBeenLastCalledWith('idle', expect.stringContaining('最后一句'))
+    const pcm = new Int16Array([1, 2]).buffer
+    f.engine.pushMicrophone(pcm); f.getNativeCallbacks().onAudio(pcm)
+    expect(f.sessions.every(session => vi.mocked(session.push).mock.calls.length === 0)).toBe(true)
+    await Promise.resolve()
+    f.sessions[0].callbacks.onSentence('Synthetic system tail', 'system:1')
+    f.sessions[1].callbacks.onSentence('Synthetic microphone tail', 'microphone:1')
+    expect(f.callbacks.onSentence.mock.calls).toEqual([
+      ['system', 'Synthetic system tail', 'system:1'], ['microphone', 'Synthetic microphone tail', 'microphone:1']
+    ])
+    finishSystem('finished'); finishMic('finished')
+    await expect(stopping).resolves.toBe('finished')
+    f.sessions[0].callbacks.onPartial('late')
+    expect(f.callbacks.onPartial).not.toHaveBeenCalled()
+    expect(f.callbacks.onError).not.toHaveBeenCalled()
+  })
+  it('returns timeout without restarting audio or discarding the last received partial', async () => {
+    const f = fixture()
+    await f.engine.start({ ...options, mode: 'microphone' })
+    vi.mocked(f.sessions[0].finish).mockResolvedValue('timeout')
+    f.sessions[0].callbacks.onPartial('Synthetic last partial', 'mic:1')
+    await expect(f.engine.pause()).resolves.toBe('timeout')
+    expect(f.callbacks.onPartial).toHaveBeenCalledExactlyOnceWith('microphone', 'Synthetic last partial', 'mic:1')
+    expect(f.callbacks.onError).not.toHaveBeenCalled()
+    expect(f.callbacks.onState).toHaveBeenLastCalledWith('idle', expect.stringContaining('超时'))
+    expect(f.sessions[0].start).toHaveBeenCalledOnce()
+  })
+  it('hard-cancels an in-progress pause before a new owner starts and ignores its late completion', async () => {
+    const f = fixture()
+    await f.engine.start({ ...options, mode: 'microphone' })
+    let finish!: (value: 'finished') => void
+    vi.mocked(f.sessions[0].finish).mockImplementation(() => new Promise(resolve => { finish = resolve }))
+    const stopping = f.engine.pause(); await Promise.resolve()
+    await f.engine.start({ ...options, mode: 'microphone' })
+    f.sessions[0].callbacks.onSentence('old tail', 'old:1')
+    finish('finished')
+    await expect(stopping).resolves.toBe('cancelled')
+    expect(f.callbacks.onSentence).not.toHaveBeenCalled()
+    expect(f.callbacks.onState).toHaveBeenLastCalledWith('listening', expect.any(String))
+    expect(f.sessions[1].stop).not.toHaveBeenCalled()
+    f.engine.stop()
+  })
+  it('still fails both sources when either recognition service fails while finishing', async () => {
+    const f = fixture()
+    await f.engine.start(options)
+    let finish!: (value: 'cancelled') => void
+    vi.mocked(f.sessions[0].finish).mockImplementation(() => new Promise(resolve => { finish = resolve }))
+    const stopping = f.engine.pause(); await Promise.resolve()
+    f.sessions[1].callbacks.onError('Synthetic service error')
+    finish('cancelled')
+    await expect(stopping).resolves.toBe('cancelled')
+    expect(f.sessions.every(session => vi.mocked(session.stop).mock.calls.length === 1)).toBe(true)
+    expect(f.callbacks.onState).toHaveBeenLastCalledWith('error', 'Synthetic service error')
+    expect(f.callbacks.onError).toHaveBeenCalledExactlyOnceWith('Synthetic service error')
+  })
+  it('cancels startup without sending a finish request', async () => {
+    const f = fixture()
+    let ready!: () => void
+    f.capture.start.mockImplementationOnce(() => new Promise(resolve => { ready = resolve }))
+    const starting = f.engine.start(options)
+    const cancelled = expect(starting).rejects.toThrow('取消')
+    await Promise.resolve(); await Promise.resolve(); await Promise.resolve()
+    await expect(f.engine.pause()).resolves.toBe('cancelled')
+    ready(); await cancelled
+    expect(f.sessions.every(session => vi.mocked(session.finish).mock.calls.length === 0)).toBe(true)
+    expect(f.capture.activate).not.toHaveBeenCalled()
   })
 })

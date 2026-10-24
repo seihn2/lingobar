@@ -1,6 +1,7 @@
 export type AudioSource = 'system' | 'microphone'
 export type CaptureMode = AudioSource | 'both'
 export type ListeningState = 'idle' | 'starting' | 'listening' | 'error'
+export type PauseResult = 'finished' | 'timeout' | 'cancelled'
 export interface Preferences {
   targetLanguages: TargetLanguage[]
   showOriginal: boolean
@@ -55,7 +56,8 @@ export interface LingoAPI {
   getSnapshot(): Promise<Snapshot>
   saveSettings(input: SettingsInput): Promise<Settings>
   start(): Promise<void>
-  stop(): Promise<void>
+  /** Explicit pause stops devices immediately, then allows a bounded final response. */
+  stop(): Promise<PauseResult | void>
   pushMicrophone(chunk: ArrayBuffer, run: number): void
   microphoneFailed(message: string, run: number): void
   microphoneReady(run: number): void

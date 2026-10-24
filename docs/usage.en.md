@@ -59,7 +59,9 @@ After choosing a source, click **开始聆听** (Start listening). A starting st
 
 Audio source buttons are disabled while starting or listening; click **暂停** (Pause) before choosing a different source. Saving a change to the microphone device or service configuration pauses current listening. If the default device changes, the selected microphone is unplugged, or system output becomes unavailable, confirm the device and start again. The app does not silently switch to another physical device and continue recording. In both-source mode, failure of either source ends both.
 
-Clicking **暂停** (Pause) ends capture and recognition while preserving the recognized part of an unfinished segment. Translation and furigana requests already submitted may still finish. Closing a panel, collapsing, or hiding the window does not pause capture. Quitting the app ends its process completely.
+Clicking **暂停** (Pause) immediately stops system and microphone capture and rejects new audio. For audio already handed to the recognition connection, the app waits up to **2 seconds** for the final words; the button shows **正在暂停** (Pausing). A returned final updates the same segment. On timeout, the last received recognition is retained and a notice is shown, without restarting capture or reconnecting. This is the finish-wait limit, not a promise of provider latency; translation or furigana requests may finish later.
+
+Quitting, errors, permission revocation, or device/service configuration changes immediately cancel recognition without waiting for a final. Pausing before the connection is ready also cancels immediately. Closing a panel, collapsing, or hiding the window does not pause capture. This describes source or test packages containing the [bounded-pause change](pause-validation.md); earlier packages still cancel recognition immediately.
 
 <a id="live"></a>
 ## 4. Translate as you listen, without waiting for long sentences to end

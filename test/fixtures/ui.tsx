@@ -15,6 +15,8 @@ let snapshot: Snapshot = { settings, state: 'idle', message: '', captions: [], p
 const listeners = new Set<(snapshot: Snapshot) => void>()
 const saves: Array<Partial<Settings>> = []
 let audioStarts = 0
+let holdPause = false
+let finishPause: ((result: 'finished' | 'timeout') => void) | null = null
 const emit = (next: Partial<Snapshot>) => {
   snapshot = structuredClone({ ...snapshot, ...next })
   for (const listener of listeners) listener(snapshot)
@@ -24,7 +26,10 @@ const api = {
   getSnapshot: async () => snapshot,
   saveSettings: async (input: Partial<Settings>) => { saves.push(input); emit({ settings: { ...snapshot.settings, ...input } }); return snapshot.settings },
   start: async () => { audioStarts++; throw new Error('Audio is disabled in UI tests') },
-  stop: async () => { emit({ state: 'idle' }) },
+  stop: async () => {
+    emit({ state: 'idle' })
+    if (holdPause) return new Promise<'finished' | 'timeout'>(resolve => { finishPause = resolve })
+  },
   pushMicrophone: () => { throw new Error('Audio is disabled in UI tests') },
   microphoneFailed: () => {}, microphoneReady: () => {},
   translateText: async () => { throw new Error('Providers are disabled in UI tests') },
@@ -142,6 +147,18 @@ async function run() {
   slider.dispatchEvent(new PointerEvent('pointerup', { bubbles: true })); await frame()
   check(saves.some(input => input.opacity === 0.55) && getComputedStyle(query('.app-shell')).getPropertyValue('--surface-opacity').trim() === '0.55', 'opacity slider saves the background setting')
   check(getComputedStyle(query('.compact-row p')).opacity === '1', 'background transparency leaves subtitle glyph opacity intact')
+  await api.setCollapsed(false); await frame()
+  emit({ state: 'idle' }); await frame()
+  const pending = caption('pause-tail', { original: 'Synthetic unfinished tail', live: true, translationPending: true })
+  emit({ state: 'listening', captions: [pending], settings: { ...snapshot.settings, showOriginal: true, hasAsrKey: true, hasTranslationKey: true } }); await frame()
+  holdPause = true
+  query<HTMLButtonElement>('.listen-button').click(); await frame()
+  check(query<HTMLButtonElement>('.listen-button').disabled && query('.listen-button').textContent?.includes('正在暂停'), 'explicit pause disables repeat capture actions while the final response is pending')
+  emit({ captions: [{ ...pending, original: 'Synthetic completed tail', translatedOriginal: 'Synthetic completed tail', translations: { ja: '合成末句' }, ja: '合成末句', live: false, translationPending: false }] }); await frame()
+  check(document.querySelectorAll('[data-caption-id="pause-tail"]').length === 1 && query('[data-caption-id="pause-tail"] .original-row p').textContent === 'Synthetic completed tail', 'a paused final updates the existing paragraph without creating a duplicate')
+  finishPause!('timeout'); await frame()
+  check(!query<HTMLButtonElement>('.listen-button').disabled && query('.inline-notice').textContent?.includes('已暂停收音') && query('.inline-notice').textContent?.includes('超时'), 'pause timeout confirms devices stopped and the last recognized words remain available')
+  holdPause = false
   check(audioStarts === 0, 'UI regression never starts audio or provider requests')
   return { checks, deviceScaleFactor: devicePixelRatio, platform: navigator.platform }
 }
