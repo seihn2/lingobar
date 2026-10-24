@@ -303,7 +303,10 @@ export class CaptionQueue {
           const changedJapanese = !sameSource || (receivedJapanese && result.ja !== caption.ja)
           const reading = result.reading || (changedJapanese ? '' : caption.reading)
           const jaSegments = result.jaSegments || (changedJapanese ? undefined : caption.jaSegments)
-          Object.assign(caption, result, { status: 'ready', translations, reading, jaSegments, translatedOriginal: job.original,
+          // Publish useful prefixes without clearing a newer final failure, such as queue eviction.
+          const failedFinal = !caption.live && caption.status === 'error' &&
+            state.finalRevision !== undefined && job.revision < state.finalRevision
+          Object.assign(caption, result, { status: failedFinal ? 'error' : 'ready', translations, reading, jaSegments, translatedOriginal: job.original,
             zh: translations.zh || '', en: translations.en || '', ja: translations.ja || '',
             targetLanguages: [...new Set([...(sameSource ? caption.targetLanguages || [] : []), ...Object.keys(translations).filter(isTargetLanguage)])]
           })

@@ -3,6 +3,7 @@ import { CaptionQueue } from '../src/main/captions'
 import type { CaptionTranslation, TranslationConfig, translateCaption } from '../src/main/translation'
 import type { annotateJapanese } from '../src/main/japanese'
 import { trace } from '../src/main/diagnostics'
+import { untranslatedErrorSource } from '../src/renderer/caption-text'
 
 vi.mock('../src/main/diagnostics', () => ({ trace: vi.fn() }))
 
@@ -61,6 +62,34 @@ describe('incremental ASR caption translation', () => {
     expect(translator).toHaveBeenCalledTimes(2)
     expect(translator.mock.calls[1][0]).toBe('Hello one two three')
     expect(queue.captions[0]).toMatchObject({ status: 'ready', live: true, translationPending: false, translatedOriginal: 'Hello one two three' })
+    queue.close()
+  })
+
+  it('coalesces 100 partial revisions with eight selected languages and finalizes the same caption', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+    vi.setSystemTime(0)
+    const targets: NonNullable<TranslationConfig['targetLanguages']> = ['en', 'zh', 'ja', 'fr', 'de', 'ko', 'es', 'ar']
+    const translator = vi.fn<typeof translateCaption>().mockImplementation(async (text, options) => {
+      const translations = Object.fromEntries(options.targetLanguages!.map(code => [code, `${code}: ${text}`]))
+      return { language: '英语', translations, zh: translations.zh, en: translations.en, ja: translations.ja, reading: '' }
+    })
+    const queue = new CaptionQueue([], () => ({ ...config, targetLanguages: targets }), vi.fn(), vi.fn(), translator)
+    for (let index = 0; index < 100; index++) {
+      queue.updatePartial(`Synthetic partial revision ${index}`, 'system', 'stress')
+      await vi.advanceTimersByTimeAsync(10)
+    }
+    expect(translator).toHaveBeenCalledTimes(1)
+    const id = queue.captions[0].id
+    const original = 'Synthetic final after 100 partial revisions.'
+    queue.finishSentence(original, 'system', 'stress')
+    await settle()
+    expect(translator).toHaveBeenCalledTimes(2)
+    expect(translator.mock.calls.map(([, options]) => options.partial)).toEqual([true, false])
+    expect(translator.mock.calls.every(([, options]) => options.targetLanguages?.join(',') === targets.join(','))).toBe(true)
+    expect(queue.captions).toHaveLength(1)
+    expect(queue.captions[0]).toMatchObject({ id, original, translatedOriginal: original, status: 'ready', live: false, translationPending: false })
+    expect(Object.keys(queue.captions[0].translations!)).toEqual(targets)
+    expect(vi.getTimerCount()).toBe(0)
     queue.close()
   })
 
@@ -231,6 +260,47 @@ describe('incremental ASR caption translation', () => {
     expect(caption).toMatchObject({ status: 'ready', translatedOriginal: 'Hello world.', en: 'Hello world.', translationPending: false })
     expect(caption.error).toBeUndefined()
     queue.close()
+  })
+
+  it('keeps an overloaded final retryable when its useful in-flight prefix completes later', async () => {
+    const prefix = deferred(), blocker = deferred()
+    const original = 'A useful prefix with an untranslated ending.'
+    const translator = vi.fn<typeof translateCaption>().mockImplementation(text =>
+      text === 'A useful prefix' ? prefix.promise : text === 'blocker' ? blocker.promise : Promise.resolve(translated(text)))
+    const { queue } = timedQueue(translator)
+    try {
+      queue.updatePartial('A useful prefix', 'system', 'overloaded-final')
+      await vi.advanceTimersByTimeAsync(650)
+      queue.add('blocker', 'text')
+      queue.finishSentence(original, 'system', 'overloaded-final')
+      // Fill both running slots and evict this final from the bounded wait queue.
+      for (let index = 0; index < 20; index++) queue.add(`backlog ${index}`, 'text')
+      const caption = queue.captions[0]
+      const error = caption.error
+      expect(caption).toMatchObject({ status: 'error', translationPending: true, original })
+      expect(error).toContain('原文已保留')
+      expect(translator.mock.calls.some(([text]) => text === original)).toBe(false)
+
+      prefix.resolve(translated('A useful prefix'))
+      await settle()
+      expect(caption).toMatchObject({ status: 'error', live: false, translationPending: false, original,
+        translatedOriginal: 'A useful prefix', en: 'A useful prefix', error })
+      expect(untranslatedErrorSource(caption)).toEqual({ label: '未译原文', text: 'with an untranslated ending.' })
+      queue.toggleSaved(caption.id)
+      expect(caption.saved).toBe(false)
+
+      queue.retry(caption.id)
+      await settle()
+      expect(translator.mock.calls.filter(([text]) => text === original)).toHaveLength(1)
+      expect(translator.mock.calls.find(([text]) => text === original)?.[1].partial).toBe(false)
+      expect(caption).toMatchObject({ status: 'ready', translatedOriginal: original, en: original, translationPending: false })
+      expect(caption.error).toBeUndefined()
+      expect(untranslatedErrorSource(caption)).toBeNull()
+    } finally {
+      queue.close()
+      prefix.resolve(translated('A useful prefix')); blocker.resolve(translated('blocker'))
+      await settle()
+    }
   })
 
   it('does not attach languages from an older prefix to a newer source after target settings change', async () => {
