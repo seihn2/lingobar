@@ -2,7 +2,7 @@ import { app, BrowserWindow, clipboard, dialog, globalShortcut, ipcMain, Menu, n
 import { execFile } from 'node:child_process'
 import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { AudioSource, ListeningState, Snapshot, SettingsInput } from '../shared/types'
+import type { AudioSource, ListeningState, PauseResult, Snapshot, SettingsInput } from '../shared/types'
 import { Storage } from './storage'
 import { CaptionQueue } from './captions'
 import { AudioEngine } from './audio'
@@ -28,6 +28,8 @@ let partialIds: Partial<Record<AudioSource, string>> = {}
 let collapsed = false
 let startGeneration = 0
 let microphoneRun: number | null = null
+let drainingMicrophoneRun: number | null = null
+let pauseTask: Promise<PauseResult> | null = null
 let expandedBounds: Electron.Rectangle | null = null
 const platform = desktopPlatform(process.platform)
 const labels = platformLabels(platform)
@@ -44,6 +46,8 @@ function microphone(enabled: boolean, run = startGeneration): void {
 }
 function stop(): void {
   startGeneration++
+  pauseTask = null
+  drainingMicrophoneRun = null
   microphoneRun = null
   microphone(false)
   audio.stop()
@@ -54,6 +58,26 @@ function stop(): void {
   message = '已暂停，可以继续阅读或收藏。'
   publish()
 }
+async function pause(): Promise<PauseResult> {
+  if (pauseTask) return pauseTask
+  // Cancelling a connection/permission prompt remains immediate.
+  if (state !== 'listening') { stop(); return 'cancelled' }
+  const generation = ++startGeneration
+  drainingMicrophoneRun = microphoneRun
+  microphoneRun = null
+  microphone(false)
+  const task = audio.pause().then(result => {
+    if (quitting || generation !== startGeneration) return 'cancelled' as const
+    queue.finishPartials()
+    partial = {}; partialIds = {}
+    drainingMicrophoneRun = null
+    publish()
+    return result
+  })
+  pauseTask = task
+  try { return await task }
+  finally { if (pauseTask === task) pauseTask = null }
+}
 function fail(error: unknown): void {
   stop()
   state = 'error'
@@ -62,6 +86,7 @@ function fail(error: unknown): void {
 }
 async function start(): Promise<void> {
   if (state === 'listening' || state === 'starting') return
+  if (pauseTask) stop()
   const generation = ++startGeneration
   try {
     const settings = storage.settings()
@@ -136,7 +161,7 @@ function wireIPC(): void {
   handle('lingo:snapshot', snapshot)
   handle('lingo:settings', (input: SettingsInput) => {
     if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('设置格式不正确。')
-    if (state === 'starting' || state === 'listening') {
+    if (state === 'starting' || state === 'listening' || pauseTask) {
       const serviceKeys: (keyof SettingsInput)[] = ['captureMode', 'microphoneDeviceId', 'asrEndpoint', 'asrModel', 'asrApiKey', 'translationBaseUrl', 'translationModel', 'translationApiKey']
       const current = storage.settings()
       if (serviceKeys.some(key => input[key] !== undefined && input[key] !== '' && input[key] !== current[key as keyof typeof current])) stop()
@@ -147,7 +172,7 @@ function wireIPC(): void {
     return settings
   })
   handle('lingo:start', start)
-  handle('lingo:stop', stop)
+  handle('lingo:stop', pause)
   handle('lingo:text', (text: unknown) => {
     if (typeof text !== 'string' || !text.trim()) throw new Error('请先输入一句话。')
     if (!storage.key('translation')) throw new Error('请先在设置中配置翻译密钥。')
@@ -220,7 +245,9 @@ function wireIPC(): void {
     if (trusted(event) && microphoneRun !== null && run === microphoneRun && chunk instanceof ArrayBuffer && chunk.byteLength > 0 && chunk.byteLength <= 64000 && chunk.byteLength % 2 === 0 && (state === 'listening' || state === 'starting')) audio.pushMicrophone(chunk)
   })
   ipcMain.on('lingo:microphone-failed', (event, error: unknown, run: unknown) => {
-    if (trusted(event) && microphoneRun !== null && run === microphoneRun && (state === 'listening' || state === 'starting')) fail(typeof error === 'string' ? error.slice(0, 300) : '麦克风不可用，请检查系统权限。')
+    const active = microphoneRun !== null && run === microphoneRun && (state === 'listening' || state === 'starting')
+    const draining = pauseTask !== null && drainingMicrophoneRun !== null && run === drainingMicrophoneRun
+    if (trusted(event) && (active || draining)) fail(typeof error === 'string' ? error.slice(0, 300) : '麦克风不可用，请检查系统权限。')
   })
   ipcMain.on('lingo:microphone-ready', (event, run: unknown) => {
     if (trusted(event) && microphoneRun !== null && run === microphoneRun && state === 'starting') {
@@ -280,7 +307,7 @@ else {
     tray.setToolTip('LingoBar · 语伴')
     tray.setContextMenu(Menu.buildFromTemplate([
       { label: `显示翻译条  ${labels.shortcut}`, click: show },
-      { label: '开始 / 暂停聆听', click: () => { if (state === 'listening' || state === 'starting') stop(); else void start().catch(() => { /* start handles only its current generation. */ }) } },
+      { label: '开始 / 暂停聆听', click: () => { if (state === 'listening' || state === 'starting') void pause(); else void start().catch(() => { /* start handles only its current generation. */ }) } },
       { type: 'separator' }, { label: '退出 LingoBar', click: () => app.quit() }
     ]))
     tray.on('click', show)

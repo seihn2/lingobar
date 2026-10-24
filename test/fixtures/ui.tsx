@@ -24,7 +24,10 @@ const api = {
   getSnapshot: async () => snapshot,
   saveSettings: async (input: Partial<Settings>) => { saves.push(input); emit({ settings: { ...snapshot.settings, ...input } }); return snapshot.settings },
   start: async () => { audioStarts++; throw new Error('Audio is disabled in UI tests') },
-  stop: async () => { emit({ state: 'idle' }) },
+  stop: async () => {
+    emit({ state: 'idle' })
+    if (holdPause) return new Promise<'finished' | 'timeout'>((resolve, reject) => { finishPause = resolve; failPause = reject })
+  },
   pushMicrophone: () => { throw new Error('Audio is disabled in UI tests') },
   microphoneFailed: () => {}, microphoneReady: () => {},
   translateText: async () => { throw new Error('Providers are disabled in UI tests') },
@@ -52,9 +55,58 @@ const caption = (id: string, extra: Partial<Caption> = {}): Caption => ({
 const currentId = () => document.querySelector('.reading-current')?.getAttribute('data-caption-id')
 const compactId = () => query('.compact-rows').getAttribute('data-caption-id')
 
+let holdPause = false
+let finishPause: ((result: 'finished' | 'timeout') => void) | null = null
+let failPause: ((error: Error) => void) | null = null
+
 async function run() {
   const checks: string[] = []
   const check = (value: unknown, message: string) => { assert(value, message); checks.push(message) }
+  await api.setCollapsed(false); await frame()
+  emit({ state: 'idle' }); await frame()
+  const pending = caption('pause-tail', { original: 'Synthetic unfinished tail', live: true, translationPending: true })
+  emit({ state: 'listening', captions: [pending], settings: { ...snapshot.settings, showOriginal: true, hasAsrKey: true, hasTranslationKey: true } }); await frame()
+  holdPause = true
+  query<HTMLButtonElement>('.listen-button').click(); await frame()
+  check(query<HTMLButtonElement>('.listen-button').disabled && query('.listen-button').textContent?.includes('正在暂停'), 'explicit pause disables repeat capture actions while the final response is pending')
+  emit({ captions: [{ ...pending, original: 'Synthetic completed tail', translatedOriginal: 'Synthetic completed tail', translations: { ja: '合成末句' }, ja: '合成末句', live: false, translationPending: false }] }); await frame()
+  check(document.querySelectorAll('[data-caption-id="pause-tail"]').length === 1 && query('[data-caption-id="pause-tail"] .original-row p').textContent === 'Synthetic completed tail', 'a paused final updates the existing paragraph without creating a duplicate')
+  query<HTMLButtonElement>('[aria-label="历史与收藏"]').click(); await frame()
+  finishPause!('timeout'); await frame()
+  check(!query<HTMLButtonElement>('.listen-button').disabled && query('.panel-notice').textContent?.includes('已暂停收音') && query('.panel-notice').textContent?.includes('超时'), 'pause timeout confirms devices stopped and the last recognized words remain available')
+  emit({ state: 'listening', message: '' }); await frame() // A tray-style restart, not this UI's start action.
+  check(!document.querySelector('.panel-notice'), 'a new capture run clears the previous pause timeout while history stays open')
+  emit({ state: 'error', message: 'Synthetic new-run recognition failure' }); await frame()
+  check(query('.panel-notice').textContent === 'Synthetic new-run recognition failure', 'the current capture error remains visible in an open history panel')
+  query<HTMLButtonElement>('[aria-label="关闭面板"]').click(); await frame()
+  check(query('.inline-notice').textContent?.includes('Synthetic new-run recognition failure'), 'closing history keeps the current capture error visible')
+  const originalCopy = api.copyText
+  api.copyText = async () => { throw new Error('Synthetic clipboard failure') }
+  query<HTMLButtonElement>('[aria-label="复制这段多语对照"]').click(); await frame()
+  check(query('.inline-notice').textContent?.includes('Synthetic clipboard failure'), 'a newer local action error remains readable after a capture error')
+  emit({ captions: [...snapshot.captions] }); await frame()
+  check(query('.inline-notice').textContent?.includes('Synthetic clipboard failure'), 'an unchanged capture error snapshot does not erase a newer local action error')
+  api.copyText = originalCopy
+  emit({ state: 'listening', message: '' }); await frame()
+  query<HTMLButtonElement>('.listen-button').click(); await frame()
+  finishPause!('timeout'); await frame()
+  emit({ state: 'error', message: 'Synthetic failure after a timeout' }); await frame()
+  check(query('.inline-notice').textContent?.includes('Synthetic failure after a timeout') && !query('.inline-notice').textContent?.includes('末句收尾'), 'a current capture error takes precedence over an older local timeout notice')
+  emit({ state: 'listening', message: '' }); await frame()
+  query<HTMLButtonElement>('.listen-button').click(); await frame()
+  emit({ state: 'listening', message: '' }); await frame()
+  finishPause!('timeout'); await frame() // A delayed reply from the previous pause operation.
+  check(!document.querySelector('.inline-notice'), 'a late pause result cannot add a stale timeout notice to a newer capture run')
+  query<HTMLButtonElement>('.listen-button').click(); await frame()
+  emit({ state: 'listening', message: '' }); await frame()
+  failPause!(new Error('Synthetic obsolete pause rejection')); await frame()
+  check(!document.querySelector('.inline-notice'), 'a late pause rejection cannot obscure a newer capture run')
+  await api.setCollapsed(true); await frame()
+  emit({ state: 'error', message: 'Synthetic compact capture failure' }); await frame()
+  check(query('.compact-notice').textContent === 'Synthetic compact capture failure', 'compact view also displays the current capture error')
+  await api.setCollapsed(false); await frame()
+  holdPause = false
+
   const history = Array.from({ length: 22 }, (_, index) => caption(`history-${index}`))
   emit({ state: 'idle' })
   emit({ state: 'listening', captions: history, collapsed: false, settings: { ...settings } })

@@ -9,6 +9,7 @@ const MAX_AUDIO_BYTES = 64_000
 const MAX_SOCKET_BUFFER = 512_000
 
 export interface AsrOptions { apiKey: string; model: string; endpoint: string }
+export type AsrFinishResult = 'finished' | 'timeout' | 'cancelled' | 'failed'
 export interface AsrCallbacks {
   onPartial(text: string, utteranceId?: string): void
   /** An empty final still closes the identified utterance's latest draft. */
@@ -18,12 +19,14 @@ export interface AsrCallbacks {
 export interface AsrSession {
   start(options: AsrOptions): Promise<void>
   push(chunk: ArrayBuffer): void
+  finish(): Promise<AsrFinishResult>
   stop(): void
 }
 interface Transcript { partial: boolean; text: string; id?: string }
 interface Dependencies {
   createSocket(url: string, apiKey: string): WebSocket
   startupTimeoutMs: number
+  finishTimeoutMs: number
 }
 interface Session {
   socket: WebSocket
@@ -35,6 +38,7 @@ interface Session {
   resolve(): void
   reject(error: Error): void
   timer?: ReturnType<typeof setTimeout>
+  finishing?: { resolve(result: AsrFinishResult): void; startedAt: number; timer?: ReturnType<typeof setTimeout> }
   buffered: Buffer[]
   bytes: number
   completed: Set<string>
@@ -132,6 +136,7 @@ export function transcriptionEvent(value: unknown): { partial: boolean; text: st
 /** One source per session; sessions never reconnect or replay already-transcribed audio. */
 export class QwenAsrSession implements AsrSession {
   private owner: Session | null = null
+  private finishPromise: Promise<AsrFinishResult> | null = null
   private dependencies: Dependencies
 
   constructor(private callbacks: AsrCallbacks, dependencies: Partial<Dependencies> = {}) {
@@ -141,12 +146,14 @@ export class QwenAsrSession implements AsrSession {
         handshakeTimeout: 15_000, maxPayload: 1_048_576, followRedirects: false
       }),
       startupTimeoutMs: 20_000,
+      finishTimeoutMs: 2_000,
       ...dependencies
     }
   }
 
   start(options: AsrOptions): Promise<void> {
     this.stop()
+    this.finishPromise = null
     if (!options.apiKey.trim()) return Promise.reject(new Error('请先在设置中填写语音识别 API Key。'))
     let connection: ReturnType<typeof asrConnection>
     try { connection = asrConnection(options) } catch { return Promise.reject(new Error('语音识别地址必须是有效的 wss:// 地址。')) }
@@ -174,7 +181,7 @@ export class QwenAsrSession implements AsrSession {
 
   push(chunk: ArrayBuffer): void {
     const owner = this.owner
-    if (!owner || !this.owns(owner)) return
+    if (!owner || !this.owns(owner) || owner.finishing) return
     if (!(chunk instanceof ArrayBuffer) || chunk.byteLength === 0 || chunk.byteLength > 16_384 || chunk.byteLength % 2) {
       this.fail(owner, '音频数据格式不正确，请重新开始。')
       return
@@ -192,6 +199,32 @@ export class QwenAsrSession implements AsrSession {
     this.sendAudio(owner, buffer)
   }
 
+  /** Stop accepting PCM immediately, then wait only for this task's bounded final results. */
+  finish(): Promise<AsrFinishResult> {
+    if (this.finishPromise) return this.finishPromise
+    const owner = this.owner
+    if (!owner || !owner.ready || !owner.settled) {
+      this.stop()
+      return this.finishPromise = Promise.resolve('cancelled')
+    }
+    let resolve!: (result: AsrFinishResult) => void
+    const promise = new Promise<AsrFinishResult>(done => { resolve = done })
+    this.finishPromise = promise
+    owner.finishing = { resolve, startedAt: Date.now() }
+    trace('asr.finish-start', { streaming: owner.streaming, timeoutMs: this.dependencies.finishTimeoutMs })
+    owner.finishing.timer = setTimeout(() => {
+      if (this.owns(owner) && owner.finishing) this.release(owner, 'timeout')
+    }, this.dependencies.finishTimeoutMs)
+    owner.finishing.timer.unref?.()
+    // Streaming: finish-task acknowledges all submitted audio. Realtime uses VAD,
+    // so session.finish requests the final result without a manual buffer commit.
+    const sent = this.send(owner, owner.streaming ? {
+      header: { action: 'finish-task', task_id: owner.taskId, streaming: 'duplex' }, payload: { input: {} }
+    } : { type: 'session.finish' })
+    if (!sent && this.owns(owner)) this.fail(owner, '语音识别结束请求发送失败，请重新开始。')
+    return promise
+  }
+
   stop(): void {
     const owner = this.owner
     if (!owner) return
@@ -203,6 +236,7 @@ export class QwenAsrSession implements AsrSession {
   private owns(owner: Session): boolean { return this.owner === owner && !owner.stopped }
 
   private sendAudio(owner: Session, buffer: Buffer): boolean {
+    if (owner.finishing) return false
     return this.send(owner, owner.streaming ? buffer : { type: 'input_audio_buffer.append', audio: buffer.toString('base64') })
   }
 
@@ -250,9 +284,11 @@ export class QwenAsrSession implements AsrSession {
     if ((owner.streaming ? kind === 'task-started' : kind === 'session.updated') && !owner.ready) {
       owner.ready = true
       if (owner.timer) clearTimeout(owner.timer)
+      owner.timer = undefined
       for (const buffered of owner.buffered) {
         if (!this.sendAudio(owner, buffered)) return
       }
+      if (!this.owns(owner)) return
       owner.buffered = []; owner.bytes = 0
       owner.settled = true
       owner.resolve()
@@ -266,7 +302,14 @@ export class QwenAsrSession implements AsrSession {
       this.fail(owner, message)
       return
     }
-    if (kind === 'session.finished' || kind === 'task-finished') { this.fail(owner, '语音识别会话已结束，请重新开始。'); return }
+    if (kind === 'session.finished' || kind === 'task-finished') {
+      const expected = owner.streaming ? kind === 'task-finished' : kind === 'session.finished'
+      if (expected) {
+        if (owner.finishing) this.release(owner, 'finished')
+        else this.fail(owner, '语音识别会话已结束，请重新开始。')
+      }
+      return
+    }
     if (!owner.ready) return
     const realtime = owner.streaming ? null : transcriptionEvent(event)
     const transcripts = owner.streaming
@@ -294,16 +337,23 @@ export class QwenAsrSession implements AsrSession {
   private fail(owner: Session, message: string): void {
     if (!this.owns(owner)) return
     const wasReady = owner.settled
-    this.release(owner)
+    this.release(owner, 'failed')
     if (!wasReady) { owner.settled = true; owner.reject(new Error(message)) }
     else this.callbacks.onError(message)
   }
 
-  private release(owner: Session): void {
+  private release(owner: Session, result: AsrFinishResult = 'cancelled'): void {
     owner.stopped = true
     if (this.owner === owner) this.owner = null
     if (owner.timer) clearTimeout(owner.timer)
+    owner.timer = undefined
+    const finishing = owner.finishing
+    owner.finishing = undefined
+    if (finishing?.timer) clearTimeout(finishing.timer)
     owner.buffered = []; owner.bytes = 0; owner.apiKey = ''
+    owner.completed.clear()
+    if (finishing) trace('asr.finish-end', { streaming: owner.streaming, ms: Math.max(0, Date.now() - finishing.startedAt), result })
+    finishing?.resolve(result)
     // terminate also aborts a pending upgrade; error listener above remains to consume its error.
     try { owner.socket.terminate() } catch { /* Already closed. */ }
   }

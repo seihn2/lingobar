@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { AudioSource, CaptureMode, ListeningState } from '../../shared/types'
+import type { AudioSource, CaptureMode, ListeningState, PauseResult } from '../../shared/types'
 import { NativeSystemAudioCapture, type NativeSystemAudioCallbacks } from './native-capture'
 import { QwenAsrSession, type AsrCallbacks, type AsrOptions, type AsrSession } from './qwen'
 import { desktopPlatform, platformLabels } from '../../shared/platform'
@@ -20,7 +20,13 @@ interface Dependencies {
   createAsr(callbacks: AsrCallbacks): AsrSession
   capture: Capture
 }
-interface Run { id: string; sessions: Partial<Record<AudioSource, AsrSession>> }
+interface Run {
+  id: string
+  sessions: Partial<Record<AudioSource, AsrSession>>
+  acceptingAudio: boolean
+  ready: boolean
+  pause?: Promise<PauseResult>
+}
 
 const platform = desktopPlatform(process.platform)
 const labels = platformLabels(platform)
@@ -51,7 +57,7 @@ export class AudioEngine {
 
   async start(options: AudioOptions): Promise<void> {
     this.release()
-    const owner: Run = { id: randomUUID(), sessions: {} }
+    const owner: Run = { id: randomUUID(), sessions: {}, acceptingAudio: true, ready: false }
     this.owner = owner
     this.callbacks.onState('starting', '正在连接语音识别…')
     try {
@@ -70,13 +76,14 @@ export class AudioEngine {
       if (sources.includes('system')) {
         this.callbacks.onState('starting', platform === 'win32' ? '正在启动电脑声音（WASAPI）…' : '正在启动电脑声音，请允许系统音频录制…')
         await this.dependencies.capture.start(owner.id, {
-          onAudio: (chunk) => { if (this.owns(owner)) owner.sessions.system?.push(chunk) },
-          onError: (code) => this.fail(owner, nativeErrors[code] || '系统声音采集已中断，请重新开始。')
+          onAudio: (chunk) => { if (this.owns(owner) && owner.acceptingAudio) owner.sessions.system?.push(chunk) },
+          onError: (code) => { if (owner.acceptingAudio) this.fail(owner, nativeErrors[code] || '系统声音采集已中断，请重新开始。') }
         })
         if (!this.owns(owner)) throw new Error('已取消启动。')
         if (!this.dependencies.capture.activate(owner.id)) throw new Error('系统声音启动失败，请重新开始。')
       }
       if (!this.owns(owner)) throw new Error('已取消启动。')
+      owner.ready = true
       this.callbacks.onState('listening', options.mode === 'both' ? '正在听电脑声音和麦克风' : options.mode === 'system' ? '正在听电脑声音' : '正在听麦克风')
     } catch (error) {
       const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : ''
@@ -91,7 +98,30 @@ export class AudioEngine {
     this.callbacks.onState('idle', '已暂停')
   }
 
-  pushMicrophone(chunk: ArrayBuffer): void { this.owner?.sessions.microphone?.push(chunk) }
+  /** Device input ends now; only responses for already-sent audio may finish. */
+  pause(): Promise<PauseResult> {
+    const owner = this.owner
+    if (!owner || !owner.ready) { this.stop(); return Promise.resolve('cancelled') }
+    if (owner.pause) return owner.pause
+    owner.acceptingAudio = false
+    this.dependencies.capture.stop()
+    owner.pause = Promise.all(Object.values(owner.sessions).map(session => Promise.resolve().then(() => session.finish())))
+      .then(results => {
+        if (!this.owns(owner)) return 'cancelled' as const
+        if (results.includes('failed')) { this.fail(owner, '末句收尾未完成，已保留识别内容。'); return 'cancelled' as const }
+        const result = results.includes('timeout') ? 'timeout' as const : results.includes('cancelled') ? 'cancelled' as const : 'finished' as const
+        this.release()
+        this.callbacks.onState('idle', result === 'timeout' ? '已暂停，末句收尾超时，已保留识别内容。' : '已暂停，可以继续阅读或收藏。')
+        return result
+      }).catch(() => {
+        this.fail(owner, '末句收尾未完成，已保留识别内容。')
+        return 'cancelled' as const
+      })
+    this.callbacks.onState('idle', '已暂停收音，正在保留最后一句…')
+    return owner.pause
+  }
+
+  pushMicrophone(chunk: ArrayBuffer): void { if (this.owner?.acceptingAudio) this.owner.sessions.microphone?.push(chunk) }
 
   private owns(owner: Run): boolean { return this.owner === owner }
   private fail(owner: Run, message: string): void {
@@ -103,6 +133,7 @@ export class AudioEngine {
   private release(): void {
     const owner = this.owner
     this.owner = null
+    if (owner) owner.acceptingAudio = false
     this.dependencies.capture.stop()
     if (owner) for (const session of Object.values(owner.sessions)) session.stop()
   }
