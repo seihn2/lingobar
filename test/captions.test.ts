@@ -5,6 +5,9 @@ import type { CaptionTranslation, TranslationConfig, translateCaption } from '..
 import type { TargetLanguage } from '../src/shared/languages'
 import type { annotateJapanese, JapaneseAnnotation } from '../src/main/japanese'
 
+vi.mock('electron', () => { throw new Error('Pure caption tests must not load Electron or its installer') })
+vi.mock('../src/main/diagnostics', () => ({ trace: vi.fn() }))
+
 const config = { baseUrl: 'https://example.test/v1', model: 'translation-test', apiKey: 'test-key', generateFurigana: false }
 const translation = (text: string): CaptionTranslation => ({ language: '英语', translations: { zh: `中文 ${text}`, en: text, ja: `日本語 ${text}` }, zh: `中文 ${text}`, en: text, ja: `日本語 ${text}`, reading: `にほんご ${text}`, jaSegments: [{ text: '日本語', reading: 'にほんご' }, { text: ` ${text}` }] })
 const selectedTranslation = (translations: Partial<Record<TargetLanguage, string>>): CaptionTranslation => ({
