@@ -38,6 +38,11 @@ const api = {
   onMicrophone: () => () => {},
 } as LingoAPI
 window.lingo = api
+// Settings may query device metadata; this UI fixture never enumerates hardware.
+Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: {
+  enumerateDevices: async () => [], addEventListener() {}, removeEventListener() {},
+  getUserMedia: () => { throw new Error('Real media is forbidden in UI fixtures') },
+} })
 
 const frame = () => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
 const assert = (condition: unknown, message: string): void => { if (!condition) throw new Error(message) }
@@ -275,5 +280,71 @@ async function verifyHide(mode: 'expanded' | 'compact', before: number) {
   assert(hideCalls === before + 1 && snapshot.state === 'listening' && audioStarts === 0 && providerCalls === 0, `${mode} real browser pointer click forwards one hide call without changing capture or contacting services`)
   return [`${mode} hide button is pointer-accessible outside native drag regions`, `${mode} real browser pointer click forwards one hide call without changing capture or contacting services`]
 }
-;(window as unknown as { __lingobarUiTest: { run: typeof run; preview: typeof preview; prepareHide: typeof prepareHide; verifyHide: typeof verifyHide } }).__lingobarUiTest = { run, preview, prepareHide, verifyHide }
+async function panelFocus() {
+  const checks: string[] = [], failures: string[] = []
+  const check = (value: unknown, message: string) => { checks.push(message); if (!value) failures.push(message) }
+  const key = (name: string, extra: KeyboardEventInit = {}) => {
+    const event = new KeyboardEvent('keydown', { key: name, bubbles: true, cancelable: true, ...extra })
+    ;(document.activeElement || document.body).dispatchEvent(event)
+    return event.defaultPrevented
+  }
+  const settingsButton = () => query<HTMLButtonElement>('[aria-label="设置"]')
+  emit({ state: 'idle', collapsed: true, settings: { ...settings }, captions: [caption('focus-synthetic', { saved: true })] }); await frame()
+  settingsButton().focus(); settingsButton().click(); await frame()
+  check(document.querySelector('.panel-settings')?.getAttribute('aria-label') === '设置' && document.querySelector('.panel-settings')?.contains(document.activeElement), 'compact settings opens a named dialog with focus inside')
+  key('Escape'); await frame()
+  check(document.activeElement === settingsButton(), 'Escape after compact settings restores the equivalent expanded settings trigger')
+
+  settingsButton().focus(); settingsButton().click(); await frame()
+  const close = query<HTMLButtonElement>('[aria-label="关闭面板"]')
+  close.focus(); check(key('Tab', { shiftKey: true }) && document.activeElement === query('.settings-form button[type="submit"]'), 'Shift+Tab wraps from dialog first to last enabled control')
+  check(key('Tab') && document.activeElement === close, 'Tab wraps from dialog last to first enabled control')
+  const nav = () => [...document.querySelectorAll<HTMLButtonElement>('.settings-nav button')]
+  nav()[0].click(); await frame()
+  check(nav().map(button => button.getAttribute('aria-pressed')).join('|') === 'true|false|false', 'settings navigation exposes the current language section')
+  const remove = query<HTMLButtonElement>('[aria-label="移除法语"]')
+  remove.focus(); remove.click(); await frame()
+  const frenchOption = [...document.querySelectorAll<HTMLButtonElement>('.language-options button')].find(button => button.textContent?.startsWith('法语'))!
+  check(!remove.isConnected && document.activeElement === frenchOption, 'removing a focused selected language moves focus to its stable language option')
+  frenchOption.click(); await frame()
+  check(frenchOption.getAttribute('aria-pressed') === 'true', 'the focused language option can re-add the removed language')
+  nav()[1].click(); await frame()
+  check(nav().map(button => button.getAttribute('aria-pressed')).join('|') === 'false|true|false', 'changing settings sections updates their accessible state')
+  close.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true })); key('Escape'); await frame()
+  check(Boolean(document.querySelector('.panel-settings')), 'IME Escape does not close settings during composition')
+  close.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true })); close.click(); await frame()
+  check(document.activeElement === settingsButton(), 'closing settings with its named button restores the original trigger')
+
+  settingsButton().focus(); settingsButton().click(); await frame()
+  query<HTMLFormElement>('.settings-form').requestSubmit(); await frame()
+  check(!document.querySelector('.panel') && document.activeElement === settingsButton(), 'saving settings restores focus without recording or service calls')
+  const textButton = query<HTMLButtonElement>('[aria-label="输入文字翻译"]')
+  textButton.focus(); textButton.click(); await frame()
+  check(document.activeElement === query('#translation-input'), 'text panel still initially focuses its named textarea')
+  key('Escape'); await frame()
+  check(document.activeElement === textButton, 'Escape from an autofocus textarea restores the text-panel trigger')
+  textButton.focus(); textButton.click(); await frame()
+  key('f', { ctrlKey: true }); await frame()
+  check(document.activeElement === query('.history-search-input'), 'Find from a text panel focuses history without retaining the removed textarea')
+  key('f', { ctrlKey: true }); await frame()
+  key('Escape'); await frame()
+  check(document.activeElement === textButton, 'switching panels and repeated Find retain the original outside invoker')
+
+  await api.setCollapsed(true); await frame()
+  query('.compact-viewport').focus(); key('f', { ctrlKey: true }); await frame()
+  const filter = () => [...document.querySelectorAll<HTMLButtonElement>('.history-tabs button')]
+  check(filter().map(button => button.getAttribute('aria-pressed')).join('|') === 'true|false', 'history exposes the current all-history filter')
+  filter()[1].click(); await frame()
+  check(filter().map(button => button.getAttribute('aria-pressed')).join('|') === 'false|true', 'saved-history filtering updates its accessible state')
+  key('Escape'); await frame()
+  check(document.activeElement === query('[aria-label="历史与收藏"]'), 'Find opened from compact reading returns focus to the expanded history control')
+  check(audioStarts === 0 && providerCalls === 0, 'panel focus tests never start media or call providers')
+  return { checks, failures }
+}
+async function preparePanelA11y(mode: 'settings' | 'history') {
+  const trigger = query<HTMLButtonElement>(mode === 'settings' ? '[aria-label="设置"]' : '[aria-label="历史与收藏"]')
+  trigger.focus(); trigger.click(); await frame()
+  query<HTMLButtonElement>(mode === 'settings' ? '.settings-nav button' : '.history-tabs button').click(); await frame()
+}
+;(window as unknown as { __lingobarUiTest: { run: typeof run; preview: typeof preview; prepareHide: typeof prepareHide; verifyHide: typeof verifyHide; panelFocus: typeof panelFocus; preparePanelA11y: typeof preparePanelA11y } }).__lingobarUiTest = { run, preview, prepareHide, verifyHide, panelFocus, preparePanelA11y }
 createRoot(document.getElementById('root')!).render(<App />)

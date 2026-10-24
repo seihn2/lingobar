@@ -78,7 +78,7 @@ npm run verify:package
 - `npm test` 的 fake socket／translator／PCM 合成用例不访问真实服务。
 - UI fixture 使用合成字幕与生产 renderer，覆盖阅读跟随／回看、分段、振假名、
   透明度、紧凑模式，以及搜索时新增100条、延迟译文、清空历史、组合输入和 Esc 焦点。
-  已实机预览796a1aa的CI为58检查×3个模拟缩放；当前测试加入隐藏入口后为62×3。
+  已实机预览796a1aa的CI为58检查×3个模拟缩放；39c6ba5为62×3，当前面板回归为85×3。
   这些是浏览器模拟，不是原生 DPI／输入法实机证明。
 - Electron 权限测试为25检查，使用 fake devices 且不启用 fake UI auto-grant。
   覆盖 idle 枚举选设备、选择后开始、暂停／取消后重开与重新枚举、拒绝权限，

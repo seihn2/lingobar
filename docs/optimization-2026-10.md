@@ -123,3 +123,16 @@ CC BY-NC 4.0 tests and the Electron API contract linked in the record support
 routing checks only, not native Mac visibility acceptance. No third-party code
 or new dependency is incorporated, and no further performance experiment is
 added in this checkpoint.
+
+## Panel focus and accessible selection
+
+The next [bounded renderer regression](panel-accessibility.md) reproduced lost
+focus when an invoking control/autofocus child was removed, focused language
+removal, and missing current-state semantics. It captures a surviving workflow
+origin before opening, restores only on close with a compact→expanded fallback,
+keeps language-removal focus on a stable option, and exposes the existing
+settings/history button states. Nine baseline failures become passing checks;
+the browser suite is now 85 per scale, including actual AX-tree state and trusted
+Tab events. Original code, no new dependency or external implementation, no
+audio/provider changes and no user Mac execution. Physical/native assistive
+technology acceptance remains separate.

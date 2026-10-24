@@ -90,3 +90,7 @@ the app while trying to determine whether it stayed hidden. Keep the current
 uncertain result until that trace exists. Use the
 [offline checklist](macos-offline-validation.md), preserving OS protections,
 fresh test data and the no-real-audio/no-service boundary.
+
+The later [panel accessibility fixes](panel-accessibility.md) have cloud browser
+coverage only. They do not extend the physical 796a1aa acceptance above or turn
+the remaining native focus-loop/IME checks into passes.

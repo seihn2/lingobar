@@ -102,7 +102,7 @@ Current source includes local lookup. Earlier `main` preview packages lack it; u
 - Press `Ctrl+F` on Windows or `⌘F` on Mac inside the app to open **历史与收藏** (History and saved captions) and focus the search field. A compact window expands first. You can also open that panel to search.
 - Look up literal text across locally retained originals, the original aligned with the last translation, and all existing translations, including languages currently hidden. Matching ignores case and normalizes Unicode forms, such as full-width and half-width characters. Search terms are not interpreted as regular expressions.
 - Use **全部** (All) or **学习收藏** (Saved study captions) to filter results. In the search field, `Enter` / `Shift+Enter` cycles to the next / previous match. Click an entry to jump back to its caption segment.
-- While the selected segment remains retained and matched, new captions or late translations keep the same segment selected and do not move the current reading position. Press `Esc` to close the panel; focus returns to the previous control if that control still exists.
+- While the selected segment remains retained and matched, new captions or late translations keep the same segment selected and do not move the current reading position. Press `Esc` to close the panel and return focus to its invoking control. If compact expansion replaced it, focus goes to the equivalent expanded control. Settings and typed-text panels preserve the same return path.
 - Lookup processes existing local text without additional API calls or retranslation. Search terms are not saved, and closing the panel clears the query. Evicted records and unsaved sessions from before the app was quit cannot be searched.
 
 Regular sessions keep approximately the latest 150 sentences in memory and are not restored after you quit the app. Explicitly saved captions are stored locally, up to 1,000 sentences; these are not audio recordings.
@@ -126,7 +126,7 @@ The compact window normally shows captions, with controls appearing on hover or 
 | Submit in the text input panel | `Ctrl+Enter` | `⌘ Enter` |
 | Open local history lookup (requires a build containing this feature) | `Ctrl+F` | `⌘F` |
 | Next / previous match in the search field | `Enter` / `Shift+Enter` | `Enter` / `Shift+Enter` |
-| Close the lookup panel | `Esc` | `Esc` |
+| Close the current panel | `Esc` | `Esc` |
 | Start/pause listening | Interface or tray menu | Interface or menu bar menu |
 
 The close button hides the app to the tray on Windows or the menu bar on Mac. Click the icon to reopen it. If another app uses the shortcut, recover the window from that menu. Choose **退出 LingoBar** (Quit LingoBar) to exit. Optional launch at login does not start audio capture automatically.

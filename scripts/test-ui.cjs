@@ -81,6 +81,37 @@ async function main() {
       assert.ok(ready, 'Renderer fixture startup timed out')
       const result = await send('Runtime.evaluate', { expression: 'window.__lingobarUiTest.run()', awaitPromise: true, returnByValue: true })
       if (result.exceptionDetails) throw new Error(`UI scale ${scale}: ${result.exceptionDetails.exception?.description || result.exceptionDetails.text}`)
+      const focus = await send('Runtime.evaluate', { expression: 'window.__lingobarUiTest.panelFocus()', awaitPromise: true, returnByValue: true })
+      if (focus.exceptionDetails) throw new Error(`Panel focus: ${focus.exceptionDetails.exception?.description}`)
+      assert.deepEqual(focus.result.value.failures, [], `Panel focus regressions at scale ${scale}`)
+      result.result.value.checks.push(...focus.result.value.checks)
+      const press = async (key, code, virtualKey, modifiers = 0) => {
+        await send('Input.dispatchKeyEvent', { type: 'keyDown', key, code, windowsVirtualKeyCode: virtualKey, modifiers })
+        await send('Input.dispatchKeyEvent', { type: 'keyUp', key, code, windowsVirtualKeyCode: virtualKey, modifiers })
+      }
+      for (const mode of ['settings', 'history']) {
+        const prepared = await send('Runtime.evaluate', { expression: `window.__lingobarUiTest.preparePanelA11y('${mode}')`, awaitPromise: true })
+        if (prepared.exceptionDetails) throw new Error(`Accessible panel preparation: ${prepared.exceptionDetails.exception?.description}`)
+        const tree = await send('Accessibility.getFullAXTree')
+        const labels = mode === 'settings' ? ['字幕语言', '服务连接', '显示与启动'] : ['全部', '学习收藏']
+        const states = labels.map(label => {
+          const node = tree.nodes.find(node => node.role?.value === 'button' && node.name?.value?.startsWith(label))
+          return String(node?.properties?.find(property => property.name === 'pressed')?.value?.value)
+        })
+        assert.deepEqual(states, labels.map((_, index) => String(index === 0)), `${mode} current selection must reach the actual accessibility tree`)
+        result.result.value.checks.push(`${mode} current selection reaches the browser accessibility tree`)
+        if (mode === 'settings') {
+          await press('Tab', 'Tab', 9, 8)
+          let active = await send('Runtime.evaluate', { expression: 'document.activeElement.matches(".settings-form button[type=submit]")', returnByValue: true })
+          assert.equal(active.result.value, true, 'Trusted Shift+Tab must wrap to the save control')
+          await press('Tab', 'Tab', 9)
+          active = await send('Runtime.evaluate', { expression: 'document.activeElement.getAttribute("aria-label") === "关闭面板"', returnByValue: true })
+          assert.equal(active.result.value, true, 'Trusted Tab must wrap to the close control')
+          result.result.value.checks.push('trusted browser Shift+Tab wraps within settings', 'trusted browser Tab wraps within settings')
+        }
+        await press('Escape', 'Escape', 27)
+        await pause()
+      }
       for (const mode of ['expanded', 'compact']) {
         const prepared = await send('Runtime.evaluate', { expression: `window.__lingobarUiTest.prepareHide('${mode}')`, awaitPromise: true, returnByValue: true })
         if (prepared.exceptionDetails) throw new Error(`Hide preparation: ${prepared.exceptionDetails.exception?.description}`)

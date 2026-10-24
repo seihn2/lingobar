@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { ArrowLeft, ArrowRight, Check, X } from 'lucide-react'
 import type { Settings, SettingsInput } from '../shared/types'
 import { LANGUAGES, MAX_TARGET_LANGUAGES, languageInfo, type TargetLanguage } from '../shared/languages'
@@ -6,6 +6,7 @@ import { LANGUAGES, MAX_TARGET_LANGUAGES, languageInfo, type TargetLanguage } fr
 export default function LanguageSettings({ draft, onChange }: { draft: Settings; onChange: (next: SettingsInput) => void }) {
   const [message, setMessage] = useState('')
   const selected = draft.targetLanguages
+  const optionButtons = useRef(new Map<TargetLanguage, HTMLButtonElement>())
 
   function toggle(code: TargetLanguage) {
     setMessage('')
@@ -36,11 +37,11 @@ export default function LanguageSettings({ draft, onChange }: { draft: Settings;
         <span className="language-order">{index + 1}</span><span className="selected-language-label">{languageInfo(code).nativeName}</span>
         <button type="button" disabled={index === 0} title={`${languageInfo(code).label}向前移动`} aria-label={`${languageInfo(code).label}向前移动`} onClick={() => move(code, -1)}><ArrowLeft size={11} /></button>
         <button type="button" disabled={index === selected.length - 1} title={`${languageInfo(code).label}向后移动`} aria-label={`${languageInfo(code).label}向后移动`} onClick={() => move(code, 1)}><ArrowRight size={11} /></button>
-        <button type="button" disabled={selected.length === 1} title={`移除${languageInfo(code).label}`} aria-label={`移除${languageInfo(code).label}`} onClick={() => toggle(code)}><X size={11} /></button>
+        <button type="button" disabled={selected.length === 1} title={`移除${languageInfo(code).label}`} aria-label={`移除${languageInfo(code).label}`} onClick={event => { if (document.activeElement === event.currentTarget) optionButtons.current.get(code)?.focus(); toggle(code) }}><X size={11} /></button>
       </div>)}</div>
       <div className="language-options" aria-label="可选字幕语言">{LANGUAGES.map(language => {
         const active = selected.includes(language.code)
-        return <button key={language.code} type="button" className={active ? 'selected' : ''} aria-pressed={active} onClick={() => toggle(language.code)}><span className="language-check">{active && <Check size={10} />}</span><span className="language-option-label">{language.label}<small>{language.nativeName}</small></span></button>
+        return <button key={language.code} ref={element => { if (element) optionButtons.current.set(language.code, element); else optionButtons.current.delete(language.code) }} type="button" className={active ? 'selected' : ''} aria-pressed={active} onClick={() => toggle(language.code)}><span className="language-check">{active && <Check size={10} />}</span><span className="language-option-label">{language.label}<small>{language.nativeName}</small></span></button>
       })}</div>
       {message && <p className="language-validation" role="alert">{message}</p>}
       <p className="settings-explanation language-change-note">保存后，新句子按此设置翻译。历史句子缺少的语言，可回看时重新翻译。</p>
