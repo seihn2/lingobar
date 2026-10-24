@@ -136,3 +136,16 @@ the browser suite is now 85 per scale, including actual AX-tree state and truste
 Tab events. Original code, no new dependency or external implementation, no
 audio/provider changes and no user Mac execution. Physical/native assistive
 technology acceptance remains separate.
+
+## Late-response isolation checkpoint
+
+A [bounded cross-layer audit](session-isolation.md) found no new reproducible
+session-contamination defect. It adds synthetic coverage through the real main
+handlers, Engine, Qwen session, caption queue and translation transport: source
+and device changes, reused provider IDs, stale socket/native/microphone errors,
+startup and translation deadlines, current-error preservation and retry of the
+original historical caption. Useful old history translations may still finish
+on their own caption IDs. Production source remains unchanged from `fad37be`;
+PR4's bounded pause tail acceptance remains a separate, explicitly tested
+contract. No reconnect, new provider call, copied upstream code or performance
+experiment is introduced.
