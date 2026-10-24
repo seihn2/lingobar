@@ -2,7 +2,7 @@
 
 **简体中文** · [English](usage.en.md) · [日本語](usage.ja.md) · [返回 README](../README.md)
 
-让原文和译文停在手边，按自己的速度逐句学习。本指南对应 **0.1.5 的 `codex/windows` 分支**；应用界面目前主要为简体中文，下面使用实际界面上的按钮名称。
+让原文和译文停在手边，按自己的速度逐句学习。本指南按 **0.1.5 的当前源码**编写，测试包请按构建提交核对功能；应用界面目前主要为简体中文，下面使用实际界面上的按钮名称。
 
 [安装](#install) · [服务配置](#services) · [声音与权限](#audio) · [实时翻译](#live) · [语言与注音](#languages) · [回看与收藏](#history) · [窗口与快捷键](#window) · [隐私](#privacy) · [排错](#troubleshooting) · [验证范围](#validation)
 
@@ -11,12 +11,12 @@
 
 | 平台 | 操作 |
 | --- | --- |
-| Windows 10/11 x64 | 打开 [Draft PR #2](https://github.com/seihn2/lingobar/pull/2)，从最新成功 CI 的 **Artifacts** 下载 Windows 测试包。登录 GitHub 后下载 ZIP，解压，核对 `SHA256SUMS.txt`，运行 `LingoBar-0.1.5-windows-x64-setup.exe`，然后从开始菜单打开 LingoBar。 |
-| macOS 14.2+ / Apple Silicon | 目前从源码构建，命令见 [README](../README.md#development)。生成的应用在 `dist/mac-arm64/LingoBar.app`。 |
+| Windows 10/11 x64 | 打开 [main 分支 CI](https://github.com/seihn2/lingobar/actions/workflows/build.yml?query=branch%3Amain)，从成功构建的 **Artifacts** 下载 Windows 测试包。登录 GitHub 后下载 ZIP，解压，核对 `SHA256SUMS.txt`，运行 `LingoBar-0.1.5-windows-x64-setup.exe`，然后从开始菜单打开 LingoBar。 |
+| macOS 14.2+ / Apple Silicon | 从 [PR #3](https://github.com/seihn2/lingobar/pull/3) 的成功 CI 下载 **LingoBar-macos-arm64-preview-…**。解开外层 artifact ZIP，按 `SHA256SUMS.txt` 核对内层应用 ZIP 和 `BUILD-MANIFEST.json`，再用 Finder 或 `ditto -x -k app.zip output` 解开应用。运行此预览无需安装 Node／Xcode；仍可[从源码构建](../README.md#development)。 |
 
-Windows 安装包未签名，可能出现系统来源提示；请先核对来源和 SHA-256，再决定是否运行，不需要关闭系统防护。Mac 本地包为 ad-hoc 签名，未经 Apple 公证，重新构建后可能需要重新授权。
+Windows 安装包未签名，可能出现系统来源提示；请先核对来源和 SHA-256，再决定是否运行，不需要关闭系统防护。Mac 预览与本地包均为 ad-hoc 签名，未经 Apple 公证；保留系统防护，不移除 quarantine 或重新签名下载包。重新构建后可能需要重新授权。PR #3 预览不含 PR #4 的暂停改动。manifest 区分 PR head 与实际 CI test-merge 构建，CI 不等于实机验收。“看看示例”可离线预览，不调用服务。详见[技术验收清单](macos-offline-validation.md)。
 
-Artifact 保留 **14 天**，不是永久 release 下载。过期后使用新的成功构建或自己构建。Windows 暂不支持 ARM64。旧提交 **`96b0b30`** 的包存在闲置时无法选择具体麦克风的问题，应使用 PR 中的最新替代包。修复基线为 `f7a64b8` 及其后续提交。升级前先从托盘／菜单栏选择“退出 LingoBar”，再安装或替换新版。PR 仍为 draft，尚未合并或发布正式 release。
+Artifact 保留 **14 天**，不是永久 release 下载。过期后使用新的成功构建或自己构建。Windows 暂不支持 ARM64。旧提交 **`96b0b30`** 的包存在闲置时无法选择具体麦克风的问题，应使用新的成功 CI 构建提供的替代包。修复基线为 `f7a64b8` 及其后续提交。升级前先从托盘／菜单栏选择“退出 LingoBar”，再安装或替换新版。Windows 实现已通过 [PR #2](https://github.com/seihn2/lingobar/pull/2) 合并到 `main`，仍以开发预览分发，尚未发布正式 release。
 
 第一次打开不会自动收音。先点 **看看示例**，可查看合成字幕布局，不调用服务。也可打开 **输入文字翻译**，输入或粘贴一句，再点 **翻译这句** 或使用下方表中的提交快捷键。提交时会调用翻译服务，但不使用麦克风。
 
@@ -95,6 +95,16 @@ Mac 还提供 **导入语音识别密钥**：只有主动点击才读取固定�
 - **导出收藏** 将学习收藏导出为 Markdown，包含原文、已有译文和可用的日语读音。导出内容由你自行保管。
 - 语段上的重新翻译按钮按当前目标语言组合调用翻译服务，可能产生额外费用。
 
+### 本地查找
+
+当前源码已包含本地查找。此前的 `main` 预览包不含此功能，请使用本次优化 PR 的成功构建，或从包含此改动的提交自行构建。文档中的功能说明不等于实机验收。
+
+- 在应用内按 `Ctrl+F`（Windows）／`⌘F`（Mac），打开 **历史与收藏** 并聚焦查找框；小窗会先展开。也可从 **历史与收藏** 进入查找。
+- 按字面查找本机仍保留的原文、最后一次译文对应的原文和全部已有译文，包括当前未显示的语言。匹配会忽略大小写并做 Unicode 归一化，例如统一全／半角；查找词不会作为正则表达式执行。
+- 用 **全部**／**学习收藏** 限定结果。在查找框内按 `Enter`／`Shift+Enter` 循环选中下一个／上一个匹配，点击条目才跳回对应字幕段落。
+- 所选语段仍保留且仍匹配时，新到字幕或迟到译文不会把选择移到其他语段，也不会主动改变当前回看位置。按 `Esc` 关闭面板，焦点会回到打开它的控件；紧凑模式展开后原控件已替换时，返回展开视图中的对应入口。设置和文字面板也保留这一返回路径。
+- 查找只处理本地已有文字，不新增 API 调用或重新翻译，不保存查找词；退出面板后清空查询。已淘汰的记录，以及退出应用前未收藏的旧会话，不在查找范围内。
+
 普通会话保留在内存中，最近约 150 句；关闭应用后不会恢复。主动收藏保存在本地，上限 1000 句，不是录音文件。
 
 <a id="window"></a>
@@ -114,6 +124,9 @@ Mac 还提供 **导入语音识别密钥**：只有主动点击才读取固定�
 | --- | --- | --- |
 | 显示／隐藏翻译条（全局） | `Ctrl+Alt+L` | `⌘⌥L` |
 | 在文字输入面板提交 | `Ctrl+Enter` | `⌘ Enter` |
+| 打开本地历史查找（须含此功能的构建） | `Ctrl+F` | `⌘F` |
+| 查找框内下一个／上一个匹配 | `Enter`／`Shift+Enter` | `Enter`／`Shift+Enter` |
+| 关闭当前面板 | `Esc` | `Esc` |
 | 开始／暂停 | 界面或托盘菜单 | 界面或菜单栏菜单 |
 
 关闭按钮隐藏到托盘（Windows）或菜单栏（Mac）；点击图标可重新打开。快捷键被占用时用该菜单找回窗口。**退出 LingoBar** 用于退出；可选登录启动不会自动收音。
@@ -140,7 +153,7 @@ Windows 数据目录为 `%APPDATA%\LingoBar`，Mac 为 `~/Library/Application Su
 
 | 现象 | 先检查 |
 | --- | --- |
-| 闲置时无法选择麦克风 | 是否误用了旧 `96b0b30` 包；改用 PR 最新替代包，刷新设备，并检查系统权限。无需先收音来解锁设备列表。 |
+| 闲置时无法选择麦克风 | 是否误用了旧 `96b0b30` 包；改用新的成功 CI 构建提供的替代包，刷新设备，并检查系统权限。无需先收音来解锁设备列表。 |
 | 没有原文字幕 | 音源、实际音频、默认输出或麦克风、OS 权限、ASR 地址／模型／密钥及账户权限。 |
 | 原文有了但没有译文 | 翻译服务的独立密钥、地址、模型、账户余额和网络；它不沿用 ASR 密钥。 |
 | 只有一路声音或出现重复字幕 | 双音源设置、麦克风权限和当前输出设备；使用耳机减少回声与重复收录。 |
@@ -149,12 +162,12 @@ Windows 数据目录为 `%APPDATA%\LingoBar`，Mac 为 `~/Library/Application Su
 | 字幕停在旧段落 | 可能正在回看或有文字选择；点“回到实时”。 |
 | 译文有了但注音未出现 | 是否选择日语并开启注音；稍候或重新翻译，注音失败不影响译文。 |
 | 窗口找不到／快捷键无效 | 从托盘或菜单栏打开；检查 `Ctrl+Alt+L`／`⌘⌥L` 是否被其他应用占用。 |
-| 安装包下载失效 | Artifact 只有 14 天保留期，去 PR 最新成功 CI 获取新包，或按 README 自行构建。 |
+| 安装包下载失效 | Artifact 只有 14 天保留期，去 main 分支成功 CI 获取新包，或按 README 自行构建。 |
 
 <a id="validation"></a>
 ## 10. 版本、测试与报告问题
 
-以安装包对应的**提交号**核对修复，不只看 0.1.5 版本号。最新包、校验值和构建结果在 [PR #2](https://github.com/seihn2/lingobar/pull/2)；详细项目见 [测试矩阵](windows-validation.md)。
+以安装包对应的**提交号**核对修复，不只看 0.1.5 版本号。当前测试包、校验值和构建结果见 [main 分支 CI](https://github.com/seihn2/lingobar/actions/workflows/build.yml?query=branch%3Amain)；[PR #2](https://github.com/seihn2/lingobar/pull/2) 保留此前已验证测试包的原提交和校验记录，详细项目见 [测试矩阵](windows-validation.md)。
 
 自动化覆盖核心状态、部分翻译、历史跟随、注音对齐、权限及 IPC、helper 生命周期、加密失败和打包资源。真实 Electron 测试使用两个合成设备，不使用 fake UI 自动授权；窗口截图和 100%／150%／200% 缩放检查也都是合成场景。
 

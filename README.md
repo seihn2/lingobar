@@ -3,7 +3,7 @@
   <h1>LingoBar · 语伴</h1>
   <p><strong>把正在听的内容，变成可对照、可回看的多语字幕。</strong></p>
   <p>
-    <a href="https://github.com/seihn2/lingobar/actions/workflows/build.yml?query=branch%3Acodex%2Fwindows"><img src="https://github.com/seihn2/lingobar/actions/workflows/build.yml/badge.svg?branch=codex%2Fwindows&amp;event=pull_request" alt="构建与合成测试"></a>
+    <a href="https://github.com/seihn2/lingobar/actions/workflows/build.yml?query=branch%3Amain"><img src="https://github.com/seihn2/lingobar/actions/workflows/build.yml/badge.svg?branch=main&amp;event=push" alt="构建与合成测试"></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-CC%20BY--NC%204.0-blue.svg" alt="CC BY-NC 4.0"></a>
     <a href="package.json"><img src="https://img.shields.io/badge/version-0.1.5-6f42c1.svg" alt="版本 0.1.5"></a>
     <a href="package-lock.json"><img src="https://img.shields.io/badge/Electron-43.8.3-47848F.svg?logo=electron" alt="Electron 43.8.3"></a>
@@ -34,16 +34,17 @@ LingoBar 是面向语言学习的桌面字幕工具。它将电脑声音、麦�
 - **把日语读音放回文字中。** 译文先显示，再由翻译模型结合语境补振假名，标在对应汉字上方；注音不阻塞阅读。
 - **实时跟随，也能停下来读。** 默认显示最新已有译文；滚动或选择文字即可回看，点击“回到实时”继续跟随。
 - **留下值得复习的句子。** 使用小窗、置顶、调节背景透明度和字号；收藏完成的语段，导出为 Markdown 学习笔记。
+- **本地查找历史。** 当前源码支持原文与已有译文查找，可用 `Ctrl+F`／`⌘F` 打开；操作和范围见 [指南](docs/usage.zh-CN.md#history)。此前的 `main` 预览包不含此功能，请选用本次优化 PR 的成功构建，或从包含此改动的提交构建。
 
 <a id="install"></a>
 ## 安装
 
 | 平台 | 系统要求 | 获取方式 |
 | --- | --- | --- |
-| Windows | Windows 10/11，**x64** | [测试包与校验值](https://github.com/seihn2/lingobar/pull/2)：在对应成功构建的 Artifacts 中下载 ZIP，解压后运行安装程序。 |
-| macOS | macOS 14.2+，Apple Silicon | [从源码构建](#development)，生成 `dist/mac-arm64/LingoBar.app`。本地包采用 ad-hoc 签名，未经 Apple 公证。 |
+| Windows | Windows 10/11，**x64** | [CI 测试包](https://github.com/seihn2/lingobar/actions/workflows/build.yml?query=branch%3Amain)：在对应成功构建的 Artifacts 中下载 ZIP，解压后运行安装程序。 |
+| macOS | macOS 14.2+，Apple Silicon | [PR #3 离线测试包](docs/usage.zh-CN.md#install)，或[从源码构建](#development)。预览采用 ad-hoc 签名，未经 Apple 公证；PR #3 包不含 PR #4 改动。 |
 
-Windows 暂不提供 ARM64 包。CI artifact 下载需要登录 GitHub，保留 14 天，过期后请使用新的成功构建或自行构建。安装前核对包内 `SHA256SUMS.txt`；具体安装、升级和系统授权步骤见 [使用指南](docs/usage.zh-CN.md#install)。
+Windows x64 支持已合并到 `main`；此前已验证测试包与校验记录见 [PR #2](https://github.com/seihn2/lingobar/pull/2)。Windows 暂不提供 ARM64 包。CI artifact 下载需要登录 GitHub，保留 14 天，过期后请使用新的成功构建或自行构建。安装前核对包内 `SHA256SUMS.txt`；具体安装、升级和系统授权步骤见 [使用指南](docs/usage.zh-CN.md#install)。
 
 <a id="quick-start"></a>
 ## 快速上手
@@ -77,7 +78,7 @@ Windows 暂不提供 ARM64 包。CI artifact 下载需要登录 GitHub，保留 
 | English | [Installation, configuration and everyday use](docs/usage.en.md) |
 | 日本語 | [インストール・設定・使い方](docs/usage.ja.md) |
 
-开发与平台资料：[Windows 移植说明](docs/windows-port.md) · [测试矩阵、已知限制与构建记录](docs/windows-validation.md) · [第三方来源](NOTICE.md)。
+开发与平台资料：[Windows 移植说明](docs/windows-port.md) · [测试矩阵、已知限制与构建记录](docs/windows-validation.md) · [Mac 实机 UI 子集与待验收项](docs/macos-validation.md) · [第三方来源](NOTICE.md)。
 
 <a id="development"></a>
 ## 开发与构建
@@ -89,12 +90,12 @@ Windows 暂不提供 ARM64 包。CI artifact 下载需要登录 GitHub，保留 
 | macOS | Apple Silicon、macOS 14.2+、Xcode Command Line Tools |
 | Windows x64 | CMake 3.24+、Visual Studio 2022 C++ Desktop tools、Windows SDK |
 
-当前 Windows 开发位于 `codex/windows` 分支。使用锁定依赖启动本地工程：
+`main` 已包含 Windows x64 支持。使用锁定依赖启动本地工程：
 
 ```sh
 git clone https://github.com/seihn2/lingobar.git
 cd lingobar
-git switch codex/windows
+git switch main
 npm ci
 npm run build:icons
 npm run build:native

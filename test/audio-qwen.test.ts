@@ -3,6 +3,9 @@ import WebSocket from 'ws'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { QwenAsrSession, realtimeSessionConfig, transcriptionEvent, asrConnection, streamingTranscriptionEvent, streamingTranscriptionEvents, DEFAULT_ASR_MODEL } from '../src/main/audio/qwen'
 
+vi.mock('electron', () => { throw new Error('Pure ASR tests must not load Electron or its installer') })
+vi.mock('../src/main/diagnostics', () => ({ trace: vi.fn() }))
+
 class FakeSocket extends EventEmitter {
   readyState = WebSocket.CONNECTING as number
   bufferedAmount = 0

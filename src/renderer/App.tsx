@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
-import { ArrowDownToLine, ArrowRight, AudioLines, Bookmark, Check, ChevronDown, ChevronUp, Contrast, Headphones, History, Keyboard, Languages, LoaderCircle, Mic, Monitor, Pause, Pin, Play, Settings2, X } from 'lucide-react'
+import { ArrowDownToLine, ArrowRight, AudioLines, Check, ChevronDown, ChevronUp, Contrast, Headphones, History, Keyboard, Languages, LoaderCircle, Mic, Monitor, Pause, Pin, Play, Settings2, X } from 'lucide-react'
 import type { Caption, CaptureMode, Settings, SettingsInput, Snapshot } from '../shared/types'
 import { DEFAULT_LANGUAGES, languageInfo, validTargetLanguages } from '../shared/languages'
 import { listMicrophones, startMicrophone, type MicrophoneDevice } from './microphone'
@@ -7,7 +7,8 @@ import { platformLabels, type DesktopPlatform } from '../shared/platform'
 import LanguageSettings from './LanguageSettings'
 import CaptionStream from './CaptionStream'
 import CompactCaption from './CompactCaption'
-import { alignedOriginal, incomingText, preferredTranslation, translationFor } from './caption-text'
+import HistoryPanel from './HistoryPanel'
+import { alignedOriginal, incomingText, translationFor } from './caption-text'
 import type { ReadingSession } from './reading-schedule'
 
 const defaults: Settings = {
@@ -57,9 +58,7 @@ const exampleFollowUp: Caption = {
 }
 const exampleStream = [example, exampleFollowUp]
 const modeNames: Record<CaptureMode, string> = { system: '电脑声音', microphone: '麦克风', both: '电脑 + 麦克风' }
-const sourceNames: Record<Caption['source'], string> = { system: '电脑声音', microphone: '麦克风', text: '文字输入' }
 const errorText = (error: unknown) => error instanceof Error ? error.message : '操作未完成，请重试。'
-const timeText = (value: number) => new Date(value).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
 function IconButton({ title, children, onClick, active, disabled, className = '' }: { title: string; children: ReactNode; onClick: () => void; active?: boolean; disabled?: boolean; className?: string }) {
   return <button type="button" className={`icon-button ${active ? 'active' : ''} ${className}`} title={title} aria-label={title} aria-pressed={active} onClick={onClick} disabled={disabled}>{children}</button>
 }
@@ -76,6 +75,7 @@ export default function App() {
   const [notice, setNotice] = useState('')
   const [toast, setToast] = useState('')
   const [historyFilter, setHistoryFilter] = useState<'all' | 'saved'>('all')
+  const [historyFocusVersion, setHistoryFocusVersion] = useState(0)
   const [input, setInput] = useState('')
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [opacityPreview, setOpacityPreview] = useState<number | null>(null)
@@ -86,6 +86,8 @@ export default function App() {
   const microphoneGeneration = useRef(0)
   const microphoneAbort = useRef<AbortController | null>(null)
   const captureOperation = useRef(0)
+  const composing = useRef(false)
+  const panelReturnFocus = useRef<{ element: HTMLElement | null; fallback: '设置' | '历史与收藏' | '输入文字翻译' } | null>(null)
   const readingSession = useRef<ReadingSession>({ clock: null, following: true, anchor: null })
   const readingPreview = useRef(false)
   if (readingPreview.current !== preview) {
@@ -97,6 +99,14 @@ export default function App() {
   const labels = platformLabels(platform)
   const developmentPreview = !api && Boolean((import.meta as ImportMeta & { env?: { DEV?: boolean } }).env?.DEV) && new URLSearchParams(location.search).get('preview') === '1'
   const available = Boolean(api) || developmentPreview
+
+  function rememberPanelFocus(fallback: '设置' | '历史与收藏' | '输入文字翻译') {
+    const active = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    // A shortcut can replace the current dialog. Keep its outside invoker,
+    // rather than a textarea/control that is about to be unmounted.
+    if (active?.closest('.panel') && panelReturnFocus.current) return
+    panelReturnFocus.current = { element: active === document.body ? null : active, fallback }
+  }
 
   useEffect(() => {
     if (!api) return
@@ -176,10 +186,26 @@ export default function App() {
   useEffect(() => () => { if (opacityTimer.current) clearTimeout(opacityTimer.current) }, [])
 
   useEffect(() => {
-    const keydown = (event: KeyboardEvent) => { if (event.key === 'Escape') { setPanel(null); setNotice('') } }
+    const keydown = (event: KeyboardEvent) => {
+      if (event.isComposing || composing.current || event.keyCode === 229) return
+      if (event.key === 'Escape') { setPanel(null); setNotice('') }
+      if ((event.metaKey || event.ctrlKey) && !event.altKey && event.key.toLowerCase() === 'f') {
+        event.preventDefault()
+        rememberPanelFocus('历史与收藏')
+        void (async () => {
+          if (snapshot.collapsed) {
+            if (api) await api.setCollapsed(false)
+            else setSnapshot(value => ({ ...value, collapsed: false }))
+          }
+          setNotice('')
+          setPanel('history')
+          setHistoryFocusVersion(value => value + 1)
+        })().catch(error => setNotice(errorText(error)))
+      }
+    }
     window.addEventListener('keydown', keydown)
     return () => window.removeEventListener('keydown', keydown)
-  }, [])
+  }, [api, snapshot.collapsed])
 
   useEffect(() => {
     if (selectedId && !snapshot.captions.some(caption => caption.id === selectedId)) setSelectedId(null)
@@ -187,10 +213,9 @@ export default function App() {
 
   useEffect(() => {
     if (!panel) return
-    const previousFocus = document.activeElement as HTMLElement | null
     const surface = document.querySelector<HTMLElement>('.panel')
     const focusable = () => [...surface?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled)') || []].filter(element => element.getClientRects().length > 0)
-    const first = panel === 'text' ? surface?.querySelector<HTMLElement>('textarea') : focusable()[0]
+    const first = panel === 'text' ? surface?.querySelector<HTMLElement>('textarea') : panel === 'history' ? surface?.querySelector<HTMLElement>('.history-search-input') : focusable()[0]
     first?.focus()
     const keepFocus = (event: KeyboardEvent) => {
       if (event.key !== 'Tab') return
@@ -201,7 +226,16 @@ export default function App() {
       else if (!event.shiftKey && (current === items.at(-1) || !surface?.contains(current))) { event.preventDefault(); items[0].focus() }
     }
     window.addEventListener('keydown', keepFocus)
-    return () => { window.removeEventListener('keydown', keepFocus); if (previousFocus?.isConnected) previousFocus.focus() }
+    return () => window.removeEventListener('keydown', keepFocus)
+  }, [panel])
+
+  useEffect(() => {
+    if (panel || !panelReturnFocus.current) return
+    const origin = panelReturnFocus.current
+    panelReturnFocus.current = null
+    const target = origin.element?.isConnected && !origin.element.closest('[inert]')
+      ? origin.element : document.querySelector<HTMLElement>(`button[aria-label="${origin.fallback}"]`)
+    target?.focus()
   }, [panel])
 
   const streamCaptions = preview ? exampleStream : snapshot.captions
@@ -220,6 +254,7 @@ export default function App() {
     if (captureAction === 'stop') return
     if (!api) { setNotice('浏览器仅供界面预览，请在 LingoBar 应用中开始收音。'); return }
     if (!listening && !starting && !configured) {
+      rememberPanelFocus('设置')
       if (snapshot.collapsed) await api.setCollapsed(false)
       setPanel('settings'); setNotice('先连接语音识别和翻译服务，就可以开始实时字幕。'); return
     }
@@ -256,7 +291,7 @@ export default function App() {
   }
   async function submitText(event: FormEvent) {
     event.preventDefault()
-    if (!input.trim() || busy) return
+    if (composing.current || !input.trim() || busy) return
     if (!api) { setNotice('请在 LingoBar 应用中使用文字翻译。'); return }
     setBusy(true)
     setNotice('')
@@ -292,14 +327,14 @@ export default function App() {
         <label className="quick-opacity" title="透明度调节：向左更透明，松开后自动保存"><Contrast size={12} /><input type="range" aria-label="背景不透明度，越低越透明" min="0.45" max="1" step="0.01" value={displayedOpacity} onChange={event => adjustOpacity(Number(event.target.value))} onPointerUp={commitOpacity} onKeyUp={commitOpacity} onBlur={commitOpacity} /><output>{Math.round(displayedOpacity * 100)}%</output></label>
         {snapshot.collapsed && <IconButton title={listening || starting ? '暂停聆听' : '开始聆听'} onClick={() => void toggleListening()} disabled={captureAction === 'stop'}>{listening || starting ? <Pause size={14} /> : <Play size={14} />}</IconButton>}
         <IconButton title={snapshot.settings.alwaysOnTop ? '取消置顶' : '始终置顶'} active={snapshot.settings.alwaysOnTop} onClick={() => void run(() => saveSettings({ alwaysOnTop: !snapshot.settings.alwaysOnTop }))}><Pin size={14} /></IconButton>
-        <IconButton title="设置" active={panel === 'settings'} onClick={() => void run(async () => { if (snapshot.collapsed) { if (api) await api.setCollapsed(false); else setSnapshot(value => ({ ...value, collapsed: false })) } setPanel(panel === 'settings' ? null : 'settings') })}><Settings2 size={15} /></IconButton>
+        <IconButton title="设置" active={panel === 'settings'} onClick={() => void run(async () => { if (panel !== 'settings') rememberPanelFocus('设置'); if (snapshot.collapsed) { if (api) await api.setCollapsed(false); else setSnapshot(value => ({ ...value, collapsed: false })) } setPanel(panel === 'settings' ? null : 'settings') })}><Settings2 size={15} /></IconButton>
         <IconButton title={snapshot.collapsed ? '展开翻译条' : '收起翻译条'} onClick={() => void run(async () => { const collapsed = !snapshot.collapsed; if (api) await api.setCollapsed(collapsed); else setSnapshot(value => ({ ...value, collapsed })); setPanel(null) })}>{snapshot.collapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}</IconButton>
         <IconButton title={`隐藏到${labels.residentArea}`} onClick={() => { if (api) void run(() => api.hide()); else setToast(`在应用中会隐藏到${labels.residentArea}`) }}><X size={15} /></IconButton>
       </div>
 
   if (!available) return <main className="unavailable"><span className="brand-mark">L</span><h1>LingoBar · 语伴</h1><p>请从 LingoBar 桌面应用打开，即可使用电脑声音与麦克风实时字幕。</p></main>
 
-  return <main className={`app-shell ${snapshot.collapsed ? 'is-collapsed' : ''}`} style={{ '--caption-size': `${snapshot.settings.fontSize}px`, '--surface-opacity': displayedOpacity } as CSSProperties}>
+  return <main className={`app-shell ${snapshot.collapsed ? 'is-collapsed' : ''}`} onCompositionStartCapture={() => { composing.current = true }} onCompositionEndCapture={() => { composing.current = false }} style={{ '--caption-size': `${snapshot.settings.fontSize}px`, '--surface-opacity': displayedOpacity } as CSSProperties}>
     {!snapshot.collapsed && <header className="titlebar">
       <div className="brand"><span className="brand-symbol" aria-hidden="true"><i /><i /><i /></span><span>LingoBar</span><span className="brand-chinese">语伴</span></div>
 
@@ -316,14 +351,14 @@ export default function App() {
       </div>
 
       <section className="caption-stage stream-stage" aria-label="多语连续字幕" inert={panel !== null}>
-        {streamCaptions.length > 0 ? <CaptionStream readingSession={readingSession.current} key={`${preview ? 'preview' : 'live'}:${readingEpoch}`} captions={streamCaptions} settings={snapshot.settings} preview={preview} focusId={selectedId} focusVersion={focusVersion} copiedId={copiedId} onCopy={caption => void copyCaption(caption)} onSave={caption => api && void run(() => api.toggleSaved(caption.id), caption.saved ? '已取消收藏' : '已加入学习收藏')} onRetry={caption => api && void run(() => api.retry(caption.id))} onReturnLive={() => setSelectedId(null)} /> : <div className="welcome"><div className={`welcome-icon ${listening ? 'is-listening' : ''}`}><Headphones size={24} strokeWidth={1.4} />{listening && <span className="sound-rings" />}</div><div className="welcome-copy"><div className="eyebrow">LISTEN. UNDERSTAND. LEARN.</div><h1>{listening ? '正在听，第一句就快来了。' : '把听见的，变成学会的。'}</h1><p>{listening ? `正在接收${modeNames[snapshot.settings.captureMode]}，说句话或播放一段音频。` : '电脑声音与麦克风，随时变成你选择的多语字幕。'}</p><div className="language-pills">{snapshot.settings.showOriginal && <span>原文</span>}{targets.map(code => <span key={code}>{languageInfo(code).nativeName}</span>)}</div></div><div className="welcome-actions"><button className="text-button" onClick={() => { setPreview(true); setSelectedId(null) }}>看看示例 <ArrowRight size={13} /></button><button className="text-button muted" onClick={() => { setNotice(''); setPanel('text') }}><Keyboard size={13} />输入文字试试</button></div></div>}
+        {streamCaptions.length > 0 ? <CaptionStream readingSession={readingSession.current} key={`${preview ? 'preview' : 'live'}:${readingEpoch}`} captions={streamCaptions} settings={snapshot.settings} preview={preview} focusId={selectedId} focusVersion={focusVersion} copiedId={copiedId} onCopy={caption => void copyCaption(caption)} onSave={caption => api && void run(() => api.toggleSaved(caption.id), caption.saved ? '已取消收藏' : '已加入学习收藏')} onRetry={caption => api && void run(() => api.retry(caption.id))} onReturnLive={() => setSelectedId(null)} /> : <div className="welcome"><div className={`welcome-icon ${listening ? 'is-listening' : ''}`}><Headphones size={24} strokeWidth={1.4} />{listening && <span className="sound-rings" />}</div><div className="welcome-copy"><div className="eyebrow">LISTEN. UNDERSTAND. LEARN.</div><h1>{listening ? '正在听，第一句就快来了。' : '把听见的，变成学会的。'}</h1><p>{listening ? `正在接收${modeNames[snapshot.settings.captureMode]}，说句话或播放一段音频。` : '电脑声音与麦克风，随时变成你选择的多语字幕。'}</p><div className="language-pills">{snapshot.settings.showOriginal && <span>原文</span>}{targets.map(code => <span key={code}>{languageInfo(code).nativeName}</span>)}</div></div><div className="welcome-actions"><button className="text-button" onClick={() => { setPreview(true); setSelectedId(null) }}>看看示例 <ArrowRight size={13} /></button><button className="text-button muted" onClick={() => { rememberPanelFocus('输入文字翻译'); setNotice(''); setPanel('text') }}><Keyboard size={13} />输入文字试试</button></div></div>}
       </section>
       {snapshot.settings.showOriginal && !preview && expandedPartial.length > 0 && <div className="partial-caption live-partial" inert={panel !== null} aria-live="off"><span className="partial-indicator" /><span className="partial-stage-label">正在听</span>{expandedPartial.map(item => <span key={item.source}><b>{item.source === 'microphone' ? '麦克风' : '电脑'}</b>{item.text}</span>)}</div>}
 
       {(notice || (snapshot.state === 'error' && snapshot.message)) && !panel && <div className="inline-notice" role="alert"><span>{notice || snapshot.message}</span><button aria-label="关闭提示" onClick={() => setNotice('')}><X size={12} /></button></div>}
       <footer className="bottom-bar" inert={panel !== null}>
         <div className="stream-footer-note">{preview ? <button className="text-button" onClick={() => { setPreview(false); setSelectedId(null) }}>退出示例预览</button> : <><span className="small-dot" />{snapshot.captions.length ? '段落持续保留 · 向上滚动回看' : '实时译文持续更新，旧内容留在这里'}</>}</div>
-        <div className="footer-actions"><IconButton title="输入文字翻译" onClick={() => { setNotice(''); setPanel('text') }}><Keyboard size={15} /></IconButton><IconButton title="历史与收藏" active={panel === 'history'} onClick={() => { setNotice(''); setPanel('history') }}><History size={15} /></IconButton></div>
+        <div className="footer-actions"><IconButton title="输入文字翻译" onClick={() => { rememberPanelFocus('输入文字翻译'); setNotice(''); setPanel('text') }}><Keyboard size={15} /></IconButton><IconButton title="历史与收藏" active={panel === 'history'} onClick={() => { rememberPanelFocus('历史与收藏'); setNotice(''); setPanel('history') }}><History size={15} /></IconButton></div>
       </footer>
     </>}
 
@@ -332,15 +367,15 @@ export default function App() {
       <div className="panel-heading"><div><span className="panel-kicker">{panel === 'settings' ? 'PREFERENCES' : panel === 'history' ? 'YOUR LANGUAGE NOTES' : 'TEXT TRANSLATION'}</span><h2>{panel === 'settings' ? '让语伴适合你' : panel === 'history' ? '听过的，留下来' : '从一句话开始'}</h2></div><IconButton title="关闭面板" onClick={() => { setPanel(null); setNotice('') }}><X size={17} /></IconButton></div>
       {notice && <div className="panel-notice" role="alert">{notice}</div>}
       {panel === 'settings' && <SettingsPanel platform={platform} settings={snapshot.settings} listening={listening || starting} saveSettings={saveSettings} onSaved={() => { setNotice(''); setToast('设置已保存'); setPanel(null) }} onError={setNotice} onImport={async () => { if (!api) throw new Error('请在应用中导入本机密钥。'); const settings = await api.importLocalKey(); setSnapshot(value => ({ ...value, settings })); setToast('本机语音识别密钥已安全导入'); return settings }} />}
-      {panel === 'text' && <form className="text-form" onSubmit={event => void submitText(event)}><label htmlFor="translation-input">输入或粘贴任何语言，翻译为你在设置中选择的字幕语言。</label><textarea id="translation-input" value={input} autoFocus onChange={event => setInput(event.target.value)} placeholder="例如：You don't have to be perfect to make progress." maxLength={5000} /><div className="text-form-footer"><span>{input.length} / 5000 · {labels.submitShortcut} 翻译</span><button className="primary-button" disabled={busy || !input.trim()} type="submit" onKeyDown={event => event.stopPropagation()}>{busy ? <LoaderCircle size={13} className="spin" /> : <ArrowRight size={13} />}翻译这句</button></div></form>}
-      {panel === 'history' && <><div className="history-toolbar"><div className="history-tabs"><button className={historyFilter === 'all' ? 'selected' : ''} onClick={() => setHistoryFilter('all')}>全部 <span>{snapshot.captions.length}</span></button><button className={historyFilter === 'saved' ? 'selected' : ''} onClick={() => setHistoryFilter('saved')}>学习收藏 <span>{snapshot.captions.filter(caption => caption.saved).length}</span></button></div><button className="text-button" disabled={!snapshot.captions.some(caption => caption.saved)} onClick={() => api && void run(async () => { if (await api.exportSaved()) setToast('收藏已导出') })}><ArrowDownToLine size={13} />导出收藏</button></div><div className="history-list">{snapshot.captions.filter(caption => historyFilter === 'all' || caption.saved).slice().reverse().map(caption => <div className="history-item" key={caption.id}><button className="history-select" onClick={() => { setSelectedId(caption.id); setFocusVersion(value => value + 1); setPreview(false); setPanel(null) }}><span className="history-item-meta">{timeText(caption.createdAt)} · {sourceNames[caption.source]}{caption.live || caption.translationPending ? ' · 实时更新' : caption.status === 'translating' ? ' · 翻译中' : caption.status === 'error' ? ' · 待重试' : ''}</span><span className="history-original" dir="auto">{preferredTranslation(caption, targets) || (snapshot.settings.showOriginal ? alignedOriginal(caption) : '所选语言尚未生成')}</span>{snapshot.settings.showOriginal && preferredTranslation(caption, targets) && <span className="history-translation" dir="auto">{alignedOriginal(caption)}</span>}</button><IconButton title={caption.saved ? '取消收藏' : '收藏'} active={caption.saved} disabled={caption.status !== 'ready' || caption.live || caption.translationPending} onClick={() => api && void run(() => api.toggleSaved(caption.id))}><Bookmark size={14} fill={caption.saved ? 'currentColor' : 'none'} /></IconButton></div>)}{!snapshot.captions.some(caption => historyFilter === 'all' || caption.saved) && <div className="empty-history"><Bookmark size={24} strokeWidth={1.3} /><p>{historyFilter === 'saved' ? '值得再读一遍的句子，就收藏在这里。' : '开始聆听或输入文字后，对照字幕会出现在这里。'}</p></div>}</div></>}
+      {panel === 'text' && <form className="text-form" onSubmit={event => void submitText(event)}><label htmlFor="translation-input">输入或粘贴任何语言，翻译为你在设置中选择的字幕语言。</label><textarea id="translation-input" value={input} autoFocus onChange={event => setInput(event.target.value)} placeholder="例如：You don't have to be perfect to make progress." maxLength={5000} /><div className="text-form-footer"><span>{input.length} / 5000 · {labels.submitShortcut} 翻译</span><button className="primary-button" disabled={busy || !input.trim()} type="submit" onKeyDown={event => { if (event.key === 'Enter') event.stopPropagation() }}>{busy ? <LoaderCircle size={13} className="spin" /> : <ArrowRight size={13} />}翻译这句</button></div></form>}
+      {panel === 'history' && <HistoryPanel captions={snapshot.captions} settings={snapshot.settings} filter={historyFilter} focusVersion={historyFocusVersion} onFilter={setHistoryFilter} onSelect={caption => { setSelectedId(caption.id); setFocusVersion(value => value + 1); setPreview(false); setPanel(null) }} onSave={caption => api && void run(() => api.toggleSaved(caption.id))} onExport={() => api && void run(async () => { if (await api.exportSaved()) setToast('收藏已导出') })} />}
     </section></div>}
-    {panel === 'text' && <TextShortcut onSubmit={() => { if (input.trim() && !busy) void submitText({ preventDefault() {} } as FormEvent) }} />}
+    {panel === 'text' && <TextShortcut isComposing={() => composing.current} onSubmit={() => { if (input.trim() && !busy) void submitText({ preventDefault() {} } as FormEvent) }} />}
   </main>
 }
 
-function TextShortcut({ onSubmit }: { onSubmit: () => void }) {
-  useEffect(() => { const callback = (event: KeyboardEvent) => { if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') { event.preventDefault(); onSubmit() } }; window.addEventListener('keydown', callback); return () => window.removeEventListener('keydown', callback) }, [onSubmit])
+function TextShortcut({ onSubmit, isComposing }: { onSubmit: () => void; isComposing: () => boolean }) {
+  useEffect(() => { const callback = (event: KeyboardEvent) => { if (event.isComposing || isComposing() || event.keyCode === 229) return; if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') { event.preventDefault(); onSubmit() } }; window.addEventListener('keydown', callback); return () => window.removeEventListener('keydown', callback) }, [onSubmit, isComposing])
   return null
 }
 
@@ -378,5 +413,5 @@ function SettingsPanel({ platform, settings, listening, saveSettings, onSaved, o
     } catch (error) { onError(errorText(error)) }
     setSaving(false)
   }
-  return <form className="settings-form" onSubmit={event => void submit(event)}><div className="settings-layout"><nav className="settings-nav"><button type="button" className={tab === 'languages' ? 'selected' : ''} onClick={() => setTab('languages')}><Languages size={14} />字幕语言</button><button type="button" className={tab === 'connection' ? 'selected' : ''} onClick={() => setTab('connection')}><AudioLines size={14} />服务连接</button><button type="button" className={tab === 'appearance' ? 'selected' : ''} onClick={() => setTab('appearance')}><Settings2 size={14} />显示与启动</button><p>为每一句听见的语言，<br />留一扇理解的窗口。</p></nav><div className="settings-content">{tab === 'languages' ? <LanguageSettings draft={draft} onChange={next => setDraft(previous => ({ ...previous, ...next }))} /> : tab === 'connection' ? <><div className="privacy-note"><span className="small-dot" /><p>语音会发送到识别服务，文字会发送到翻译服务。密钥仅在本机加密保存。</p></div>{listening && <p className="settings-warning">修改音源、麦克风或服务配置会暂停聆听，保存后请重新开始。</p>}<section className="settings-section"><div className="section-title"><h3>声音设备</h3><button type="button" className="text-button" onClick={() => void refreshDevices()}>刷新设备</button></div><label htmlFor="microphone-device">麦克风</label><select id="microphone-device" className="device-select" value={draft.microphoneDeviceId} onChange={event => field('microphoneDeviceId', event.target.value)}><option value="default">跟随系统默认麦克风</option>{devices.map(device => <option key={device.deviceId} value={device.deviceId}>{device.label}</option>)}{draft.microphoneDeviceId !== 'default' && !devices.some(device => device.deviceId === draft.microphoneDeviceId) && <option value={draft.microphoneDeviceId}>已选麦克风（未连接或尚未授权）</option>}</select><p className="settings-explanation">可在开始聆听前选择设备；系统权限受限时名称可能不可用。默认设备变化或所选设备断开时会暂停，请确认设备后重新开始。</p><p className="settings-explanation">电脑声音使用当前系统默认输出设备；切换输出设备后请重新开始。双音源建议使用耳机，减少重复收录。</p>{deviceNotice && <p className="settings-warning" role="status">{deviceNotice}</p>}</section><section className="settings-section"><div className="section-title"><h3>语音识别</h3><span className={`readiness ${settings.hasAsrKey ? 'ready' : ''}`}>{settings.hasAsrKey ? <><Check size={10} />已配置密钥</> : '等待配置'}</span></div><label htmlFor="asr-key">DashScope API Key</label><input id="asr-key" type="password" autoComplete="off" spellCheck={false} value={asrKey} onChange={event => setAsrKey(event.target.value)} placeholder={settings.hasAsrKey ? '已安全保存 · 留空保留现有密钥' : '输入语音识别密钥'} /><div className="settings-fields"><div><label htmlFor="asr-model">识别模型 · 推荐 Qwen Audio 3.1</label><input id="asr-model" list="asr-model-options" value={draft.asrModel} onChange={event => field('asrModel', event.target.value)} required /><datalist id="asr-model-options"><option value="qwen-audio-3.1-asr-flash-streaming">Qwen Audio 3.1 · 推荐</option><option value="qwen-audio-3.0-asr-flash-streaming">Qwen Audio 3.0</option><option value="qwen3-asr-flash-realtime">Qwen3 ASR · 旧版实时模型</option></datalist></div><div><label htmlFor="asr-endpoint">服务地址</label><input id="asr-endpoint" value={draft.asrEndpoint} onChange={event => field('asrEndpoint', event.target.value)} required spellCheck={false} /></div></div></section><section className="settings-section"><div className="section-title"><h3>字幕翻译</h3><span className={`readiness ${settings.hasTranslationKey ? 'ready' : ''}`}>{settings.hasTranslationKey ? <><Check size={10} />已配置密钥</> : '等待配置'}</span></div><label htmlFor="translation-key">{isDeepSeek ? 'DeepSeek API Key · 与语音识别密钥不同' : '翻译服务 API Key · 与语音识别密钥分别配置'}</label><input id="translation-key" type="password" autoComplete="off" spellCheck={false} value={translationKey} onChange={event => setTranslationKey(event.target.value)} placeholder={settings.hasTranslationKey ? '已安全保存 · 留空保留现有密钥' : isDeepSeek ? '输入 DeepSeek 密钥，仅用于字幕翻译' : '输入此翻译服务对应的 API Key'} /><div className="settings-fields"><div><label htmlFor="translation-model">{isDeepSeek ? '翻译模型 · 推荐 DeepSeek Flash' : '翻译模型'}</label><input id="translation-model" value={draft.translationModel} onChange={event => field('translationModel', event.target.value)} required /></div><div><label htmlFor="translation-endpoint">兼容 OpenAI 的服务地址</label><input id="translation-endpoint" value={draft.translationBaseUrl} onChange={event => field('translationBaseUrl', event.target.value)} required spellCheck={false} /></div></div></section>{platform === 'darwin' && <div className="import-key"><div><b>已经在本机用过 DashScope？</b><p>点击后，读取本机 DashScope 密钥，仅用于语音识别。</p></div><button type="button" className="secondary-button" disabled={importing || saving} onClick={async () => { setImporting(true); onError(''); try { const imported = await onImport(); setDraft(previous => ({ ...previous, hasAsrKey: imported.hasAsrKey, asrModel: imported.asrModel, asrEndpoint: imported.asrEndpoint })); setAsrKey('') } catch (error) { onError(errorText(error)) } setImporting(false) }}>{importing ? <LoaderCircle size={12} className="spin" /> : <ArrowDownToLine size={12} />}导入语音识别密钥</button></div>}</> : <><section className="settings-section"><h3>阅读舒适度</h3><div className="range-setting"><label htmlFor="font-size">字幕字号 <b>{draft.fontSize} px</b></label><input id="font-size" type="range" min="14" max="24" step="1" value={draft.fontSize} onChange={event => field('fontSize', Number(event.target.value))} /><div className="font-sample" style={{ fontSize: draft.fontSize }}>每天学会一点点。<span>A little, every day.</span></div></div><div className="range-setting"><label htmlFor="opacity">窗口不透明度 <b>{Math.round(draft.opacity * 100)}%</b></label><input id="opacity" type="range" min="0.45" max="1" step="0.01" value={draft.opacity} onChange={event => field('opacity', Number(event.target.value))} /></div></section><section className="settings-section"><label className="toggle-setting"><div><b>始终置顶</b><span>在其他窗口上方显示翻译条</span></div><input type="checkbox" checked={draft.alwaysOnTop} onChange={event => field('alwaysOnTop', event.target.checked)} /><i /></label><label className="toggle-setting"><div><b>登录时启动</b><span>打开电脑时，让语伴一起就位</span></div><input type="checkbox" checked={draft.launchAtLogin} onChange={event => field('launchAtLogin', event.target.checked)} /><i /></label></section></>}</div></div><div className="panel-footer"><span>设置只影响 LingoBar</span><button type="submit" className="primary-button" disabled={saving || importing}>{saving ? <LoaderCircle size={13} className="spin" /> : <Check size={13} />}保存设置</button></div></form>
+  return <form className="settings-form" onSubmit={event => void submit(event)}><div className="settings-layout"><nav className="settings-nav"><button type="button" className={tab === 'languages' ? 'selected' : ''} aria-pressed={tab === 'languages'} onClick={() => setTab('languages')}><Languages size={14} />字幕语言</button><button type="button" className={tab === 'connection' ? 'selected' : ''} aria-pressed={tab === 'connection'} onClick={() => setTab('connection')}><AudioLines size={14} />服务连接</button><button type="button" className={tab === 'appearance' ? 'selected' : ''} aria-pressed={tab === 'appearance'} onClick={() => setTab('appearance')}><Settings2 size={14} />显示与启动</button><p>为每一句听见的语言，<br />留一扇理解的窗口。</p></nav><div className="settings-content">{tab === 'languages' ? <LanguageSettings draft={draft} onChange={next => setDraft(previous => ({ ...previous, ...next }))} /> : tab === 'connection' ? <><div className="privacy-note"><span className="small-dot" /><p>语音会发送到识别服务，文字会发送到翻译服务。密钥仅在本机加密保存。</p></div>{listening && <p className="settings-warning">修改音源、麦克风或服务配置会暂停聆听，保存后请重新开始。</p>}<section className="settings-section"><div className="section-title"><h3>声音设备</h3><button type="button" className="text-button" onClick={() => void refreshDevices()}>刷新设备</button></div><label htmlFor="microphone-device">麦克风</label><select id="microphone-device" className="device-select" value={draft.microphoneDeviceId} onChange={event => field('microphoneDeviceId', event.target.value)}><option value="default">跟随系统默认麦克风</option>{devices.map(device => <option key={device.deviceId} value={device.deviceId}>{device.label}</option>)}{draft.microphoneDeviceId !== 'default' && !devices.some(device => device.deviceId === draft.microphoneDeviceId) && <option value={draft.microphoneDeviceId}>已选麦克风（未连接或尚未授权）</option>}</select><p className="settings-explanation">可在开始聆听前选择设备；系统权限受限时名称可能不可用。默认设备变化或所选设备断开时会暂停，请确认设备后重新开始。</p><p className="settings-explanation">电脑声音使用当前系统默认输出设备；切换输出设备后请重新开始。双音源建议使用耳机，减少重复收录。</p>{deviceNotice && <p className="settings-warning" role="status">{deviceNotice}</p>}</section><section className="settings-section"><div className="section-title"><h3>语音识别</h3><span className={`readiness ${settings.hasAsrKey ? 'ready' : ''}`}>{settings.hasAsrKey ? <><Check size={10} />已配置密钥</> : '等待配置'}</span></div><label htmlFor="asr-key">DashScope API Key</label><input id="asr-key" type="password" autoComplete="off" spellCheck={false} value={asrKey} onChange={event => setAsrKey(event.target.value)} placeholder={settings.hasAsrKey ? '已安全保存 · 留空保留现有密钥' : '输入语音识别密钥'} /><div className="settings-fields"><div><label htmlFor="asr-model">识别模型 · 推荐 Qwen Audio 3.1</label><input id="asr-model" list="asr-model-options" value={draft.asrModel} onChange={event => field('asrModel', event.target.value)} required /><datalist id="asr-model-options"><option value="qwen-audio-3.1-asr-flash-streaming">Qwen Audio 3.1 · 推荐</option><option value="qwen-audio-3.0-asr-flash-streaming">Qwen Audio 3.0</option><option value="qwen3-asr-flash-realtime">Qwen3 ASR · 旧版实时模型</option></datalist></div><div><label htmlFor="asr-endpoint">服务地址</label><input id="asr-endpoint" value={draft.asrEndpoint} onChange={event => field('asrEndpoint', event.target.value)} required spellCheck={false} /></div></div></section><section className="settings-section"><div className="section-title"><h3>字幕翻译</h3><span className={`readiness ${settings.hasTranslationKey ? 'ready' : ''}`}>{settings.hasTranslationKey ? <><Check size={10} />已配置密钥</> : '等待配置'}</span></div><label htmlFor="translation-key">{isDeepSeek ? 'DeepSeek API Key · 与语音识别密钥不同' : '翻译服务 API Key · 与语音识别密钥分别配置'}</label><input id="translation-key" type="password" autoComplete="off" spellCheck={false} value={translationKey} onChange={event => setTranslationKey(event.target.value)} placeholder={settings.hasTranslationKey ? '已安全保存 · 留空保留现有密钥' : isDeepSeek ? '输入 DeepSeek 密钥，仅用于字幕翻译' : '输入此翻译服务对应的 API Key'} /><div className="settings-fields"><div><label htmlFor="translation-model">{isDeepSeek ? '翻译模型 · 推荐 DeepSeek Flash' : '翻译模型'}</label><input id="translation-model" value={draft.translationModel} onChange={event => field('translationModel', event.target.value)} required /></div><div><label htmlFor="translation-endpoint">兼容 OpenAI 的服务地址</label><input id="translation-endpoint" value={draft.translationBaseUrl} onChange={event => field('translationBaseUrl', event.target.value)} required spellCheck={false} /></div></div></section>{platform === 'darwin' && <div className="import-key"><div><b>已经在本机用过 DashScope？</b><p>点击后，读取本机 DashScope 密钥，仅用于语音识别。</p></div><button type="button" className="secondary-button" disabled={importing || saving} onClick={async () => { setImporting(true); onError(''); try { const imported = await onImport(); setDraft(previous => ({ ...previous, hasAsrKey: imported.hasAsrKey, asrModel: imported.asrModel, asrEndpoint: imported.asrEndpoint })); setAsrKey('') } catch (error) { onError(errorText(error)) } setImporting(false) }}>{importing ? <LoaderCircle size={12} className="spin" /> : <ArrowDownToLine size={12} />}导入语音识别密钥</button></div>}</> : <><section className="settings-section"><h3>阅读舒适度</h3><div className="range-setting"><label htmlFor="font-size">字幕字号 <b>{draft.fontSize} px</b></label><input id="font-size" type="range" min="14" max="24" step="1" value={draft.fontSize} onChange={event => field('fontSize', Number(event.target.value))} /><div className="font-sample" style={{ fontSize: draft.fontSize }}>每天学会一点点。<span>A little, every day.</span></div></div><div className="range-setting"><label htmlFor="opacity">窗口不透明度 <b>{Math.round(draft.opacity * 100)}%</b></label><input id="opacity" type="range" min="0.45" max="1" step="0.01" value={draft.opacity} onChange={event => field('opacity', Number(event.target.value))} /></div></section><section className="settings-section"><label className="toggle-setting"><div><b>始终置顶</b><span>在其他窗口上方显示翻译条</span></div><input type="checkbox" checked={draft.alwaysOnTop} onChange={event => field('alwaysOnTop', event.target.checked)} /><i /></label><label className="toggle-setting"><div><b>登录时启动</b><span>打开电脑时，让语伴一起就位</span></div><input type="checkbox" checked={draft.launchAtLogin} onChange={event => field('launchAtLogin', event.target.checked)} /><i /></label></section></>}</div></div><div className="panel-footer"><span>设置只影响 LingoBar</span><button type="submit" className="primary-button" disabled={saving || importing}>{saving ? <LoaderCircle size={13} className="spin" /> : <Check size={13} />}保存设置</button></div></form>
 }
