@@ -87,7 +87,7 @@ export default function HistoryPanel({ captions, settings, filter, focusVersion,
         <button className={filter === 'all' ? 'selected' : ''} aria-pressed={filter === 'all'} onClick={() => { anchor.current = null; onFilter('all') }}>全部 <span>{captions.length}</span></button>
         <button className={filter === 'saved' ? 'selected' : ''} aria-pressed={filter === 'saved'} onClick={() => { anchor.current = null; onFilter('saved') }}>学习收藏 <span>{captions.filter(caption => caption.saved).length}</span></button>
       </div>
-      <button className="text-button" disabled={!captions.some(caption => caption.saved)} aria-disabled={exporting} aria-busy={exporting} onClick={onExport}><ArrowDownToLine size={13} />{exporting ? '正在导出…' : '导出收藏'}</button>
+      <button className="text-button" disabled={!captions.some(caption => caption.saved)} aria-disabled={exporting || undefined} aria-busy={exporting} onClick={onExport}><ArrowDownToLine size={13} />{exporting ? '正在导出…' : '导出收藏'}</button>
     </div>
     {exportResult && <div className={`history-export-result ${exportResult.error ? 'panel-notice' : 'history-search-hint'}`} role={exportResult.error ? 'alert' : 'status'}>{exportResult.text}</div>}
     <div className="history-search">
