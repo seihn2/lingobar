@@ -42,7 +42,7 @@ LingoBar 是面向语言学习的桌面字幕工具。它将电脑声音、麦�
 | 平台 | 系统要求 | 获取方式 |
 | --- | --- | --- |
 | Windows | Windows 10/11，**x64** | [CI 测试包](https://github.com/seihn2/lingobar/actions/workflows/build.yml?query=branch%3Amain)：在对应成功构建的 Artifacts 中下载 ZIP，解压后运行安装程序。 |
-| macOS | macOS 14.2+，Apple Silicon | [从源码构建](#development)，生成 `dist/mac-arm64/LingoBar.app`。本地包采用 ad-hoc 签名，未经 Apple 公证。 |
+| macOS | macOS 14.2+，Apple Silicon | [PR #3 离线测试包](docs/usage.zh-CN.md#install)，或[从源码构建](#development)。预览采用 ad-hoc 签名，未经 Apple 公证；PR #3 包不含 PR #4 改动。 |
 
 Windows x64 支持已合并到 `main`；此前已验证测试包与校验记录见 [PR #2](https://github.com/seihn2/lingobar/pull/2)。Windows 暂不提供 ARM64 包。CI artifact 下载需要登录 GitHub，保留 14 天，过期后请使用新的成功构建或自行构建。安装前核对包内 `SHA256SUMS.txt`；具体安装、升级和系统授权步骤见 [使用指南](docs/usage.zh-CN.md#install)。
 

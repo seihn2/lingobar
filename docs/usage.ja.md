@@ -12,9 +12,9 @@
 | プラットフォーム | 手順 |
 | --- | --- |
 | Windows 10/11 x64 | [main ブランチの CI](https://github.com/seihn2/lingobar/actions/workflows/build.yml?query=branch%3Amain) を開き、成功したビルドの **Artifacts** から Windows テストパッケージを取得します。GitHub にログインして ZIP をダウンロード・展開し、`SHA256SUMS.txt` を確認してから `LingoBar-0.1.5-windows-x64-setup.exe` を実行します。その後、スタートメニューから LingoBar を開きます。 |
-| macOS 14.2 以降 / Apple Silicon | 現在はソースからビルドします。コマンドは [README](../README.ja.md#development) を参照してください。生成されるアプリは `dist/mac-arm64/LingoBar.app` です。 |
+| macOS 14.2 以降 / Apple Silicon | [PR #3](https://github.com/seihn2/lingobar/pull/3) の成功した CI から **LingoBar-macos-arm64-preview-…** を取得します。外側の artifact ZIP を展開し、内側のアプリ ZIP と `BUILD-MANIFEST.json` を `SHA256SUMS.txt` で照合してから、Finder または `ditto -x -k app.zip output` でアプリを展開します。実行に Node／Xcode のインストールは不要です。[ソースからのビルド](../README.ja.md#development)も利用できます。 |
 
-Windows インストーラーは未署名のため、入手元に関するシステムの警告が出る場合があります。まず入手元と SHA-256 を確認し、実行するか判断してください。システムの保護機能を無効にする必要はありません。Mac のローカルビルドは ad-hoc 署名で、Apple の公証は受けていません。再ビルド後に権限の再許可が必要になる場合があります。
+Windows インストーラーは未署名のため、入手元に関するシステムの警告が出る場合があります。まず入手元と SHA-256 を確認し、実行するか判断してください。システムの保護機能を無効にする必要はありません。Mac のプレビューとローカルビルドは ad-hoc 署名で Apple 未公証です。保護機能を有効に保ち、quarantine の削除やダウンロードしたアプリの再署名は行いません。再ビルド後に権限の再許可が必要になる場合があります。PR #3 のプレビューに PR #4 の一時停止の変更は含まれません。manifest には PR head と実際の CI test-merge ビルドを区別して記録します。CI は実機検証ではありません。**看看示例** はサービスを呼ばずにオフラインで表示例を確認できます。[技術検証チェックリスト](macos-offline-validation.md)も参照してください。
 
 Artifact の保存期間は **14 日**であり、恒久的な release ダウンロードではありません。期限切れの場合は、新しい成功したビルドを使うか、自分でビルドしてください。Windows ARM64 にはまだ対応していません。古いコミット **`96b0b30`** のパッケージには、待機中に特定のマイクを選べない問題があります。修正の基準となる **`f7a64b8` 以降のコミット**に対応した、新しい成功した CI ビルドのパッケージに置き換えてください。更新前に、トレイ／メニューバーの **退出 LingoBar**（LingoBar を終了）でアプリを終了してから、新版をインストールまたは置き換えます。Windows 実装は [PR #2](https://github.com/seihn2/lingobar/pull/2) を通じて `main` にマージ済みです。引き続き開発プレビューとして配布しており、正式 release はまだありません。
 

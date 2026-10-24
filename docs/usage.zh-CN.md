@@ -12,9 +12,9 @@
 | 平台 | 操作 |
 | --- | --- |
 | Windows 10/11 x64 | 打开 [main 分支 CI](https://github.com/seihn2/lingobar/actions/workflows/build.yml?query=branch%3Amain)，从成功构建的 **Artifacts** 下载 Windows 测试包。登录 GitHub 后下载 ZIP，解压，核对 `SHA256SUMS.txt`，运行 `LingoBar-0.1.5-windows-x64-setup.exe`，然后从开始菜单打开 LingoBar。 |
-| macOS 14.2+ / Apple Silicon | 目前从源码构建，命令见 [README](../README.md#development)。生成的应用在 `dist/mac-arm64/LingoBar.app`。 |
+| macOS 14.2+ / Apple Silicon | 从 [PR #3](https://github.com/seihn2/lingobar/pull/3) 的成功 CI 下载 **LingoBar-macos-arm64-preview-…**。解开外层 artifact ZIP，按 `SHA256SUMS.txt` 核对内层应用 ZIP 和 `BUILD-MANIFEST.json`，再用 Finder 或 `ditto -x -k app.zip output` 解开应用。运行此预览无需安装 Node／Xcode；仍可[从源码构建](../README.md#development)。 |
 
-Windows 安装包未签名，可能出现系统来源提示；请先核对来源和 SHA-256，再决定是否运行，不需要关闭系统防护。Mac 本地包为 ad-hoc 签名，未经 Apple 公证，重新构建后可能需要重新授权。
+Windows 安装包未签名，可能出现系统来源提示；请先核对来源和 SHA-256，再决定是否运行，不需要关闭系统防护。Mac 预览与本地包均为 ad-hoc 签名，未经 Apple 公证；保留系统防护，不移除 quarantine 或重新签名下载包。重新构建后可能需要重新授权。PR #3 预览不含 PR #4 的暂停改动。manifest 区分 PR head 与实际 CI test-merge 构建，CI 不等于实机验收。“看看示例”可离线预览，不调用服务。详见[技术验收清单](macos-offline-validation.md)。
 
 Artifact 保留 **14 天**，不是永久 release 下载。过期后使用新的成功构建或自己构建。Windows 暂不支持 ARM64。旧提交 **`96b0b30`** 的包存在闲置时无法选择具体麦克风的问题，应使用新的成功 CI 构建提供的替代包。修复基线为 `f7a64b8` 及其后续提交。升级前先从托盘／菜单栏选择“退出 LingoBar”，再安装或替换新版。Windows 实现已通过 [PR #2](https://github.com/seihn2/lingobar/pull/2) 合并到 `main`，仍以开发预览分发，尚未发布正式 release。
 

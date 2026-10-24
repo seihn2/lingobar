@@ -17,9 +17,46 @@
 未合并，任何单独包都不能称含有两者全部功能。Mac CI 曾完成 arm64 构建，
 没有提供经过公证的 Mac 安装包。
 
+## 下载离线预览，无需开发依赖
+
+[PR #3](https://github.com/seihn2/lingobar/pull/3) 的成功 CI 现会保存
+`LingoBar-macos-arm64-preview-…` artifact；具体 head、下载链接和校验值以该 PR
+当前构建记录为准。登录 GitHub 下载并解开外层 artifact ZIP，得到：
+
+- `LingoBar-0.1.5-macos-arm64-preview-<head前12位>.zip`：已构建的 `.app`，
+  Apple Silicon／macOS 14.2+，无需安装 Node、npm、Xcode 或重新编译。
+- `BUILD-MANIFEST.json`：PR head／base、CI 实际 checkout commit、生产源码 tree、
+  archive hash、逐文件 hash／权限／符号链接、签名及合成自测状态。
+- `SHA256SUMS.txt`：内层 ZIP 和 manifest 的校验值。GitHub 外层 artifact ZIP
+  自己的 digest 另记在 PR，不与内层应用 ZIP 混用。
+
+在这三个文件所在目录执行以下系统自带工具；这不会录音或访问服务：
+
+```sh
+shasum -a 256 -c SHA256SUMS.txt
+ditto -x -k LingoBar-*-macos-arm64-preview-*.zip LingoBar-preview
+codesign --verify --deep --strict LingoBar-preview/LingoBar.app
+LingoBar-preview/LingoBar.app/Contents/Resources/native/system-audio-capture --self-test
+```
+
+helper 输出应为 `ok:true`、`captureStarted:false` 的 JSON。构建机已执行完整 ZIP
+往返验证：每项文件内容、POSIX 模式与相对符号链接一致，解包后签名及 helper
+合成自测通过。CI 保存应用前先用 `ditto` 归档，避免 artifact 直接上传目录时
+丢失可执行权限；依据 [upload-artifact v4 文档](https://github.com/actions/upload-artifact/tree/v4#permission-loss)。
+
+该预览沿用现有 **ad-hoc 签名，未经 Apple 公证**，不能等同 Developer ID 发布版。
+不移除 quarantine，不重新签名，不关闭 Gatekeeper。系统若阻止打开，保留提示由
+用户决定后续操作；云端不会替用户修改安全设置。父任务启动 UI 时使用新的
+`LINGOBAR_TEST_DATA` 临时目录隔离已有配置，点击“看看示例”只显示内置合成内容；
+不导入密钥、不点击开始收音、不提交文字翻译。
+
+artifact 保留14天、不是正式 Release。本次仅保存 PR #3 的独立构建；没有把
+PR #4 暂停改动纳入包，也没有新建组合包。两份源代码的组合回归仍按下节单独记录。
+
 ## 无音频／服务的测试入口
 
-在独立 checkout 中核对 `git status`、提交和脚本后，使用锁定依赖。要求 Node
+以下仅供开发者从源码复验，不是运行上述预览的前提。在独立 checkout 中核对
+`git status`、提交和脚本后，使用锁定依赖。要求 Node
 22.18+、Apple Silicon、macOS 14.2+、Xcode Command Line Tools；UI 测试使用
 已安装 Chrome，找不到时报告缺项，不自动下载未知浏览器。
 

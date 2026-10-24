@@ -42,7 +42,7 @@ Built with Electron, React, and TypeScript, the project is **source-available un
 | Platform | System requirements | How to get it |
 | --- | --- | --- |
 | Windows | Windows 10/11, **x64** | [CI test packages](https://github.com/seihn2/lingobar/actions/workflows/build.yml?query=branch%3Amain): download the ZIP from the corresponding successful build's Artifacts, extract it, and run the installer. |
-| macOS | macOS 14.2+, Apple Silicon | [Build from source](#development) to generate `dist/mac-arm64/LingoBar.app`. Local builds use an ad-hoc signature and are not notarized by Apple. |
+| macOS | macOS 14.2+, Apple Silicon | [PR #3 offline preview](docs/usage.en.md#install), or [build from source](#development). The preview is ad-hoc signed and not Apple-notarized; PR #4 changes are separate. |
 
 Windows x64 support is merged into `main`; see [PR #2](https://github.com/seihn2/lingobar/pull/2) for earlier verified test packages and checksum records. Windows ARM64 packages are not currently available. Downloading CI artifacts requires signing in to GitHub. Artifacts are retained for 14 days; after expiry, obtain a newer successful build or build from source. Check the included `SHA256SUMS.txt` before installing. See the [user guide](docs/usage.en.md#install) for installation, upgrades, and system permissions.
 

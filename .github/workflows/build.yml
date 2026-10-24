@@ -47,6 +47,8 @@ jobs:
       LINGOBAR_NATIVE_ARCH: arm64
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -57,6 +59,20 @@ jobs:
       - run: npm run package:mac
       - run: resources/native/system-audio-capture --self-test
       - run: npm run verify:package
+      - run: npm run archive:mac
+        env:
+          LINGOBAR_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+          LINGOBAR_SOURCE_BASE: ${{ github.event.pull_request.base.sha || '' }}
+          LINGOBAR_PULL_REQUEST: ${{ github.event.pull_request.number || '' }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LingoBar-macos-arm64-preview-${{ github.sha }}
+          path: |
+            dist/macos-artifact/LingoBar-*-macos-arm64-preview-*.zip
+            dist/macos-artifact/BUILD-MANIFEST.json
+            dist/macos-artifact/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
   ui:
     name: Chromium UI regression (synthetic captions)
     runs-on: ubuntu-24.04

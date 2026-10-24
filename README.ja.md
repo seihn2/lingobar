@@ -42,7 +42,7 @@ Electron、React、TypeScript で開発し、**非商用ライセンスの CC BY
 | プラットフォーム | システム要件 | 入手方法 |
 | --- | --- | --- |
 | Windows | Windows 10/11、**x64** | [CI テストパッケージ](https://github.com/seihn2/lingobar/actions/workflows/build.yml?query=branch%3Amain)：対応する成功したビルドの Artifacts から ZIP をダウンロードし、展開してインストーラーを実行します。 |
-| macOS | macOS 14.2 以降、Apple Silicon | [ソースからビルド](#development)して `dist/mac-arm64/LingoBar.app` を生成します。ローカルパッケージは ad-hoc 署名で、Apple の公証は受けていません。 |
+| macOS | macOS 14.2 以降、Apple Silicon | [PR #3 のオフラインプレビュー](docs/usage.ja.md#install)、または[ソースからビルド](#development)。プレビューは ad-hoc 署名で Apple 未公証です。PR #4 の変更は別です。 |
 
 Windows x64 対応は `main` にマージ済みです。それ以前に検証したテストパッケージとチェックサムの記録は [PR #2](https://github.com/seihn2/lingobar/pull/2) を参照してください。Windows ARM64 用のパッケージはまだ提供していません。CI artifact のダウンロードには GitHub へのログインが必要で、保存期間は 14 日です。期限切れの場合は、新しい成功したビルドを使うか、自分でビルドしてください。インストール前にパッケージ内の `SHA256SUMS.txt` を確認してください。インストール、更新、システム権限の詳しい手順は[使い方ガイド](docs/usage.ja.md#install)を参照してください。
 

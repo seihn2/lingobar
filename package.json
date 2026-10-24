@@ -22,6 +22,7 @@
     "package:mac": "npm run build:native && npm run build && electron-builder --mac --dir --publish never",
     "package:win": "npm run build:icons && npm run build:native && npm run build && electron-builder --win --x64 --publish never",
     "verify:package": "node scripts/verify-package.cjs",
+    "archive:mac": "node scripts/archive-macos.cjs",
     "checksums:win": "node scripts/checksums-windows.cjs"
   },
   "devDependencies": {
