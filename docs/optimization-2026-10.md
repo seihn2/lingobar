@@ -149,3 +149,15 @@ on their own caption IDs. Production source remains unchanged from `fad37be`;
 PR4's bounded pause tail acceptance remains a separate, explicitly tested
 contract. No reconnect, new provider call, copied upstream code or performance
 experiment is introduced.
+
+## Saved-caption export reliability
+
+The [export checkpoint](saved-export-validation.md) reproduced exclusion of
+useful saved translations during/after retry and late file errors appearing in
+unrelated panels. Export now includes retained saved translations and owns a
+pending/result state shown only in history, with one in-flight call and results
+retained across panel close/reopen. Cancellation and actual temporary-directory
+write failure already preserved the collection; regression checks retain those
+negative findings and verify a later successful export. Markdown, destination
+policy and file-writing strategy remain unchanged. This closes the bounded
+cloud batch; no extra feature or research task is automatically invented.

@@ -76,6 +76,8 @@ export default function App() {
   const [toast, setToast] = useState('')
   const [historyFilter, setHistoryFilter] = useState<'all' | 'saved'>('all')
   const [historyFocusVersion, setHistoryFocusVersion] = useState(0)
+  const [exporting, setExporting] = useState(false)
+  const [exportResult, setExportResult] = useState<{ text: string; error: boolean } | null>(null)
   const [input, setInput] = useState('')
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [opacityPreview, setOpacityPreview] = useState<number | null>(null)
@@ -86,6 +88,7 @@ export default function App() {
   const microphoneGeneration = useRef(0)
   const microphoneAbort = useRef<AbortController | null>(null)
   const captureOperation = useRef(0)
+  const exportPending = useRef(false)
   const composing = useRef(false)
   const panelReturnFocus = useRef<{ element: HTMLElement | null; fallback: '设置' | '历史与收藏' | '输入文字翻译' } | null>(null)
   const readingSession = useRef<ReadingSession>({ clock: null, following: true, anchor: null })
@@ -250,6 +253,20 @@ export default function App() {
     setNotice('')
     try { await action(); if (success) setToast(success) } catch (error) { setNotice(errorText(error)) }
   }
+  async function exportSaved() {
+    if (!api || exportPending.current) return
+    exportPending.current = true
+    setExporting(true)
+    setExportResult(null)
+    try {
+      if (await api.exportSaved()) setExportResult({ text: '收藏已导出', error: false })
+    } catch (error) {
+      setExportResult({ text: `导出未完成：${errorText(error)}`, error: true })
+    } finally {
+      exportPending.current = false
+      setExporting(false)
+    }
+  }
   async function toggleListening() {
     if (captureAction === 'stop') return
     if (!api) { setNotice('浏览器仅供界面预览，请在 LingoBar 应用中开始收音。'); return }
@@ -368,7 +385,7 @@ export default function App() {
       {notice && <div className="panel-notice" role="alert">{notice}</div>}
       {panel === 'settings' && <SettingsPanel platform={platform} settings={snapshot.settings} listening={listening || starting} saveSettings={saveSettings} onSaved={() => { setNotice(''); setToast('设置已保存'); setPanel(null) }} onError={setNotice} onImport={async () => { if (!api) throw new Error('请在应用中导入本机密钥。'); const settings = await api.importLocalKey(); setSnapshot(value => ({ ...value, settings })); setToast('本机语音识别密钥已安全导入'); return settings }} />}
       {panel === 'text' && <form className="text-form" onSubmit={event => void submitText(event)}><label htmlFor="translation-input">输入或粘贴任何语言，翻译为你在设置中选择的字幕语言。</label><textarea id="translation-input" value={input} autoFocus onChange={event => setInput(event.target.value)} placeholder="例如：You don't have to be perfect to make progress." maxLength={5000} /><div className="text-form-footer"><span>{input.length} / 5000 · {labels.submitShortcut} 翻译</span><button className="primary-button" disabled={busy || !input.trim()} type="submit" onKeyDown={event => { if (event.key === 'Enter') event.stopPropagation() }}>{busy ? <LoaderCircle size={13} className="spin" /> : <ArrowRight size={13} />}翻译这句</button></div></form>}
-      {panel === 'history' && <HistoryPanel captions={snapshot.captions} settings={snapshot.settings} filter={historyFilter} focusVersion={historyFocusVersion} onFilter={setHistoryFilter} onSelect={caption => { setSelectedId(caption.id); setFocusVersion(value => value + 1); setPreview(false); setPanel(null) }} onSave={caption => api && void run(() => api.toggleSaved(caption.id))} onExport={() => api && void run(async () => { if (await api.exportSaved()) setToast('收藏已导出') })} />}
+      {panel === 'history' && <HistoryPanel captions={snapshot.captions} settings={snapshot.settings} filter={historyFilter} focusVersion={historyFocusVersion} onFilter={setHistoryFilter} onSelect={caption => { setSelectedId(caption.id); setFocusVersion(value => value + 1); setPreview(false); setPanel(null) }} onSave={caption => api && void run(() => api.toggleSaved(caption.id))} onExport={() => void exportSaved()} exporting={exporting} exportResult={exportResult} />}
     </section></div>}
     {panel === 'text' && <TextShortcut isComposing={() => composing.current} onSubmit={() => { if (input.trim() && !busy) void submitText({ preventDefault() {} } as FormEvent) }} />}
   </main>

@@ -187,7 +187,9 @@ function wireIPC(): void {
     if (Math.abs(next.height - current.height) >= 2) window.setBounds(next)
   })
   handle('lingo:export', async () => {
-    const saved = queue.captions.filter(c => c.saved && c.status === 'ready')
+    // Saving requires a completed translation; retries retain that useful text
+    // even while pending or failed. Export the same collection shown in history.
+    const saved = queue.captions.filter(c => c.saved)
     if (!saved.length) throw new Error('先收藏一句，再导出学习笔记。')
     const result = await dialog.showSaveDialog(window!, { title: '导出学习笔记', defaultPath: `LingoBar-${new Date().toISOString().slice(0, 10)}.md`, filters: [{ name: 'Markdown', extensions: ['md'] }] })
     if (result.canceled || !result.filePath) return false

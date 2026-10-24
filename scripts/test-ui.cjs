@@ -85,6 +85,10 @@ async function main() {
       if (focus.exceptionDetails) throw new Error(`Panel focus: ${focus.exceptionDetails.exception?.description}`)
       assert.deepEqual(focus.result.value.failures, [], `Panel focus regressions at scale ${scale}`)
       result.result.value.checks.push(...focus.result.value.checks)
+      const exported = await send('Runtime.evaluate', { expression: 'window.__lingobarUiTest.exportRegression()', awaitPromise: true, returnByValue: true })
+      if (exported.exceptionDetails) throw new Error(`Saved export: ${exported.exceptionDetails.exception?.description}`)
+      assert.deepEqual(exported.result.value.failures, [], `Saved export regressions at scale ${scale}`)
+      result.result.value.checks.push(...exported.result.value.checks)
       const press = async (key, code, virtualKey, modifiers = 0) => {
         await send('Input.dispatchKeyEvent', { type: 'keyDown', key, code, windowsVirtualKeyCode: virtualKey, modifiers })
         await send('Input.dispatchKeyEvent', { type: 'keyUp', key, code, windowsVirtualKeyCode: virtualKey, modifiers })

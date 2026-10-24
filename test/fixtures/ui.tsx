@@ -17,6 +17,8 @@ const saves: Array<Partial<Settings>> = []
 let audioStarts = 0
 let providerCalls = 0
 let hideCalls = 0
+let exportCalls = 0
+let exportAction = async () => false
 const emit = (next: Partial<Snapshot>) => {
   snapshot = structuredClone({ ...snapshot, ...next })
   for (const listener of listeners) listener(snapshot)
@@ -30,7 +32,7 @@ const api = {
   pushMicrophone: () => { throw new Error('Audio is disabled in UI tests') },
   microphoneFailed: () => {}, microphoneReady: () => {},
   translateText: async () => { providerCalls++; throw new Error('Providers are disabled in UI tests') },
-  retry: async () => {}, toggleSaved: async () => {}, exportSaved: async () => false,
+  retry: async () => {}, toggleSaved: async () => {}, exportSaved: async () => { exportCalls++; return exportAction() },
   copyText: async () => {}, importLocalKey: async () => { throw new Error('No keys in UI tests') },
   setCollapsed: async (collapsed: boolean) => { emit({ collapsed }) },
   setCompactHeight: async () => {}, hide: async () => { hideCalls++ }, quit: async () => {},
@@ -346,5 +348,54 @@ async function preparePanelA11y(mode: 'settings' | 'history') {
   trigger.focus(); trigger.click(); await frame()
   query<HTMLButtonElement>(mode === 'settings' ? '.settings-nav button' : '.history-tabs button').click(); await frame()
 }
-;(window as unknown as { __lingobarUiTest: { run: typeof run; preview: typeof preview; prepareHide: typeof prepareHide; verifyHide: typeof verifyHide; panelFocus: typeof panelFocus; preparePanelA11y: typeof preparePanelA11y } }).__lingobarUiTest = { run, preview, prepareHide, verifyHide, panelFocus, preparePanelA11y }
+async function exportRegression() {
+  const checks: string[] = [], failures: string[] = []
+  const check = (value: unknown, message: string) => { checks.push(message); if (!value) failures.push(message) }
+  const saved = caption('synthetic-export', { saved: true })
+  emit({ state: 'idle', message: '', captions: [saved], partial: {}, collapsed: false }); await frame()
+  const openHistory = async () => { query<HTMLButtonElement>('[aria-label="历史与收藏"]').click(); await frame() }
+  const close = async () => { query<HTMLButtonElement>('[aria-label="关闭面板"]').click(); await frame() }
+  const button = () => query<HTMLButtonElement>('.history-toolbar > button')
+  const exportToast = () => document.querySelector('.toast')?.textContent?.includes('收藏已导出')
+  await openHistory()
+  exportAction = async () => false
+  button().click(); await frame()
+  check(!exportToast() && !document.querySelector('.history-export-result'), 'cancelled export is silent and shows no success')
+  check(snapshot.captions[0].saved && snapshot.captions[0].id === saved.id, 'export cancellation retains the synthetic saved caption')
+
+  let reject!: (error: Error) => void
+  const pending = new Promise<boolean>((_yes, no) => { reject = no })
+  exportAction = () => pending; exportCalls = 0
+  button().focus(); button().click(); button().click(); await frame()
+  check(button().getAttribute('aria-disabled') === 'true' && button().getAttribute('aria-busy') === 'true' && document.activeElement === button() && exportCalls === 1, 'one pending export prevents duplicate dialogs, keeps focus and exposes its busy state')
+  await close()
+  query<HTMLButtonElement>('[aria-label="设置"]').click(); await frame()
+  emit({ state: 'error', message: 'Synthetic current capture error' }); await frame()
+  reject(new Error('Synthetic export write failure')); await frame()
+  check(!query('.panel-settings').textContent?.includes('Synthetic export write failure'), 'late export failure does not enter a different settings panel')
+  await close()
+  await openHistory()
+  check(Boolean(document.querySelector('.history-export-result[role="alert"]')?.textContent?.includes('导出未完成：Synthetic export write failure')), 'reopening history retains the failed export result in its own context')
+  check(!button().disabled && snapshot.captions[0].saved, 'a failed export releases its button and preserves the saved caption')
+
+  let rejectAgain!: (error: Error) => void
+  const another = new Promise<boolean>((_yes, no) => { rejectAgain = no })
+  exportAction = () => another
+  button().click(); await frame(); await close()
+  rejectAgain(new Error('Synthetic second export failure')); await frame()
+  check(query('.inline-notice').textContent?.includes('Synthetic current capture error') && !query('.inline-notice').textContent?.includes('Synthetic second export failure'), 'late export failure cannot hide the current capture error')
+  await openHistory()
+
+  exportAction = async () => true
+  button().click(); await frame()
+  check(Boolean(document.querySelector('.history-export-result[role="status"]')?.textContent?.includes('收藏已导出')) && !exportToast(), 'successful retry reports export success locally without a global toast')
+  exportAction = async () => false
+  button().click(); await frame()
+  check(!document.querySelector('.history-export-result') && !exportToast(), 'cancelling another export clears its previous result without claiming success')
+  await close()
+  check(snapshot.state === 'error' && snapshot.message === 'Synthetic current capture error' && audioStarts === 0 && providerCalls === 0, 'export feedback never changes capture state or calls audio/providers')
+  emit({ state: 'idle', message: '' }); await frame()
+  return { checks, failures }
+}
+;(window as unknown as { __lingobarUiTest: { run: typeof run; preview: typeof preview; prepareHide: typeof prepareHide; verifyHide: typeof verifyHide; panelFocus: typeof panelFocus; preparePanelA11y: typeof preparePanelA11y; exportRegression: typeof exportRegression } }).__lingobarUiTest = { run, preview, prepareHide, verifyHide, panelFocus, preparePanelA11y, exportRegression }
 createRoot(document.getElementById('root')!).render(<App />)

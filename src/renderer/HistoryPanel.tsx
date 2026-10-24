@@ -14,11 +14,13 @@ type Props = {
   onSelect: (caption: Caption) => void
   onSave: (caption: Caption) => void
   onExport: () => void
+  exporting: boolean
+  exportResult: { text: string; error: boolean } | null
 }
 const sourceNames = { system: '电脑声音', microphone: '麦克风', text: '文字输入' }
 const timeText = (value: number) => new Date(value).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
 
-export default function HistoryPanel({ captions, settings, filter, focusVersion, onFilter, onSelect, onSave, onExport }: Props) {
+export default function HistoryPanel({ captions, settings, filter, focusVersion, onFilter, onSelect, onSave, onExport, exporting, exportResult }: Props) {
   const [query, setQuery] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [navigationVersion, setNavigationVersion] = useState(0)
@@ -85,8 +87,9 @@ export default function HistoryPanel({ captions, settings, filter, focusVersion,
         <button className={filter === 'all' ? 'selected' : ''} aria-pressed={filter === 'all'} onClick={() => { anchor.current = null; onFilter('all') }}>全部 <span>{captions.length}</span></button>
         <button className={filter === 'saved' ? 'selected' : ''} aria-pressed={filter === 'saved'} onClick={() => { anchor.current = null; onFilter('saved') }}>学习收藏 <span>{captions.filter(caption => caption.saved).length}</span></button>
       </div>
-      <button className="text-button" disabled={!captions.some(caption => caption.saved)} onClick={onExport}><ArrowDownToLine size={13} />导出收藏</button>
+      <button className="text-button" disabled={!captions.some(caption => caption.saved)} aria-disabled={exporting} aria-busy={exporting} onClick={onExport}><ArrowDownToLine size={13} />{exporting ? '正在导出…' : '导出收藏'}</button>
     </div>
+    {exportResult && <div className={`history-export-result ${exportResult.error ? 'panel-notice' : 'history-search-hint'}`} role={exportResult.error ? 'alert' : 'status'}>{exportResult.text}</div>}
     <div className="history-search">
       <Search size={14} aria-hidden="true" />
       <input ref={input} type="search" className="history-search-input" aria-label="查找历史原文与已有译文" placeholder="查找原文与已有译文" value={query} maxLength={500} onChange={event => { anchor.current = null; setQuery(event.target.value); setSelectedId(null) }} onCompositionStart={() => { composing.current = true }} onCompositionEnd={() => { composing.current = false }} onKeyDown={event => {

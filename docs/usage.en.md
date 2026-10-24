@@ -93,6 +93,7 @@ The view follows the **latest available translation** by default, without manual
 - Open **历史与收藏** (History and saved captions) to view recent segments or saved study captions. Select a segment to return to its reading position.
 - Use the bookmark button to save a completed segment. Segments still being recognized, filled in, or translated cannot be saved yet.
 - **导出收藏** (Export saved captions) exports Markdown containing the original, available translations, and any available Japanese readings. You are responsible for the exported files.
+- A saved caption's retained translation remains exportable while a retry is pending or has failed. The button shows **正在导出…** (Exporting…) while busy; results appear only in history and remain available when you reopen it. Cancelling reports no success and leaves the collection unchanged; after a write failure, choose another destination and retry.
 - The retranslate button on a segment calls the translation service with the current target languages and may incur additional charges.
 
 ### Local lookup
