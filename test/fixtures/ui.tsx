@@ -15,8 +15,6 @@ let snapshot: Snapshot = { settings, state: 'idle', message: '', captions: [], p
 const listeners = new Set<(snapshot: Snapshot) => void>()
 const saves: Array<Partial<Settings>> = []
 let audioStarts = 0
-let holdPause = false
-let finishPause: ((result: 'finished' | 'timeout') => void) | null = null
 const emit = (next: Partial<Snapshot>) => {
   snapshot = structuredClone({ ...snapshot, ...next })
   for (const listener of listeners) listener(snapshot)
@@ -56,6 +54,9 @@ const caption = (id: string, extra: Partial<Caption> = {}): Caption => ({
 })
 const currentId = () => document.querySelector('.reading-current')?.getAttribute('data-caption-id')
 const compactId = () => query('.compact-rows').getAttribute('data-caption-id')
+
+let holdPause = false
+let finishPause: ((result: 'finished' | 'timeout') => void) | null = null
 
 async function run() {
   const checks: string[] = []
