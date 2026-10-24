@@ -1,6 +1,6 @@
 # Windows 版开发任务
 
-状态：Windows x64 实现已在 `codex/windows` 分支落地，包含原生 helper、平台适配、NSIS 安装包和合成 CI；仍需 Windows 实机验收。实际证据和未验证项见 [测试矩阵](windows-validation.md)。现有 macOS 应用与 Windows 版共用 Electron / React / TypeScript 工程；不修改 Penumbra。
+状态：Windows x64 实现已通过 [PR #2](https://github.com/seihn2/lingobar/pull/2) 合并到 `main`，包含原生 helper、平台适配、NSIS 安装包和合成 CI；仍需 Windows 实机验收。实际证据和未验证项见 [测试矩阵](windows-validation.md)。现有 macOS 应用与 Windows 版共用 Electron / React / TypeScript 工程；不修改 Penumbra。
 
 ## 已有可复用基础
 
@@ -31,7 +31,7 @@
 - 在 100% / 150% / 200% DPI 下检查振假名、窗口尺寸和控件命中。
 - 密钥和真实语音、字幕、个人设置不写入仓库、CI 日志或安装包。CI 成功不能替代实机验收；没有实机环境时必须标明未验证项目。
 
-在独立 `codex/windows` 分支提交并开 PR，说明实际完成范围、构建结果和仍需实机验证的事项。保留 CC BY-NC 4.0 及第三方许可声明。
+原移植工作在 `codex/windows` 分支提交，已通过 [PR #2](https://github.com/seihn2/lingobar/pull/2) 合并到 `main`。后续改动请在独立功能分支提交 PR，说明实际完成范围、构建结果和仍需实机验证的事项。保留 CC BY-NC 4.0 及第三方许可声明。
 
 
 ## 当前实现约定
@@ -42,4 +42,4 @@
 - `ready` 是 helper 已启动设备的控制消息；`activate` 是主进程在识别会话就绪后释放有界缓存的方法，不是 stdin 文本命令。stdin 关闭是停止信号；父进程退出和管道背压都有独立 watchdog，强制退役有界。
 - Windows 托盘使用现有 LingoBar 图形，快捷键 Ctrl+Alt+L；密钥由系统 DPAPI 提供的 safeStorage 加密，无法加密时拒绝保存。钥匙串导入仅在 macOS 可用。
 - 原生构建需要 CMake 3.24+、Visual Studio C++ tools 与 Windows SDK。详细命令及安装包位置见 README。
-- 安装包为未签名的 PR 测试版本，未设置自动更新或正式 release；不会合并、部署或升级付费 runner。
+- 安装包仍为未签名的开发预览，未设置自动更新或正式 release；合并不代表实机验收完成，也不自动部署或升级付费 runner。

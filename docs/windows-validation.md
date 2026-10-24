@@ -2,20 +2,22 @@
 
 This record separates synthetic automation from Windows hardware acceptance.
 No test uses personal audio, real service keys, paid ASR/translation calls, or a
-user's computer. The branch is a draft implementation for issue #1; a successful
-build does not establish that real capture or translation works on hardware.
+user's computer. The Windows implementation for issue #1 was merged into `main`
+through [PR #2](https://github.com/seihn2/lingobar/pull/2). It remains a
+development preview; a successful build does not establish that real capture or
+translation works on hardware.
 
 ## Reproducible test matrix
 
 | Area | Automated check | Environment / limit |
 | --- | --- | --- |
-| Core state, ASR transport, partial/final translation, selected languages, stale callbacks, queue cancellation, saved captions | `npm test` | Synthetic text/PCM, fake sockets and translators; no provider access |
+| Core state, ASR transport, partial/final translation, selected languages, stale callbacks, queue cancellation, saved captions, late prefix after final overflow, local history matching | `npm test` | Synthetic text/PCM, fake sockets and translators; no provider access |
 | Windows native protocol | `npm run test:windows-native` after packaging | Windows CI x64: real EXE, PE architecture, bounded PCM1 silence, ready control message, invalid arguments, EOF, repeated starts, parent death, broken pipe, backpressure, built/packaged byte equality; no audio-device activation |
 | Encryption and failure atomicity | Storage unit tests; `node scripts/test-windows-storage.cjs` | Mocked unavailable/encrypt/decrypt failures plus actual Windows CI DPAPI round trip with a synthetic string and fresh temp profile; never plaintext fallback |
 | Permissions and IPC | Platform/security tests | Reject other pages, frames, non-audio requests and idle/cancelled runs; Windows cannot invoke macOS key import |
 | Microphone and device changes | Mocked microphone tests | Resampling, exact device selection, no device, denied permission, unplug/default change, cancellation/late grant, cleanup; no real microphone |
 | Real Electron microphone permission chain | `npm run test:media-permissions` | Electron 43.8.3 / Chromium 150.0.7871.250 with two fake devices, real App/preload/production permission handlers: 25 checks for idle settings selection, exact-device start, pause/reopen/refresh, cancelled late grant, denied request, camera/mixed requests, same-URL subframe, other window and navigated page. No fake UI or real audio device; executed on Linux locally and in all three platform CI jobs |
-| UI reading and learning | `npm run test:ui` | Linux Chromium, 29 checks at each device scale 1 / 1.5 / 2: partial updates, source alignment, latest translation, history/selection pause, return to live, cross-mode anchor, 1–8 languages, matching ruby above kanji, drag/no-drag regions, opacity persistence and opaque text |
+| UI reading and learning | `npm run test:ui` | Linux Chromium, 58 checks at each device scale 1 / 1.5 / 2: partial updates, source alignment, latest translation, history/selection pause, return to live, cross-mode anchor, 1–8 languages, matching ruby above kanji, drag/no-drag regions, opacity persistence and opaque text; local search, keyboard/IME, stable selection/scroll through 100 arrivals and late translations, Unicode, safe text, saved filtering, empty history and focus restoration |
 | Production bundles | `npm run build` / `npm run typecheck` | Shared Electron/React/TypeScript builds |
 | Windows packaging | `npm run package:win`, `npm run verify:package`, `npm run checksums:win` | Standard Windows CI; x64 NSIS, fixed helper/icon/notice resources, app.asar data exclusions, SHA-256 manifest |
 | macOS regression | `npm test`, `npm run package:mac`, native `--self-test`, package inspection | Standard macOS arm64 CI; synthetic-only, no permissions or audio devices |
@@ -38,11 +40,15 @@ The workflow `.github/workflows/build.yml` uploads
 - `LingoBar-0.1.5-windows-x64-setup.exe`
 - `SHA256SUMS.txt`
 
-Download from the PR's completed workflow run → Artifacts. Compare the installer
+Download from a successful [main workflow run](https://github.com/seihn2/lingobar/actions/workflows/build.yml?query=branch%3Amain)
+→ Artifacts. [PR #2](https://github.com/seihn2/lingobar/pull/2) retains the
+earlier verified test-package and checksum records; those packages still
+correspond to their original build commits. Compare the installer
 using `Get-FileHash .\LingoBar-0.1.5-windows-x64-setup.exe -Algorithm SHA256`.
 The installer is unsigned; no production release or auto-update is published.
 CI artifacts expire and are not permanent release downloads. Exact run, remote
-commit, artifact URL and checksum are reported in the PR and delivery response.
+commit, artifact URL and checksum are reported with the corresponding build
+and delivery response.
 
 ## Still requires a Windows 10/11 x64 machine
 

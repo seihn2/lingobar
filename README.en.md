@@ -3,7 +3,7 @@
   <h1>LingoBar · 语伴</h1>
   <p><strong>Turn what you hear into multilingual captions you can compare and revisit.</strong></p>
   <p>
-    <a href="https://github.com/seihn2/lingobar/actions/workflows/build.yml?query=branch%3Acodex%2Fwindows"><img src="https://github.com/seihn2/lingobar/actions/workflows/build.yml/badge.svg?branch=codex%2Fwindows&amp;event=pull_request" alt="Build and synthetic tests"></a>
+    <a href="https://github.com/seihn2/lingobar/actions/workflows/build.yml?query=branch%3Amain"><img src="https://github.com/seihn2/lingobar/actions/workflows/build.yml/badge.svg?branch=main&amp;event=push" alt="Build and synthetic tests"></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-CC%20BY--NC%204.0-blue.svg" alt="CC BY-NC 4.0"></a>
     <a href="package.json"><img src="https://img.shields.io/badge/version-0.1.5-6f42c1.svg" alt="Version 0.1.5"></a>
     <a href="package-lock.json"><img src="https://img.shields.io/badge/Electron-43.8.3-47848F.svg?logo=electron" alt="Electron 43.8.3"></a>
@@ -34,16 +34,17 @@ Built with Electron, React, and TypeScript, the project is **source-available un
 - **Read Japanese pronunciation in context.** Translations appear first, followed by context-aware furigana from the translation model above the corresponding kanji. Readings never block the translation.
 - **Follow live captions or stop to read.** The view follows the latest available translation by default. Scroll or select text to look back, then click **回到实时** (Back to live) to resume following.
 - **Keep sentences worth revisiting.** Collapse to a compact window, keep it on top, and adjust background opacity and font size. Save completed segments and export them as Markdown study notes.
+- **Find history locally.** Current source supports lookup across retained originals and existing translations, opened with `Ctrl+F` / `⌘F`. See the [guide](docs/usage.en.md#history) for scope and controls. Earlier `main` preview packages lack this feature; use a successful build from the optimization PR or build a commit containing the change.
 
 <a id="install"></a>
 ## Install
 
 | Platform | System requirements | How to get it |
 | --- | --- | --- |
-| Windows | Windows 10/11, **x64** | [Test packages and checksums](https://github.com/seihn2/lingobar/pull/2): download the ZIP from the corresponding successful build's Artifacts, extract it, and run the installer. |
+| Windows | Windows 10/11, **x64** | [CI test packages](https://github.com/seihn2/lingobar/actions/workflows/build.yml?query=branch%3Amain): download the ZIP from the corresponding successful build's Artifacts, extract it, and run the installer. |
 | macOS | macOS 14.2+, Apple Silicon | [Build from source](#development) to generate `dist/mac-arm64/LingoBar.app`. Local builds use an ad-hoc signature and are not notarized by Apple. |
 
-Windows ARM64 packages are not currently available. Downloading CI artifacts requires signing in to GitHub. Artifacts are retained for 14 days; after expiry, obtain a newer successful build or build from source. Check the included `SHA256SUMS.txt` before installing. See the [user guide](docs/usage.en.md#install) for installation, upgrades, and system permissions.
+Windows x64 support is merged into `main`; see [PR #2](https://github.com/seihn2/lingobar/pull/2) for earlier verified test packages and checksum records. Windows ARM64 packages are not currently available. Downloading CI artifacts requires signing in to GitHub. Artifacts are retained for 14 days; after expiry, obtain a newer successful build or build from source. Check the included `SHA256SUMS.txt` before installing. See the [user guide](docs/usage.en.md#install) for installation, upgrades, and system permissions.
 
 <a id="quick-start"></a>
 ## Quick start
@@ -89,12 +90,12 @@ Node.js **22.18+** and npm are required. Build native components on the target p
 | macOS | Apple Silicon, macOS 14.2+, Xcode Command Line Tools |
 | Windows x64 | CMake 3.24+, Visual Studio 2022 Desktop development with C++ tools, Windows SDK |
 
-Windows development is currently on the `codex/windows` branch. Use the locked dependencies to start the local project:
+`main` includes Windows x64 support. Use the locked dependencies to start the local project:
 
 ```sh
 git clone https://github.com/seihn2/lingobar.git
 cd lingobar
-git switch codex/windows
+git switch main
 npm ci
 npm run build:icons
 npm run build:native

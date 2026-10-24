@@ -2,7 +2,7 @@
 
 [简体中文](usage.zh-CN.md) · **English** · [日本語](usage.ja.md) · [Back to README](../README.en.md)
 
-Keep the original and translations close at hand, and study each sentence at your own pace. This guide covers **version 0.1.5 on the `codex/windows` branch**. The interface is currently mainly in Simplified Chinese, so this guide preserves the actual Chinese button names and explains their meaning in English.
+Keep the original and translations close at hand, and study each sentence at your own pace. This guide follows **the current source revision of version 0.1.5**; check a test package’s build commit to confirm its features. The interface is currently mainly in Simplified Chinese, so this guide preserves the actual Chinese button names and explains their meaning in English.
 
 [Install](#install) · [Service configuration](#services) · [Audio and permissions](#audio) · [Live translation](#live) · [Languages and furigana](#languages) · [History and saved captions](#history) · [Window and shortcuts](#window) · [Privacy](#privacy) · [Troubleshooting](#troubleshooting) · [Validation status](#validation)
 
@@ -11,12 +11,12 @@ Keep the original and translations close at hand, and study each sentence at you
 
 | Platform | Steps |
 | --- | --- |
-| Windows 10/11 x64 | Open [Draft PR #2](https://github.com/seihn2/lingobar/pull/2) and download the Windows test package from **Artifacts** in the latest successful CI run. Sign in to GitHub to download the ZIP, extract it, check `SHA256SUMS.txt`, and run `LingoBar-0.1.5-windows-x64-setup.exe`. Then open LingoBar from the Start menu. |
+| Windows 10/11 x64 | Open [CI for the main branch](https://github.com/seihn2/lingobar/actions/workflows/build.yml?query=branch%3Amain) and download the Windows test package from **Artifacts** in a successful build. Sign in to GitHub to download the ZIP, extract it, check `SHA256SUMS.txt`, and run `LingoBar-0.1.5-windows-x64-setup.exe`. Then open LingoBar from the Start menu. |
 | macOS 14.2+ / Apple Silicon | Build from source using the commands in the [README](../README.en.md#development). The resulting app is `dist/mac-arm64/LingoBar.app`. |
 
 The Windows installer is unsigned, so Windows may show a warning about its source. Verify the source and SHA-256 before deciding whether to run it; you do not need to disable system protections. Local Mac builds use an ad-hoc signature and are not notarized by Apple. Rebuilding may require granting permissions again.
 
-Artifacts are retained for **14 days** and are not permanent release downloads. After expiry, use a newer successful build or build from source. Windows ARM64 is not currently supported. The old package from commit **`96b0b30`** has a bug that prevents selecting a specific microphone while idle; replace it with a package built from the fix baseline **`f7a64b8`** or a later commit. Before upgrading, choose **退出 LingoBar** (Quit LingoBar) from the tray or menu bar to exit the old app, then install or replace it with the new version. The PR remains a draft and has not been merged or published as a formal release.
+Artifacts are retained for **14 days** and are not permanent release downloads. After expiry, use a newer successful build or build from source. Windows ARM64 is not currently supported. The old package from commit **`96b0b30`** has a bug that prevents selecting a specific microphone while idle; replace it with a package built from the fix baseline **`f7a64b8`** or a later commit. Before upgrading, choose **退出 LingoBar** (Quit LingoBar) from the tray or menu bar to exit the old app, then install or replace it with the new version. The Windows implementation has been merged into `main` through [PR #2](https://github.com/seihn2/lingobar/pull/2). It is still distributed as a development preview, with no formal release yet.
 
 The app does not start audio capture on first launch. Click **看看示例** (View example) to explore synthetic captions without calling services. To check your translation configuration, open **输入文字翻译** (Translate typed text), type or paste a sentence, then click **翻译这句** (Translate this sentence) or use `Ctrl+Enter` on Windows / `⌘ Enter` on Mac, as listed in the shortcuts table. Only submitting the sentence calls the translation service; this does not access the microphone.
 
@@ -95,6 +95,16 @@ The view follows the **latest available translation** by default, without manual
 - **导出收藏** (Export saved captions) exports Markdown containing the original, available translations, and any available Japanese readings. You are responsible for the exported files.
 - The retranslate button on a segment calls the translation service with the current target languages and may incur additional charges.
 
+### Local lookup
+
+Current source includes local lookup. Earlier `main` preview packages lack it; use a successful build from the optimization PR or build a commit containing the change. A feature description does not establish hardware acceptance.
+
+- Press `Ctrl+F` on Windows or `⌘F` on Mac inside the app to open **历史与收藏** (History and saved captions) and focus the search field. A compact window expands first. You can also open that panel to search.
+- Look up literal text across locally retained originals, the original aligned with the last translation, and all existing translations, including languages currently hidden. Matching ignores case and normalizes Unicode forms, such as full-width and half-width characters. Search terms are not interpreted as regular expressions.
+- Use **全部** (All) or **学习收藏** (Saved study captions) to filter results. In the search field, `Enter` / `Shift+Enter` cycles to the next / previous match. Click an entry to jump back to its caption segment.
+- While the selected segment remains retained and matched, new captions or late translations keep the same segment selected and do not move the current reading position. Press `Esc` to close the panel; focus returns to the previous control if that control still exists.
+- Lookup processes existing local text without additional API calls or retranslation. Search terms are not saved, and closing the panel clears the query. Evicted records and unsaved sessions from before the app was quit cannot be searched.
+
 Regular sessions keep approximately the latest 150 sentences in memory and are not restored after you quit the app. Explicitly saved captions are stored locally, up to 1,000 sentences; these are not audio recordings.
 
 <a id="window"></a>
@@ -114,6 +124,9 @@ The compact window normally shows captions, with controls appearing on hover or 
 | --- | --- | --- |
 | Show/hide the caption bar globally | `Ctrl+Alt+L` | `⌘⌥L` |
 | Submit in the text input panel | `Ctrl+Enter` | `⌘ Enter` |
+| Open local history lookup (requires a build containing this feature) | `Ctrl+F` | `⌘F` |
+| Next / previous match in the search field | `Enter` / `Shift+Enter` | `Enter` / `Shift+Enter` |
+| Close the lookup panel | `Esc` | `Esc` |
 | Start/pause listening | Interface or tray menu | Interface or menu bar menu |
 
 The close button hides the app to the tray on Windows or the menu bar on Mac. Click the icon to reopen it. If another app uses the shortcut, recover the window from that menu. Choose **退出 LingoBar** (Quit LingoBar) to exit. Optional launch at login does not start audio capture automatically.
@@ -140,7 +153,7 @@ Before sharing screenshots, logs, issues, or exported notes, remove keys, person
 
 | Symptom | What to check first |
 | --- | --- |
-| Cannot select a microphone while idle | Check whether you installed the old `96b0b30` package. Replace it with the latest package in the PR, refresh devices, and check system permissions. You do not need to start recording to unlock the device list. |
+| Cannot select a microphone while idle | Check whether you installed the old `96b0b30` package. Replace it with a package from a newer successful CI build, refresh devices, and check system permissions. You do not need to start recording to unlock the device list. |
 | No original captions | Check the audio source, actual audio, default output or microphone, OS permissions, ASR endpoint/model/key, and account permissions. |
 | Originals appear but no translations | Check the translation service's separate key, endpoint, model, account balance, and network. It does not reuse the ASR key. |
 | Only one source works, or captions are duplicated | Check both-source mode, microphone permission, and the current output device. Use headphones to reduce echo and duplicate pickup. |
@@ -149,12 +162,12 @@ Before sharing screenshots, logs, issues, or exported notes, remove keys, person
 | Captions stay on an older segment | You may be looking back or have selected text. Click **回到实时** (Back to live). |
 | Japanese translation appears without furigana | Check that Japanese is selected and readings are enabled. Wait or retranslate; a furigana failure does not affect the translation. |
 | Cannot find the window, or the shortcut does not work | Reopen it from the tray or menu bar. Check whether another app uses `Ctrl+Alt+L` / `⌘⌥L`. |
-| Installer download has expired | Artifacts are retained for only 14 days. Get a new package from the PR's latest successful CI run, or build it using the README. |
+| Installer download has expired | Artifacts are retained for only 14 days. Get a new package from a successful CI run on main, or build it using the README. |
 
 <a id="validation"></a>
 ## 10. Version, tests, and reporting problems
 
-Check fixes against the package's **commit ID**, not just version 0.1.5. The latest package, checksums, and build results are linked in [PR #2](https://github.com/seihn2/lingobar/pull/2). See the [test matrix](windows-validation.md) for details.
+Check fixes against the package's **commit ID**, not just version 0.1.5. Current test packages, checksums, and build results are available from [CI for the main branch](https://github.com/seihn2/lingobar/actions/workflows/build.yml?query=branch%3Amain). [PR #2](https://github.com/seihn2/lingobar/pull/2) retains the original commit and checksum records for the earlier verified test packages. See the [test matrix](windows-validation.md) for details.
 
 Automation covers core state handling, partial translation, history following, furigana alignment, permissions and IPC, helper lifecycle, encryption failure, and packaged resources. Real Electron tests use two synthetic devices without fake UI auto-authorization. Window screenshots and 100% / 150% / 200% scaling checks also use synthetic scenarios.
 

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
-import { ArrowDownToLine, ArrowRight, AudioLines, Bookmark, Check, ChevronDown, ChevronUp, Contrast, Headphones, History, Keyboard, Languages, LoaderCircle, Mic, Monitor, Pause, Pin, Play, Settings2, X } from 'lucide-react'
+import { ArrowDownToLine, ArrowRight, AudioLines, Check, ChevronDown, ChevronUp, Contrast, Headphones, History, Keyboard, Languages, LoaderCircle, Mic, Monitor, Pause, Pin, Play, Settings2, X } from 'lucide-react'
 import type { Caption, CaptureMode, Settings, SettingsInput, Snapshot } from '../shared/types'
 import { DEFAULT_LANGUAGES, languageInfo, validTargetLanguages } from '../shared/languages'
 import { listMicrophones, startMicrophone, type MicrophoneDevice } from './microphone'
@@ -7,7 +7,8 @@ import { platformLabels, type DesktopPlatform } from '../shared/platform'
 import LanguageSettings from './LanguageSettings'
 import CaptionStream from './CaptionStream'
 import CompactCaption from './CompactCaption'
-import { alignedOriginal, incomingText, preferredTranslation, translationFor } from './caption-text'
+import HistoryPanel from './HistoryPanel'
+import { alignedOriginal, incomingText, translationFor } from './caption-text'
 import type { ReadingSession } from './reading-schedule'
 
 const defaults: Settings = {
@@ -57,9 +58,7 @@ const exampleFollowUp: Caption = {
 }
 const exampleStream = [example, exampleFollowUp]
 const modeNames: Record<CaptureMode, string> = { system: '电脑声音', microphone: '麦克风', both: '电脑 + 麦克风' }
-const sourceNames: Record<Caption['source'], string> = { system: '电脑声音', microphone: '麦克风', text: '文字输入' }
 const errorText = (error: unknown) => error instanceof Error ? error.message : '操作未完成，请重试。'
-const timeText = (value: number) => new Date(value).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
 function IconButton({ title, children, onClick, active, disabled, className = '' }: { title: string; children: ReactNode; onClick: () => void; active?: boolean; disabled?: boolean; className?: string }) {
   return <button type="button" className={`icon-button ${active ? 'active' : ''} ${className}`} title={title} aria-label={title} aria-pressed={active} onClick={onClick} disabled={disabled}>{children}</button>
 }
@@ -76,6 +75,7 @@ export default function App() {
   const [notice, setNotice] = useState('')
   const [toast, setToast] = useState('')
   const [historyFilter, setHistoryFilter] = useState<'all' | 'saved'>('all')
+  const [historyFocusVersion, setHistoryFocusVersion] = useState(0)
   const [input, setInput] = useState('')
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [opacityPreview, setOpacityPreview] = useState<number | null>(null)
@@ -86,6 +86,7 @@ export default function App() {
   const microphoneGeneration = useRef(0)
   const microphoneAbort = useRef<AbortController | null>(null)
   const captureOperation = useRef(0)
+  const composing = useRef(false)
   const readingSession = useRef<ReadingSession>({ clock: null, following: true, anchor: null })
   const readingPreview = useRef(false)
   if (readingPreview.current !== preview) {
@@ -176,10 +177,25 @@ export default function App() {
   useEffect(() => () => { if (opacityTimer.current) clearTimeout(opacityTimer.current) }, [])
 
   useEffect(() => {
-    const keydown = (event: KeyboardEvent) => { if (event.key === 'Escape') { setPanel(null); setNotice('') } }
+    const keydown = (event: KeyboardEvent) => {
+      if (event.isComposing || composing.current || event.keyCode === 229) return
+      if (event.key === 'Escape') { setPanel(null); setNotice('') }
+      if ((event.metaKey || event.ctrlKey) && !event.altKey && event.key.toLowerCase() === 'f') {
+        event.preventDefault()
+        void (async () => {
+          if (snapshot.collapsed) {
+            if (api) await api.setCollapsed(false)
+            else setSnapshot(value => ({ ...value, collapsed: false }))
+          }
+          setNotice('')
+          setPanel('history')
+          setHistoryFocusVersion(value => value + 1)
+        })().catch(error => setNotice(errorText(error)))
+      }
+    }
     window.addEventListener('keydown', keydown)
     return () => window.removeEventListener('keydown', keydown)
-  }, [])
+  }, [api, snapshot.collapsed])
 
   useEffect(() => {
     if (selectedId && !snapshot.captions.some(caption => caption.id === selectedId)) setSelectedId(null)
@@ -190,7 +206,7 @@ export default function App() {
     const previousFocus = document.activeElement as HTMLElement | null
     const surface = document.querySelector<HTMLElement>('.panel')
     const focusable = () => [...surface?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled)') || []].filter(element => element.getClientRects().length > 0)
-    const first = panel === 'text' ? surface?.querySelector<HTMLElement>('textarea') : focusable()[0]
+    const first = panel === 'text' ? surface?.querySelector<HTMLElement>('textarea') : panel === 'history' ? surface?.querySelector<HTMLElement>('.history-search-input') : focusable()[0]
     first?.focus()
     const keepFocus = (event: KeyboardEvent) => {
       if (event.key !== 'Tab') return
@@ -256,7 +272,7 @@ export default function App() {
   }
   async function submitText(event: FormEvent) {
     event.preventDefault()
-    if (!input.trim() || busy) return
+    if (composing.current || !input.trim() || busy) return
     if (!api) { setNotice('请在 LingoBar 应用中使用文字翻译。'); return }
     setBusy(true)
     setNotice('')
@@ -299,7 +315,7 @@ export default function App() {
 
   if (!available) return <main className="unavailable"><span className="brand-mark">L</span><h1>LingoBar · 语伴</h1><p>请从 LingoBar 桌面应用打开，即可使用电脑声音与麦克风实时字幕。</p></main>
 
-  return <main className={`app-shell ${snapshot.collapsed ? 'is-collapsed' : ''}`} style={{ '--caption-size': `${snapshot.settings.fontSize}px`, '--surface-opacity': displayedOpacity } as CSSProperties}>
+  return <main className={`app-shell ${snapshot.collapsed ? 'is-collapsed' : ''}`} onCompositionStartCapture={() => { composing.current = true }} onCompositionEndCapture={() => { composing.current = false }} style={{ '--caption-size': `${snapshot.settings.fontSize}px`, '--surface-opacity': displayedOpacity } as CSSProperties}>
     {!snapshot.collapsed && <header className="titlebar">
       <div className="brand"><span className="brand-symbol" aria-hidden="true"><i /><i /><i /></span><span>LingoBar</span><span className="brand-chinese">语伴</span></div>
 
@@ -332,15 +348,15 @@ export default function App() {
       <div className="panel-heading"><div><span className="panel-kicker">{panel === 'settings' ? 'PREFERENCES' : panel === 'history' ? 'YOUR LANGUAGE NOTES' : 'TEXT TRANSLATION'}</span><h2>{panel === 'settings' ? '让语伴适合你' : panel === 'history' ? '听过的，留下来' : '从一句话开始'}</h2></div><IconButton title="关闭面板" onClick={() => { setPanel(null); setNotice('') }}><X size={17} /></IconButton></div>
       {notice && <div className="panel-notice" role="alert">{notice}</div>}
       {panel === 'settings' && <SettingsPanel platform={platform} settings={snapshot.settings} listening={listening || starting} saveSettings={saveSettings} onSaved={() => { setNotice(''); setToast('设置已保存'); setPanel(null) }} onError={setNotice} onImport={async () => { if (!api) throw new Error('请在应用中导入本机密钥。'); const settings = await api.importLocalKey(); setSnapshot(value => ({ ...value, settings })); setToast('本机语音识别密钥已安全导入'); return settings }} />}
-      {panel === 'text' && <form className="text-form" onSubmit={event => void submitText(event)}><label htmlFor="translation-input">输入或粘贴任何语言，翻译为你在设置中选择的字幕语言。</label><textarea id="translation-input" value={input} autoFocus onChange={event => setInput(event.target.value)} placeholder="例如：You don't have to be perfect to make progress." maxLength={5000} /><div className="text-form-footer"><span>{input.length} / 5000 · {labels.submitShortcut} 翻译</span><button className="primary-button" disabled={busy || !input.trim()} type="submit" onKeyDown={event => event.stopPropagation()}>{busy ? <LoaderCircle size={13} className="spin" /> : <ArrowRight size={13} />}翻译这句</button></div></form>}
-      {panel === 'history' && <><div className="history-toolbar"><div className="history-tabs"><button className={historyFilter === 'all' ? 'selected' : ''} onClick={() => setHistoryFilter('all')}>全部 <span>{snapshot.captions.length}</span></button><button className={historyFilter === 'saved' ? 'selected' : ''} onClick={() => setHistoryFilter('saved')}>学习收藏 <span>{snapshot.captions.filter(caption => caption.saved).length}</span></button></div><button className="text-button" disabled={!snapshot.captions.some(caption => caption.saved)} onClick={() => api && void run(async () => { if (await api.exportSaved()) setToast('收藏已导出') })}><ArrowDownToLine size={13} />导出收藏</button></div><div className="history-list">{snapshot.captions.filter(caption => historyFilter === 'all' || caption.saved).slice().reverse().map(caption => <div className="history-item" key={caption.id}><button className="history-select" onClick={() => { setSelectedId(caption.id); setFocusVersion(value => value + 1); setPreview(false); setPanel(null) }}><span className="history-item-meta">{timeText(caption.createdAt)} · {sourceNames[caption.source]}{caption.live || caption.translationPending ? ' · 实时更新' : caption.status === 'translating' ? ' · 翻译中' : caption.status === 'error' ? ' · 待重试' : ''}</span><span className="history-original" dir="auto">{preferredTranslation(caption, targets) || (snapshot.settings.showOriginal ? alignedOriginal(caption) : '所选语言尚未生成')}</span>{snapshot.settings.showOriginal && preferredTranslation(caption, targets) && <span className="history-translation" dir="auto">{alignedOriginal(caption)}</span>}</button><IconButton title={caption.saved ? '取消收藏' : '收藏'} active={caption.saved} disabled={caption.status !== 'ready' || caption.live || caption.translationPending} onClick={() => api && void run(() => api.toggleSaved(caption.id))}><Bookmark size={14} fill={caption.saved ? 'currentColor' : 'none'} /></IconButton></div>)}{!snapshot.captions.some(caption => historyFilter === 'all' || caption.saved) && <div className="empty-history"><Bookmark size={24} strokeWidth={1.3} /><p>{historyFilter === 'saved' ? '值得再读一遍的句子，就收藏在这里。' : '开始聆听或输入文字后，对照字幕会出现在这里。'}</p></div>}</div></>}
+      {panel === 'text' && <form className="text-form" onSubmit={event => void submitText(event)}><label htmlFor="translation-input">输入或粘贴任何语言，翻译为你在设置中选择的字幕语言。</label><textarea id="translation-input" value={input} autoFocus onChange={event => setInput(event.target.value)} placeholder="例如：You don't have to be perfect to make progress." maxLength={5000} /><div className="text-form-footer"><span>{input.length} / 5000 · {labels.submitShortcut} 翻译</span><button className="primary-button" disabled={busy || !input.trim()} type="submit" onKeyDown={event => { if (event.key === 'Enter') event.stopPropagation() }}>{busy ? <LoaderCircle size={13} className="spin" /> : <ArrowRight size={13} />}翻译这句</button></div></form>}
+      {panel === 'history' && <HistoryPanel captions={snapshot.captions} settings={snapshot.settings} filter={historyFilter} focusVersion={historyFocusVersion} onFilter={setHistoryFilter} onSelect={caption => { setSelectedId(caption.id); setFocusVersion(value => value + 1); setPreview(false); setPanel(null) }} onSave={caption => api && void run(() => api.toggleSaved(caption.id))} onExport={() => api && void run(async () => { if (await api.exportSaved()) setToast('收藏已导出') })} />}
     </section></div>}
-    {panel === 'text' && <TextShortcut onSubmit={() => { if (input.trim() && !busy) void submitText({ preventDefault() {} } as FormEvent) }} />}
+    {panel === 'text' && <TextShortcut isComposing={() => composing.current} onSubmit={() => { if (input.trim() && !busy) void submitText({ preventDefault() {} } as FormEvent) }} />}
   </main>
 }
 
-function TextShortcut({ onSubmit }: { onSubmit: () => void }) {
-  useEffect(() => { const callback = (event: KeyboardEvent) => { if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') { event.preventDefault(); onSubmit() } }; window.addEventListener('keydown', callback); return () => window.removeEventListener('keydown', callback) }, [onSubmit])
+function TextShortcut({ onSubmit, isComposing }: { onSubmit: () => void; isComposing: () => boolean }) {
+  useEffect(() => { const callback = (event: KeyboardEvent) => { if (event.isComposing || isComposing() || event.keyCode === 229) return; if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') { event.preventDefault(); onSubmit() } }; window.addEventListener('keydown', callback); return () => window.removeEventListener('keydown', callback) }, [onSubmit, isComposing])
   return null
 }
 

@@ -15,6 +15,7 @@ let snapshot: Snapshot = { settings, state: 'idle', message: '', captions: [], p
 const listeners = new Set<(snapshot: Snapshot) => void>()
 const saves: Array<Partial<Settings>> = []
 let audioStarts = 0
+let providerCalls = 0
 const emit = (next: Partial<Snapshot>) => {
   snapshot = structuredClone({ ...snapshot, ...next })
   for (const listener of listeners) listener(snapshot)
@@ -27,7 +28,7 @@ const api = {
   stop: async () => { emit({ state: 'idle' }) },
   pushMicrophone: () => { throw new Error('Audio is disabled in UI tests') },
   microphoneFailed: () => {}, microphoneReady: () => {},
-  translateText: async () => { throw new Error('Providers are disabled in UI tests') },
+  translateText: async () => { providerCalls++; throw new Error('Providers are disabled in UI tests') },
   retry: async () => {}, toggleSaved: async () => {}, exportSaved: async () => false,
   copyText: async () => {}, importLocalKey: async () => { throw new Error('No keys in UI tests') },
   setCollapsed: async (collapsed: boolean) => { emit({ collapsed }) },
@@ -142,6 +143,112 @@ async function run() {
   slider.dispatchEvent(new PointerEvent('pointerup', { bubbles: true })); await frame()
   check(saves.some(input => input.opacity === 0.55) && getComputedStyle(query('.app-shell')).getPropertyValue('--surface-opacity').trim() === '0.55', 'opacity slider saves the background setting')
   check(getComputedStyle(query('.compact-row p')).opacity === '1', 'background transparency leaves subtitle glyph opacity intact')
+
+  // The real renderer searches local snapshots; no service, audio, or search-index dependency.
+  const lookup = [
+    caption('find-old', { original: 'First needle in synthetic history' }),
+    caption('find-saved', { original: 'Second NEEDLE in synthetic history', saved: true }),
+    caption('find-unicode', { original: '東京 Cafe\u0301 👩🏽‍💻 <img src=x onerror=alert(1)>' }),
+    caption('find-other-language', { original: 'A different synthetic source', translations: { de: 'Nicht gewählte Sprache Nadel', fr: 'Exemple' } }),
+    caption('find-latest', { original: 'Third needle in synthetic history' }),
+  ]
+  const priorFind = Array.from({ length: 20 }, (_, index) => caption(`find-prior-${index}`, { original: `Needle synthetic archive ${index}` }))
+  emit({ state: 'idle', captions: [...priorFind, ...lookup] }); await frame()
+  const shortcut = (target: EventTarget, key: string, options: KeyboardEventInit = {}) => {
+    const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...options })
+    target.dispatchEvent(event)
+    return event.defaultPrevented
+  }
+  const compactSurface = query('.compact-viewport')
+  shortcut(compactSurface, 'f', { ctrlKey: true, isComposing: true }); await frame()
+  check(!document.querySelector('.panel-history'), 'IME key events do not open history search')
+  compactSurface.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
+  shortcut(compactSurface, 'f', { ctrlKey: true }); await frame()
+  check(!document.querySelector('.panel-history'), 'composition state also protects shortcuts without an isComposing flag')
+  compactSurface.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true }))
+  check(shortcut(compactSurface, 'f', { ctrlKey: true }), 'Ctrl+F handles local search instead of browser find')
+  await frame()
+  const search = query<HTMLInputElement>('.history-search-input')
+  check(!snapshot.collapsed && document.activeElement === search, 'search from compact mode expands the window and focuses history input')
+  const setSearch = async (value: string) => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(search, value)
+    search.dispatchEvent(new Event('input', { bubbles: true })); search.dispatchEvent(new Event('change', { bubbles: true }))
+    await frame()
+  }
+  const matchId = () => document.querySelector('.history-match-current')?.getAttribute('data-history-id')
+  await setSearch('needle')
+  check(document.querySelectorAll('.history-item').length === 23 && matchId() === 'find-latest', 'local literal lookup finds original text in newest-first history')
+  shortcut(search, 'Enter'); await frame()
+  check(matchId() === 'find-saved', 'Enter selects the next matching segment')
+  shortcut(search, 'Enter', { shiftKey: true }); await frame()
+  check(matchId() === 'find-latest', 'Shift+Enter selects the previous matching segment')
+  query<HTMLButtonElement>('[aria-label="上一个匹配"]').click(); await frame()
+  check(matchId() === 'find-prior-0', 'previous-match button wraps by segment ID')
+  shortcut(search, 'Enter'); await frame()
+  shortcut(search, 'Enter'); await frame()
+  check(matchId() === 'find-saved', 'keyboard navigation keeps the input available while locating older matches')
+  const selectedTop = query('.history-match-current').getBoundingClientRect().top
+  const arrivals = Array.from({ length: 100 }, (_, index) => caption(`find-arrival-${index}`, { original: `Needle synthetic arrival ${index}` }))
+  emit({ captions: [...priorFind, ...lookup, ...arrivals] }); await frame()
+  check(matchId() === 'find-saved' && Math.abs(query('.history-match-current').getBoundingClientRect().top - selectedTop) < 2, '100 arriving segments preserve the selected match and its reading position')
+  const late = { ...lookup[3], translations: { ...lookup[3].translations, fr: 'needle from a delayed synthetic translation' } }
+  emit({ captions: [...priorFind, ...lookup.slice(0, 3), late, lookup[4], ...arrivals] }); await frame()
+  check(matchId() === 'find-saved' && Math.abs(query('.history-match-current').getBoundingClientRect().top - selectedTop) < 2, 'late translated matches do not steal the selected segment or scroll position')
+  search.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
+  shortcut(search, 'Enter'); shortcut(search, 'Escape'); await frame()
+  check(matchId() === 'find-saved' && Boolean(document.querySelector('.panel-history')), 'IME confirmation and cancellation do not navigate or close search')
+  search.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true }))
+  await setSearch('café')
+  check(matchId() === 'find-unicode', 'canonical combining-character search finds the original Unicode text')
+  await setSearch('東京')
+  check(matchId() === 'find-unicode', 'CJK search remains a local literal lookup')
+  await setSearch('👩🏽‍💻')
+  check(matchId() === 'find-unicode', 'emoji search preserves complete displayed sequences')
+  await setSearch('<img')
+  check(query('.history-original').textContent?.includes('<img src=x') && !query('.history-list').querySelector('img'), 'HTML-looking subtitles are displayed as text, never markup')
+  await setSearch('Nadel')
+  check(matchId() === 'find-other-language' && query('.history-match-language').textContent === 'Deutsch匹配', 'search includes an existing translation outside the displayed language selection')
+  await setSearch('needle')
+  query<HTMLButtonElement>('.history-tabs button:nth-child(2)').click(); await frame()
+  check(document.querySelectorAll('.history-item').length === 1 && matchId() === 'find-saved', 'saved-only filtering retains local search semantics')
+  query<HTMLButtonElement>('[aria-label="清空查找"]').click(); await frame()
+  check(search.value === '' && document.querySelectorAll('.history-item').length === 1 && document.activeElement === search, 'clearing a search restores the filtered history and input focus')
+  await setSearch('no synthetic match')
+  check(Boolean(document.querySelector('.empty-history')) && query<HTMLButtonElement>('[aria-label="下一个匹配"]').disabled, 'no-match state disables navigation without losing the query')
+  emit({ captions: [] }); await frame()
+  check(!document.querySelector('.history-match-current') && query('.history-search-count').textContent === '0 / 0', 'clearing history removes stale search selection')
+  shortcut(search, 'Escape'); await frame()
+  const historyButton = query<HTMLButtonElement>('[aria-label="历史与收藏"]')
+  historyButton.focus(); historyButton.click(); await frame()
+  check(query<HTMLInputElement>('.history-search-input').value === '', 'reopening history does not persist the search query')
+  shortcut(document.activeElement!, 'Escape'); await frame()
+  check(document.activeElement === historyButton && !document.querySelector('.panel-history'), 'Escape closes history and restores the invoking control focus')
+  emit({ captions: lookup }); await frame()
+  shortcut(historyButton, 'f', { metaKey: true }); await frame()
+  check(document.activeElement === document.querySelector('.history-search-input'), 'Cmd+F also opens and focuses local history search')
+  query<HTMLButtonElement>('.history-tabs button:first-child').click(); await frame()
+  query<HTMLButtonElement>('[data-history-id="find-old"] .history-select').click(); await frame()
+  check(!document.querySelector('.panel-history') && query('.focused-caption').getAttribute('data-caption-id') === 'find-old' && query('.stream-label').textContent?.includes('正在回看'), 'opening a history result locates its original segment and pauses live following')
+  emit({ captions: [...lookup, caption('after-search')] }); await frame()
+  check(query('.focused-caption').getAttribute('data-caption-id') === 'find-old', 'new subtitles do not replace a paragraph opened from search')
+  query<HTMLButtonElement>('[aria-label="输入文字翻译"]').click(); await frame()
+  const textInput = query<HTMLTextAreaElement>('#translation-input')
+  Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!.call(textInput, 'Synthetic typed sentence')
+  textInput.dispatchEvent(new Event('input', { bubbles: true })); await frame()
+  const submitButton = query<HTMLButtonElement>('.text-form button[type="submit"]')
+  submitButton.focus()
+  shortcut(submitButton, 'f', { ctrlKey: true }); await frame()
+  check(Boolean(document.querySelector('.panel-history')) && document.activeElement === document.querySelector('.history-search-input'), 'Find remains available when the text submit button has focus')
+  shortcut(document.activeElement!, 'Escape'); await frame()
+  query<HTMLButtonElement>('[aria-label="输入文字翻译"]').click(); await frame()
+  const composingInput = query<HTMLTextAreaElement>('#translation-input')
+  composingInput.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
+  shortcut(composingInput, 'Enter', { ctrlKey: true }); await frame()
+  check(providerCalls === 0, 'IME confirmation with Ctrl+Enter cannot submit typed text to a provider')
+  composingInput.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true }))
+  shortcut(composingInput, 'Enter', { metaKey: true, isComposing: true }); await frame()
+  check(providerCalls === 0, 'isComposing also blocks Cmd+Enter provider submission')
+  shortcut(composingInput, 'Escape'); await frame()
   check(audioStarts === 0, 'UI regression never starts audio or provider requests')
   return { checks, deviceScaleFactor: devicePixelRatio, platform: navigator.platform }
 }
