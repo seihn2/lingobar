@@ -9,13 +9,15 @@ const assert = require('node:assert/strict')
 const root = resolve(__dirname, '..')
 const candidates = [
   process.env.CHROMIUM_PATH,
-  '/usr/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/google-chrome',
+  // Prefer the real Chrome package over Ubuntu's optional snap-launcher stubs.
+  '/usr/bin/google-chrome', '/usr/bin/google-chrome-stable', '/usr/bin/chromium', '/usr/bin/chromium-browser',
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
   process.env.PROGRAMFILES && join(process.env.PROGRAMFILES, 'Google/Chrome/Application/chrome.exe'),
   process.env['PROGRAMFILES(X86)'] && join(process.env['PROGRAMFILES(X86)'], 'Microsoft/Edge/Application/msedge.exe'),
 ].filter(Boolean)
 const executable = candidates.find(path => existsSync(path))
 if (!executable) throw new Error('An installed Chromium browser is required. Set CHROMIUM_PATH; this test does not download software.')
+console.log(`Synthetic UI browser: ${executable}`)
 
 async function main() {
   const { createServer } = await import('vite')

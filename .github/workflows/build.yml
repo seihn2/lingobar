@@ -59,6 +59,8 @@ jobs:
     name: Chromium UI regression (synthetic captions)
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    env:
+      CHROMIUM_PATH: /usr/bin/google-chrome
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
