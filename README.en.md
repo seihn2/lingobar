@@ -123,6 +123,8 @@ Before submitting a PR, run `npm run typecheck`, `npm test`, and `npm run build`
 <a id="privacy-license"></a>
 ## Privacy and license
 
+LingoBar does not register or restore launch at login; legacy enabled preferences are treated as off. Startup and ordinary settings saves do not modify OS login items. Removing a previous entry requires an explicit action, and actual system state still needs verification.
+
 The app does not start audio capture on first launch or save recordings. After you start listening, audio is sent over an encrypted connection to the configured recognition service, and transcripts or typed text are sent to the translation service. The main process encrypts keys using Electron `safeStorage`. If encryption is unavailable or fails, saving is refused with no plaintext fallback. See the [privacy guide](docs/usage.en.md#privacy) for data retention, system permissions, and provider responsibilities.
 
 The project uses [CC BY-NC 4.0](LICENSE), which permits noncommercial use, modification, and sharing with attribution, preservation of the license, and an indication of changes. Commercial use requires separate permission. This is a source-available project and does not qualify as open source under the OSI definition. Third-party dependencies retain their own licenses.

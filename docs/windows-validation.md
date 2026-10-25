@@ -16,6 +16,7 @@ build does not establish that real capture or translation works on hardware.
 | Microphone and device changes | Mocked microphone tests | Resampling, exact device selection, no device, denied permission, unplug/default change, cancellation/late grant, cleanup; no real microphone |
 | Real Electron microphone permission chain | `npm run test:media-permissions` | Electron 43.8.3 / Chromium 150.0.7871.250 with two fake devices, real App/preload/production permission handlers: 25 checks for idle settings selection, exact-device start, pause/reopen/refresh, cancelled late grant, denied request, camera/mixed requests, same-URL subframe, other window and navigated page. No fake UI or real audio device; executed on Linux locally and in all three platform CI jobs |
 | UI reading and learning | `npm run test:ui` | Linux Chromium, 29 checks at each device scale 1 / 1.5 / 2: partial updates, source alignment, latest translation, history/selection pause, return to live, cross-mode anchor, 1–8 languages, matching ruby above kanji, drag/no-drag regions, opacity persistence and opaque text |
+| Startup prohibition | `npx vitest run test/login-items.test.ts` | Packaged native API stubs and temporary preferences: old true ignored, new enable rejected, startup/ordinary saves make zero login calls, explicit removal is false-only and readback can remain unconfirmed; no actual OS login change |
 | Production bundles | `npm run build` / `npm run typecheck` | Shared Electron/React/TypeScript builds |
 | Windows packaging | `npm run package:win`, `npm run verify:package`, `npm run checksums:win` | Standard Windows CI; x64 NSIS, fixed helper/icon/notice resources, app.asar data exclusions, SHA-256 manifest |
 | macOS regression | `npm test`, `npm run package:mac`, native `--self-test`, package inspection | Standard macOS arm64 CI; synthetic-only, no permissions or audio devices |
@@ -47,7 +48,7 @@ commit, artifact URL and checksum are reported in the PR and delivery response.
 ## Still requires a Windows 10/11 x64 machine
 
 - Install/uninstall and first-run behavior under a normal non-admin account;
-  SmartScreen, actual DPAPI user profile, login startup, tray and shortcut conflicts.
+  SmartScreen, actual DPAPI user profile, legacy login-item absence/removal, tray and shortcut conflicts.
 - WASAPI output on speakers/headphones/Bluetooth/USB, muted/silent playback,
   default-output changes and unplugging; no-device and denied-access behavior.
 - Real microphone and dual-source audio, permissions, start/pause/exit/crash,

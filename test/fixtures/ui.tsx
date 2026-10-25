@@ -15,6 +15,7 @@ let snapshot: Snapshot = { settings, state: 'idle', message: '', captions: [], p
 const listeners = new Set<(snapshot: Snapshot) => void>()
 const saves: Array<Partial<Settings>> = []
 let audioStarts = 0
+let providerCalls = 0
 const emit = (next: Partial<Snapshot>) => {
   snapshot = structuredClone({ ...snapshot, ...next })
   for (const listener of listeners) listener(snapshot)
@@ -24,10 +25,13 @@ const api = {
   getSnapshot: async () => snapshot,
   saveSettings: async (input: Partial<Settings>) => { saves.push(input); emit({ settings: { ...snapshot.settings, ...input } }); return snapshot.settings },
   start: async () => { audioStarts++; throw new Error('Audio is disabled in UI tests') },
-  stop: async () => { emit({ state: 'idle' }) },
+  stop: async () => {
+    emit({ state: 'idle' })
+    if (holdPause) return new Promise<'finished' | 'timeout'>((resolve, reject) => { finishPause = resolve; failPause = reject })
+  },
   pushMicrophone: () => { throw new Error('Audio is disabled in UI tests') },
   microphoneFailed: () => {}, microphoneReady: () => {},
-  translateText: async () => { throw new Error('Providers are disabled in UI tests') },
+  translateText: async () => { providerCalls++; throw new Error('Providers are disabled in UI tests') },
   retry: async () => {}, toggleSaved: async () => {}, exportSaved: async () => false,
   copyText: async () => {}, importLocalKey: async () => { throw new Error('No keys in UI tests') },
   setCollapsed: async (collapsed: boolean) => { emit({ collapsed }) },
@@ -36,6 +40,11 @@ const api = {
   onMicrophone: () => () => {},
 } as LingoAPI
 window.lingo = api
+// Settings may query device metadata; this UI fixture never enumerates hardware.
+Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: {
+  enumerateDevices: async () => [], addEventListener() {}, removeEventListener() {},
+  getUserMedia: () => { throw new Error('Real media is forbidden in UI fixtures') },
+} })
 
 const frame = () => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
 const assert = (condition: unknown, message: string): void => { if (!condition) throw new Error(message) }
@@ -52,9 +61,58 @@ const caption = (id: string, extra: Partial<Caption> = {}): Caption => ({
 const currentId = () => document.querySelector('.reading-current')?.getAttribute('data-caption-id')
 const compactId = () => query('.compact-rows').getAttribute('data-caption-id')
 
+let holdPause = false
+let finishPause: ((result: 'finished' | 'timeout') => void) | null = null
+let failPause: ((error: Error) => void) | null = null
+
 async function run() {
   const checks: string[] = []
   const check = (value: unknown, message: string) => { assert(value, message); checks.push(message) }
+  await api.setCollapsed(false); await frame()
+  emit({ state: 'idle' }); await frame()
+  const pending = caption('pause-tail', { original: 'Synthetic unfinished tail', live: true, translationPending: true })
+  emit({ state: 'listening', captions: [pending], settings: { ...snapshot.settings, showOriginal: true, hasAsrKey: true, hasTranslationKey: true } }); await frame()
+  holdPause = true
+  query<HTMLButtonElement>('.listen-button').click(); await frame()
+  check(query<HTMLButtonElement>('.listen-button').disabled && query('.listen-button').textContent?.includes('正在暂停'), 'explicit pause disables repeat capture actions while the final response is pending')
+  emit({ captions: [{ ...pending, original: 'Synthetic completed tail', translatedOriginal: 'Synthetic completed tail', translations: { ja: '合成末句' }, ja: '合成末句', live: false, translationPending: false }] }); await frame()
+  check(document.querySelectorAll('[data-caption-id="pause-tail"]').length === 1 && query('[data-caption-id="pause-tail"] .original-row p').textContent === 'Synthetic completed tail', 'a paused final updates the existing paragraph without creating a duplicate')
+  query<HTMLButtonElement>('[aria-label="历史与收藏"]').click(); await frame()
+  finishPause!('timeout'); await frame()
+  check(!query<HTMLButtonElement>('.listen-button').disabled && query('.panel-notice').textContent?.includes('已暂停收音') && query('.panel-notice').textContent?.includes('超时'), 'pause timeout confirms devices stopped and the last recognized words remain available')
+  emit({ state: 'listening', message: '' }); await frame() // A tray-style restart, not this UI's start action.
+  check(!document.querySelector('.panel-notice'), 'a new capture run clears the previous pause timeout while history stays open')
+  emit({ state: 'error', message: 'Synthetic new-run recognition failure' }); await frame()
+  check(query('.panel-notice').textContent === 'Synthetic new-run recognition failure', 'the current capture error remains visible in an open history panel')
+  query<HTMLButtonElement>('[aria-label="关闭面板"]').click(); await frame()
+  check(query('.inline-notice').textContent?.includes('Synthetic new-run recognition failure'), 'closing history keeps the current capture error visible')
+  const originalCopy = api.copyText
+  api.copyText = async () => { throw new Error('Synthetic clipboard failure') }
+  query<HTMLButtonElement>('[aria-label="复制这段多语对照"]').click(); await frame()
+  check(query('.inline-notice').textContent?.includes('Synthetic clipboard failure'), 'a newer local action error remains readable after a capture error')
+  emit({ captions: [...snapshot.captions] }); await frame()
+  check(query('.inline-notice').textContent?.includes('Synthetic clipboard failure'), 'an unchanged capture error snapshot does not erase a newer local action error')
+  api.copyText = originalCopy
+  emit({ state: 'listening', message: '' }); await frame()
+  query<HTMLButtonElement>('.listen-button').click(); await frame()
+  finishPause!('timeout'); await frame()
+  emit({ state: 'error', message: 'Synthetic failure after a timeout' }); await frame()
+  check(query('.inline-notice').textContent?.includes('Synthetic failure after a timeout') && !query('.inline-notice').textContent?.includes('末句收尾'), 'a current capture error takes precedence over an older local timeout notice')
+  emit({ state: 'listening', message: '' }); await frame()
+  query<HTMLButtonElement>('.listen-button').click(); await frame()
+  emit({ state: 'listening', message: '' }); await frame()
+  finishPause!('timeout'); await frame() // A delayed reply from the previous pause operation.
+  check(!document.querySelector('.inline-notice'), 'a late pause result cannot add a stale timeout notice to a newer capture run')
+  query<HTMLButtonElement>('.listen-button').click(); await frame()
+  emit({ state: 'listening', message: '' }); await frame()
+  failPause!(new Error('Synthetic obsolete pause rejection')); await frame()
+  check(!document.querySelector('.inline-notice'), 'a late pause rejection cannot obscure a newer capture run')
+  await api.setCollapsed(true); await frame()
+  emit({ state: 'error', message: 'Synthetic compact capture failure' }); await frame()
+  check(query('.compact-notice').textContent === 'Synthetic compact capture failure', 'compact view also displays the current capture error')
+  await api.setCollapsed(false); await frame()
+  holdPause = false
+
   const history = Array.from({ length: 22 }, (_, index) => caption(`history-${index}`))
   emit({ state: 'idle' })
   emit({ state: 'listening', captions: history, collapsed: false, settings: { ...settings } })
@@ -154,5 +212,49 @@ async function preview(mode: 'expanded' | 'compact') {
   ] })
   await frame()
 }
-;(window as unknown as { __lingobarUiTest: { run: typeof run; preview: typeof preview } }).__lingobarUiTest = { run, preview }
+async function loginItemRegression() {
+  const checks: string[] = []
+  const check = (ok: unknown, label: string) => { assert(ok, label); checks.push(label) }
+  const originalSave = api.saveSettings
+  let removals = 0, pending = true
+  let reject!: (error: Error) => void
+  const refusal = new Promise<void>((_yes, no) => { reject = no })
+  const requests: Array<Partial<Settings>> = []
+  api.saveSettings = async input => {
+    requests.push(structuredClone(input))
+    if (Object.keys(input).length === 1 && input.launchAtLogin === false) {
+      removals++
+      if (pending) await refusal
+    }
+    if (input.launchAtLogin === true) throw new Error('Startup registration is prohibited in this fixture')
+    return originalSave(input)
+  }
+  try {
+    emit({ state: 'idle', message: '', settings: { ...settings, launchAtLogin: false } }); await frame()
+    query<HTMLButtonElement>('[aria-label="设置"]').click(); await frame()
+    const appearance = [...document.querySelectorAll<HTMLButtonElement>('.settings-nav button')].find(button => button.textContent?.includes('显示与启动'))!
+    appearance.click(); await frame()
+    const startup = [...document.querySelectorAll<HTMLLabelElement>('.toggle-setting')].find(label => label.textContent?.includes('不允许开机启动'))!.querySelector<HTMLInputElement>('input')!
+    check(startup.disabled && !startup.checked && query('.settings-content').textContent?.includes('不会创建或恢复'), 'startup stays visibly off and cannot be enabled in settings')
+    const remove = [...document.querySelectorAll<HTMLButtonElement>('.settings-content button')].find(button => button.textContent?.includes('移除语伴登录项'))!
+    remove.focus(); remove.click(); remove.click(); await frame()
+    query<HTMLFormElement>('.settings-form').requestSubmit(); await frame()
+    check(removals === 1 && requests.length === 1 && remove.getAttribute('aria-busy') === 'true' && document.activeElement === remove, 'one explicit removal keeps focus and prevents duplicate removal or concurrent form save')
+    reject(new Error('系统尚未确认移除语伴登录项。')); await frame()
+    check(Boolean(document.querySelector('.panel-settings')) && query('.panel-notice').textContent?.includes('尚未确认移除') && remove.getAttribute('aria-busy') === 'false', 'failed removal is reported without claiming success or closing settings')
+    emit({ captions: [caption('login-item-status-update')] }); await frame()
+    check(removals === 1 && snapshot.settings.launchAtLogin === false, 'ordinary snapshots do not retry removal or enable startup')
+    pending = false; remove.click(); await frame()
+    check(removals === 2 && Boolean(document.querySelector('.panel-settings')) && query('.settings-content [role="status"]').textContent?.includes('登录项关闭'), 'only an explicit removal retry reports its result while retaining the settings draft')
+    query<HTMLFormElement>('.settings-form').requestSubmit(); await frame()
+    check(!document.querySelector('.panel') && removals === 2 && requests.every(input => input.launchAtLogin !== true), 'ordinary preference save keeps startup off and does not submit another removal')
+    check(audioStarts === 0 && providerCalls === 0, 'startup-policy UI tests never start audio or call providers')
+  } finally {
+    api.saveSettings = originalSave
+    emit({ state: 'idle', message: '', settings: { ...settings } }); await frame()
+  }
+  return { checks }
+}
+
+;(window as unknown as { __lingobarUiTest: { run: typeof run; preview: typeof preview; loginItemRegression: typeof loginItemRegression } }).__lingobarUiTest = { run, preview, loginItemRegression }
 createRoot(document.getElementById('root')!).render(<App />)
