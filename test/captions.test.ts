@@ -4,6 +4,7 @@ import type { Caption } from '../src/shared/types'
 import type { CaptionTranslation, TranslationConfig, translateCaption } from '../src/main/translation'
 import type { TargetLanguage } from '../src/shared/languages'
 import type { annotateJapanese, JapaneseAnnotation } from '../src/main/japanese'
+import { trace } from '../src/main/diagnostics'
 
 vi.mock('electron', () => { throw new Error('Pure caption tests must not load Electron or its installer') })
 vi.mock('../src/main/diagnostics', () => ({ trace: vi.fn() }))
@@ -303,6 +304,141 @@ describe('CaptionQueue', () => {
     await settle()
     expect(caption).toMatchObject({ furiganaStatus: 'ready', ...annotation() })
     queue.close()
+  })
+
+  it.each(['pending', 'ready'] as const)('reuses %s annotation when ASR returns to the same translated snapshot', async status => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+    vi.setSystemTime(0)
+    const work = deferredAnnotation()
+    const annotator = vi.fn<typeof annotateJapanese>().mockImplementation(() => work.promise)
+    const translator = vi.fn<typeof translateCaption>().mockResolvedValue(selectedTranslation({ ja: '日本語' }))
+    const queue = new CaptionQueue([], () => ({ ...config, generateFurigana: true }), vi.fn(), vi.fn(), translator, annotator)
+    queue.updatePartial('Japanese', 'system')
+    await vi.advanceTimersByTimeAsync(650)
+    if (status === 'ready') { work.resolve(annotation()); await settle() }
+    expect(queue.captions[0].furiganaStatus).toBe(status)
+    // A speculative ASR correction is coalesced back to the same source before translation starts.
+    queue.updatePartial('Japanese language', 'system')
+    queue.updatePartial('Japanese', 'system')
+    await vi.advanceTimersByTimeAsync(1100)
+    expect(translator).toHaveBeenCalledTimes(2)
+    expect(translator.mock.calls.map(([original]) => original)).toEqual(['Japanese', 'Japanese'])
+    expect(annotator).toHaveBeenCalledTimes(1)
+    expect(annotator.mock.calls[0][3]?.aborted).toBe(false)
+    expect(queue.captions[0].furiganaStatus).toBe(status)
+    work.resolve(annotation())
+    await settle()
+    expect(queue.captions[0]).toMatchObject({ furiganaStatus: 'ready', ...annotation() })
+    queue.close()
+  })
+
+  it.each(['original', 'japanese', 'baseUrl', 'model', 'apiKey'] as const)('replaces annotation when its %s input changes', async input => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+    vi.setSystemTime(0)
+    let current: TranslationConfig = { ...config, generateFurigana: true }
+    const work = [deferredAnnotation(), deferredAnnotation()]
+    const annotator = vi.fn<typeof annotateJapanese>()
+      .mockImplementationOnce(() => work[0].promise).mockImplementationOnce(() => work[1].promise)
+    const translator = vi.fn<typeof translateCaption>().mockResolvedValue(selectedTranslation({ ja: '日本語' }))
+    const queue = new CaptionQueue([], () => current, vi.fn(), vi.fn(), translator, annotator)
+    queue.updatePartial('Japanese', 'system')
+    await vi.advanceTimersByTimeAsync(650)
+    if (input === 'baseUrl') current = { ...current, baseUrl: 'https://second.example.test/v1' }
+    if (input === 'model') current = { ...current, model: 'second-model' }
+    if (input === 'apiKey') current = { ...current, apiKey: 'second-test-key' }
+    if (input === 'japanese') translator.mockResolvedValue(selectedTranslation({ ja: '日本語です' }))
+    queue.updatePartial('Japanese language', 'system')
+    if (input !== 'original') queue.updatePartial('Japanese', 'system')
+    await vi.advanceTimersByTimeAsync(1100)
+    expect(annotator).toHaveBeenCalledTimes(2)
+    expect(annotator.mock.calls[0][3]?.aborted).toBe(true)
+    annotator.mock.calls[0][4]?.(annotation('ふるい'))
+    work[0].resolve(annotation('ふるい'))
+    await settle()
+    expect(queue.captions[0]).toMatchObject({ furiganaStatus: 'pending', reading: '' })
+    queue.close()
+  })
+
+  it('reuses pending annotation across target changes and finalization without extending its deadline', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+    vi.setSystemTime(0)
+    let current: TranslationConfig = { ...config, generateFurigana: true, targetLanguages: ['ja'] }
+    const work = deferredAnnotation()
+    const annotator = vi.fn<typeof annotateJapanese>().mockImplementation(() => work.promise)
+    const queue = new CaptionQueue([], () => current, vi.fn(), vi.fn(),
+      vi.fn<typeof translateCaption>().mockResolvedValue(selectedTranslation({ ja: '日本語' })), annotator)
+    queue.updatePartial('Japanese', 'system')
+    await vi.advanceTimersByTimeAsync(650)
+    await vi.advanceTimersByTimeAsync(20_000)
+    current = { ...current, targetLanguages: ['ja', 'fr'] }
+    queue.finishSentence('Japanese', 'system')
+    await settle()
+    expect(annotator).toHaveBeenCalledTimes(1)
+    await vi.advanceTimersByTimeAsync(5000)
+    expect(annotator.mock.calls[0][3]?.aborted).toBe(true)
+    expect(queue.captions[0]).toMatchObject({ status: 'ready', furiganaStatus: 'error' })
+    annotator.mock.calls[0][4]?.(annotation('おそい'))
+    expect(queue.captions[0].reading).toBe('')
+    queue.close()
+  })
+
+  it('explicitly retries a completed annotation even when its inputs are unchanged', async () => {
+    const annotator = vi.fn<typeof annotateJapanese>().mockResolvedValue(annotation())
+    const queue = new CaptionQueue([], () => ({ ...config, generateFurigana: true }), vi.fn(), vi.fn(),
+      vi.fn<typeof translateCaption>().mockResolvedValue(selectedTranslation({ ja: '日本語' })), annotator)
+    queue.add('Japanese', 'text')
+    await settle()
+    queue.retry(queue.captions[0].id)
+    await settle()
+    expect(annotator).toHaveBeenCalledTimes(2)
+    queue.close()
+  })
+
+  it('publishes annotation progress before completion and ignores progress after retry or close', async () => {
+    vi.mocked(trace).mockClear()
+    const work = [deferredAnnotation(), deferredAnnotation()]
+    const annotator = vi.fn<typeof annotateJapanese>()
+      .mockImplementationOnce(() => work[0].promise).mockImplementationOnce(() => work[1].promise)
+    const changed = vi.fn()
+    const persist = vi.fn()
+    const queue = new CaptionQueue([], () => ({ ...config, generateFurigana: true }), changed, persist,
+      vi.fn<typeof translateCaption>().mockResolvedValue(selectedTranslation({ ja: '日本語' })), annotator)
+    queue.add('Japanese', 'text')
+    await settle()
+    const caption = queue.captions[0]
+    queue.toggleSaved(caption.id)
+    changed.mockClear(); persist.mockClear()
+    expect(annotator.mock.calls[0][4]).toBeTypeOf('function')
+    annotator.mock.calls[0][4]?.(annotation('にほん'))
+    expect(caption).toMatchObject({ furiganaStatus: 'pending', ...annotation('にほん') })
+    expect(changed).toHaveBeenCalledTimes(1)
+    expect(persist).not.toHaveBeenCalled()
+    queue.retry(caption.id)
+    await settle()
+    annotator.mock.calls[0][4]?.(annotation('ふるい'))
+    expect(caption.reading).not.toBe('ふるい')
+    annotator.mock.calls[1][4]?.(annotation())
+    expect(caption).toMatchObject({ furiganaStatus: 'pending', ...annotation() })
+    work[1].resolve(annotation())
+    await settle()
+    expect(caption).toMatchObject({ furiganaStatus: 'ready', ...annotation() })
+    expect(persist).toHaveBeenCalledTimes(2)
+    queue.close()
+    changed.mockClear()
+    annotator.mock.calls[1][4]?.(annotation('おそい'))
+    work[0].resolve(annotation('ふるい'))
+    await settle()
+    expect(caption.reading).toBe('にほんご')
+    expect(changed).not.toHaveBeenCalled()
+    const annotationEvents = vi.mocked(trace).mock.calls.filter(([event]) => event.startsWith('annotation.'))
+    expect(annotationEvents.map(([event]) => event)).toEqual([
+      'annotation.start', 'annotation.progress', 'annotation.cancelled', 'annotation.start', 'annotation.progress', 'annotation.ready'
+    ])
+    expect(annotationEvents[0][1]).toMatchObject({ sourceChars: 8, chars: 3, queueMs: expect.any(Number) })
+    expect(annotationEvents[1][1]).toMatchObject({ firstProgressMs: expect.any(Number) })
+    for (const value of ['Japanese', '日本語', 'にほん', config.baseUrl, config.apiKey, config.model]) {
+      expect(JSON.stringify(annotationEvents)).not.toContain(value)
+    }
   })
 
   it('bounds queued plus running annotation time to 25 seconds without losing translations', async () => {
