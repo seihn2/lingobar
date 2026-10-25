@@ -2,7 +2,7 @@ import { app, BrowserWindow, clipboard, dialog, globalShortcut, ipcMain, Menu, n
 import { execFile } from 'node:child_process'
 import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { AudioSource, ListeningState, Snapshot, SettingsInput } from '../shared/types'
+import type { AudioSource, ListeningState, Snapshot, Settings, SettingsInput } from '../shared/types'
 import { Storage } from './storage'
 import { CaptionQueue } from './captions'
 import { AudioEngine } from './audio'
@@ -11,6 +11,7 @@ import { trace } from './diagnostics'
 import { desktopPlatform, platformLabels } from '../shared/platform'
 import { mayUseLocalKeyImport, trustedRendererUrl } from './ipc-security'
 import { installMediaPermissions } from './media-permissions'
+import { LoginItems } from './login-items'
 
 app.setName('LingoBar')
 if (process.platform === 'win32') app.setAppUserModelId('com.lingobar.app')
@@ -30,6 +31,7 @@ let startGeneration = 0
 let microphoneRun: number | null = null
 let expandedBounds: Electron.Rectangle | null = null
 const platform = desktopPlatform(process.platform)
+const loginItems = new LoginItems(app, platform)
 const labels = platformLabels(platform)
 const rendererLocation = () => ({ packaged: app.isPackaged, htmlPath: join(__dirname, '../renderer/index.html'), developmentUrl: process.env.ELECTRON_RENDERER_URL })
 
@@ -97,7 +99,6 @@ function compactBounds(bounds: Electron.Rectangle, requestedHeight: number): Ele
 function applyPreferences(): void {
   const settings = storage.settings()
   window?.setAlwaysOnTop(settings.alwaysOnTop, 'floating')
-  if (app.isPackaged) app.setLoginItemSettings({ openAtLogin: settings.launchAtLogin, path: app.getPath('exe') })
 }
 function createWindow(): void {
   const area = screen.getPrimaryDisplay().workArea
@@ -141,7 +142,17 @@ function wireIPC(): void {
       const current = storage.settings()
       if (serviceKeys.some(key => input[key] !== undefined && input[key] !== '' && input[key] !== current[key as keyof typeof current])) stop()
     }
-    const settings = storage.save(input)
+    // The dedicated UI removal action sends exactly this one false field.
+    // Full preference forms and ordinary opacity/font saves never touch OS login items.
+    const removeLoginItem = input.launchAtLogin === false && Object.keys(input).length === 1
+    if (removeLoginItem) loginItems.remove()
+    let settings: Settings
+    try {
+      settings = storage.save(removeLoginItem ? { launchAtLogin: false } : input)
+    } catch (error) {
+      if (removeLoginItem) throw new Error('语伴登录项已确认关闭，但本地设置未能保存；应用不会恢复或启用它。')
+      throw error
+    }
     applyPreferences()
     publish()
     return settings

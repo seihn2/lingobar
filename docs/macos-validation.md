@@ -1,7 +1,7 @@
 # macOS validation record
 
 This record separates physical Mac observations from synthetic CI and from
-Windows acceptance. The authorized local verification reported on 2026-10-24
+Windows acceptance. The initial authorized local verification reported on 2026-10-24
 used the **PR #3 `796a1aaef67b81e7df91e3109859daf73d2c755c` preview** and
 120 non-personal synthetic history entries. It did not use real audio, service
 keys, personal captions or paid recognition/translation APIs. No private
@@ -9,8 +9,8 @@ directories, account identities or local automation transcripts are published.
 
 The app package targets Apple Silicon and macOS 14.2+. The exact machine model
 and OS build were not supplied in this handoff; do not infer broader device or
-OS coverage. The local environment disconnected again, so this is a completed
-subset, not full Mac acceptance. PR #4, real audio, online translation and
+OS coverage. The later `8f7426b` summary below is a separate limited report;
+neither report establishes full Mac acceptance. PR #4, real audio, online translation and
 Windows 10/11 hardware remain **unverified** by this session.
 
 ## Physical Mac: confirmed subset
@@ -45,7 +45,25 @@ Manifest       becb4832db245a3cfe7f1cdd6b9f1a27c274dc55119ab07017efd3a98ea61167
 
 ## Pending and uncertain
 
-- Native dragging/resizing, font size, tray/menu-bar interaction, native IME,
+### Later physical report: PR3 8f7426b
+
+On 2026-10-25 the separate local task reported **focus, search, font-size changes
+and native export** passing on
+`8f7426b9055ba0b77a88ec647a97c6760f57750a`. This is a summary handoff, not a
+new detailed trace of every keyboard/native interaction. It does not transfer
+acceptance to the subsequent login-item policy change, PR4 or combined packages.
+
+That report also observed a generic `Unable to set login item` message.
+The isolated configurations were false, with a false `openAtLogin` readback;
+the old false setter branch attempted to unregister, not enable. The specific
+OS refusal reason and complete system main-app registration state remain
+unknown; later log access was unavailable in the local sandbox and stopped.
+No permission change or confirmed system-item removal is claimed. See the
+[cloud source correction and user no-startup policy](login-item-policy.md).
+
+### Still pending
+
+- Native dragging/resizing, tray/menu-bar interaction, native IME,
   the complete focus loop and application quit were not validated.
 - Hide controls and the show/hide shortcut were attempted, then a window was
   still observed. The evidence does not establish which input, IPC, native
@@ -91,6 +109,6 @@ uncertain result until that trace exists. Use the
 [offline checklist](macos-offline-validation.md), preserving OS protections,
 fresh test data and the no-real-audio/no-service boundary.
 
-The later [panel accessibility fixes](panel-accessibility.md) have cloud browser
-coverage only. They do not extend the physical 796a1aa acceptance above or turn
-the remaining native focus-loop/IME checks into passes.
+The [panel accessibility fixes](panel-accessibility.md) have full cloud browser
+coverage; the later8f7426b summary adds only its reported physical focus/search
+subset. Neither turns the remaining native focus-loop/IME checks into passes.

@@ -89,6 +89,9 @@ async function main() {
       if (exported.exceptionDetails) throw new Error(`Saved export: ${exported.exceptionDetails.exception?.description}`)
       assert.deepEqual(exported.result.value.failures, [], `Saved export regressions at scale ${scale}`)
       result.result.value.checks.push(...exported.result.value.checks)
+      const login = await send('Runtime.evaluate', { expression: 'window.__lingobarUiTest.loginItemRegression()', awaitPromise: true, returnByValue: true })
+      if (login.exceptionDetails) throw new Error(`Login-item feedback: ${login.exceptionDetails.exception?.description}`)
+      result.result.value.checks.push(...login.result.value.checks)
       const press = async (key, code, virtualKey, modifiers = 0) => {
         await send('Input.dispatchKeyEvent', { type: 'keyDown', key, code, windowsVirtualKeyCode: virtualKey, modifiers })
         await send('Input.dispatchKeyEvent', { type: 'keyUp', key, code, windowsVirtualKeyCode: virtualKey, modifiers })

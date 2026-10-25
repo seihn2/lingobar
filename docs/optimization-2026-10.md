@@ -161,3 +161,16 @@ write failure already preserved the collection; regression checks retain those
 negative findings and verify a later successful export. Markdown, destination
 policy and file-writing strategy remain unchanged. This closes the bounded
 cloud batch; no extra feature or research task is automatically invented.
+
+## Explicit no-startup policy and login-item correction
+
+New [physical Mac feedback and source review](login-item-policy.md) showed that
+the baseline's default-false startup and ordinary preference saves unnecessarily
+requested unregistration. It was not evidence of an enable attempt or of a
+specific OS error code. The user's subsequent prohibition now removes all
+registration/enable/restore paths: old true preferences load as false, new true
+requests fail, and only explicit owned-item removal can write false once.
+Native readback, unknown/pending feedback, no retry/rollback-to-enabled and
+separate removal UI are covered with synthetic Electron and temporary files.
+The physical record now distinguishes the later8f7426b focus/search/font/export
+summary from older796a1aa details and from this not-yet-physical policy fix.

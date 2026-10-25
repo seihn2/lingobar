@@ -119,7 +119,7 @@ Regular sessions keep approximately the latest 150 sentences in memory and are n
 
 Use **收起翻译条／展开翻译条** (Collapse/expand caption bar) at the top right to switch reading modes while keeping the current segment. Drag the compact window using its full **20px** top strip or the **8px** blank areas along the sides and bottom. Text, buttons, and scrollbars remain available for reading and interaction; they are not drag areas.
 
-The compact window normally shows captions, with controls appearing on hover or keyboard focus. Long content is scrollable. While hovering, adjust background opacity from **45–100%**; it is saved automatically when released, and text remains clear. Font size and launch-at-login options are under **设置 → 显示与启动** (Settings → Display and startup). Toggle always-on-top directly in the main window. Mac also supports displaying the app across desktops.
+The compact window normally shows captions, with controls appearing on hover or keyboard focus. Long content is scrollable. While hovering, adjust background opacity from **45–100%**; it is saved automatically when released, and text remains clear. Font size is under **设置 → 显示与启动** (Settings → Display and startup). Toggle always-on-top directly in the main window. Mac also supports displaying the app across desktops.
 
 | Action | Windows | Mac |
 | --- | --- | --- |
@@ -130,7 +130,9 @@ The compact window normally shows captions, with controls appearing on hover or 
 | Close the current panel | `Esc` | `Esc` |
 | Start/pause listening | Interface or tray menu | Interface or menu bar menu |
 
-The close button hides the app to the tray on Windows or the menu bar on Mac. Click the icon to reopen it. If another app uses the shortcut, recover the window from that menu. Choose **退出 LingoBar** (Quit LingoBar) to exit. Optional launch at login does not start audio capture automatically.
+The close button hides the app to the tray on Windows or the menu bar on Mac. Click the icon to reopen it. If another app uses the shortcut, recover the window from that menu. Choose **退出 LingoBar** (Quit LingoBar) to exit. The app does not start audio capture automatically.
+
+**Launch at login is prohibited.** Both new and legacy preferences stay off; the app cannot register or restore a login item. Startup and ordinary settings saves do not write OS login items. To handle a previous entry, explicitly choose **设置 → 显示与启动 → 移除语伴登录项** (Settings → Display and startup → Remove LingoBar login item). This affects only the app’s own user item, does not change system permissions, and reports an unconfirmed result without automatic retry. Other unsaved edits remain in the panel; actual system remnants require separate verification.
 
 <a id="privacy"></a>
 ## 8. Keys, data, and privacy
@@ -172,6 +174,6 @@ Check fixes against the package's **commit ID**, not just version 0.1.5. Current
 
 Automation covers core state handling, partial translation, history following, furigana alignment, permissions and IPC, helper lifecycle, encryption failure, and packaged resources. Real Electron tests use two synthetic devices without fake UI auto-authorization. Window screenshots and 100% / 150% / 200% scaling checks also use synthetic scenarios.
 
-**Validation on physical Windows 10/11 machines is not complete:** real computer audio/microphone/both-source capture, system privacy permissions, devices and drivers, the tray and shortcuts, launch at login, installation/uninstallation by a standard user, native dragging, real DPI settings, and multiple monitors remain unverified. This round of Mac CI also did not revalidate real audio capture, Keychain prompts, or real ASR/translation services. No paid APIs were called for testing. CI and synthetic results cannot replace these checks.
+**Validation on physical Windows 10/11 machines is not complete:** real computer audio/microphone/both-source capture, system privacy permissions, devices and drivers, the tray and shortcuts, old login-item removal, installation/uninstallation by a standard user, native dragging, real DPI settings, and multiple monitors remain unverified. This round of Mac CI also did not revalidate real audio capture, Keychain prompts, or real ASR/translation services. No paid APIs were called for testing. CI and synthetic results cannot replace these checks.
 
 When reporting a problem, include the commit ID, OS version, devices, display scaling, audio source, reproduction steps, and expected/actual behavior: [Report an issue](https://github.com/seihn2/lingobar/issues). Do not include keys or private content. The project uses [CC BY-NC 4.0](../LICENSE); see [NOTICE](../NOTICE.md) for third-party sources.
