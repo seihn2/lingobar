@@ -10,6 +10,9 @@
     "dev": "electron-vite dev",
     "typecheck": "tsc --noEmit",
     "test": "vitest run && node --test src/renderer/reading-schedule.test.mjs",
+    "benchmark:captions": "node scripts/benchmark-captions.cjs",
+    "benchmark:snapshot:serialization": "node scripts/benchmark-snapshot-serialization.cjs",
+    "benchmark:snapshot:ipc": "node scripts/benchmark-snapshot-ipc.cjs",
     "test:ui": "node scripts/test-ui.cjs",
     "test:media-permissions": "node scripts/test-media-permissions.cjs",
     "test:windows-native": "node scripts/verify-windows-system-audio.cjs",
@@ -19,6 +22,7 @@
     "package:mac": "npm run build:native && npm run build && electron-builder --mac --dir --publish never",
     "package:win": "npm run build:icons && npm run build:native && npm run build && electron-builder --win --x64 --publish never",
     "verify:package": "node scripts/verify-package.cjs",
+    "archive:mac": "node scripts/archive-macos.cjs",
     "checksums:win": "node scripts/checksums-windows.cjs"
   },
   "devDependencies": {

@@ -3,7 +3,7 @@
   <h1>LingoBar · 语伴</h1>
   <p><strong>聞いている内容を、見比べて読み返せる多言語字幕に。</strong></p>
   <p>
-    <a href="https://github.com/seihn2/lingobar/actions/workflows/build.yml?query=branch%3Acodex%2Fwindows"><img src="https://github.com/seihn2/lingobar/actions/workflows/build.yml/badge.svg?branch=codex%2Fwindows&amp;event=pull_request" alt="ビルドと合成テスト"></a>
+    <a href="https://github.com/seihn2/lingobar/actions/workflows/build.yml?query=branch%3Amain"><img src="https://github.com/seihn2/lingobar/actions/workflows/build.yml/badge.svg?branch=main&amp;event=push" alt="ビルドと合成テスト"></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-CC%20BY--NC%204.0-blue.svg" alt="CC BY-NC 4.0"></a>
     <a href="package.json"><img src="https://img.shields.io/badge/version-0.1.5-6f42c1.svg" alt="バージョン 0.1.5"></a>
     <a href="package-lock.json"><img src="https://img.shields.io/badge/Electron-43.8.3-47848F.svg?logo=electron" alt="Electron 43.8.3"></a>
@@ -34,16 +34,17 @@ Electron、React、TypeScript で開発し、**非商用ライセンスの CC BY
 - **日本語の読みを本文に添える。** 訳文を先に表示し、翻訳モデルが文脈に沿った振り仮名を対応する漢字の上に補います。振り仮名を待たずに読み始められます。
 - **リアルタイムで追従し、立ち止まって読み返す。** 通常は最新の表示可能な訳文に追従します。スクロールや文字選択で過去の字幕を読み返し、**回到实时**（リアルタイム表示に戻る）で追従を再開できます。
 - **復習したい一文を残す。** 小窓への切り替え、最前面表示、背景の透明度や文字サイズの調整ができます。完了した区間を保存し、Markdown の学習ノートに書き出せます。
+- **履歴をローカルで検索。** 現在のソースでは、保持中の原文と取得済みの訳文を `Ctrl+F`／`⌘F` で検索できます。範囲と操作は[ガイド](docs/usage.ja.md#history)を参照してください。以前の `main` プレビューパッケージには含まれていないため、今回の改善 PR の成功したビルドを使うか、この変更を含むコミットからビルドしてください。
 
 <a id="install"></a>
 ## インストール
 
 | プラットフォーム | システム要件 | 入手方法 |
 | --- | --- | --- |
-| Windows | Windows 10/11、**x64** | [テストパッケージとチェックサム](https://github.com/seihn2/lingobar/pull/2)：対応する成功したビルドの Artifacts から ZIP をダウンロードし、展開してインストーラーを実行します。 |
-| macOS | macOS 14.2 以降、Apple Silicon | [ソースからビルド](#development)して `dist/mac-arm64/LingoBar.app` を生成します。ローカルパッケージは ad-hoc 署名で、Apple の公証は受けていません。 |
+| Windows | Windows 10/11、**x64** | [CI テストパッケージ](https://github.com/seihn2/lingobar/actions/workflows/build.yml?query=branch%3Amain)：対応する成功したビルドの Artifacts から ZIP をダウンロードし、展開してインストーラーを実行します。 |
+| macOS | macOS 14.2 以降、Apple Silicon | [PR #3 のオフラインプレビュー](docs/usage.ja.md#install)、または[ソースからビルド](#development)。プレビューは ad-hoc 署名で Apple 未公証です。PR #4 の変更は別です。 |
 
-Windows ARM64 用のパッケージはまだ提供していません。CI artifact のダウンロードには GitHub へのログインが必要で、保存期間は 14 日です。期限切れの場合は、新しい成功したビルドを使うか、自分でビルドしてください。インストール前にパッケージ内の `SHA256SUMS.txt` を確認してください。インストール、更新、システム権限の詳しい手順は[使い方ガイド](docs/usage.ja.md#install)を参照してください。
+Windows x64 対応は `main` にマージ済みです。それ以前に検証したテストパッケージとチェックサムの記録は [PR #2](https://github.com/seihn2/lingobar/pull/2) を参照してください。Windows ARM64 用のパッケージはまだ提供していません。CI artifact のダウンロードには GitHub へのログインが必要で、保存期間は 14 日です。期限切れの場合は、新しい成功したビルドを使うか、自分でビルドしてください。インストール前にパッケージ内の `SHA256SUMS.txt` を確認してください。インストール、更新、システム権限の詳しい手順は[使い方ガイド](docs/usage.ja.md#install)を参照してください。
 
 <a id="quick-start"></a>
 ## クイックスタート
@@ -77,7 +78,7 @@ Windows ARM64 用のパッケージはまだ提供していません。CI artifa
 | English | [Installation, configuration and everyday use](docs/usage.en.md) |
 | 日本語 | [インストール・設定・使い方](docs/usage.ja.md) |
 
-開発とプラットフォームに関する資料：[Windows 移植の説明](docs/windows-port.md) · [テストマトリクス、既知の制限、ビルド記録](docs/windows-validation.md) · [第三者の出典](NOTICE.md)。
+開発とプラットフォームに関する資料：[Windows 移植の説明](docs/windows-port.md) · [テストマトリクス、既知の制限、ビルド記録](docs/windows-validation.md) · [Mac 実機 UI の確認済み範囲と未検証項目](docs/macos-validation.md) · [第三者の出典](NOTICE.md)。
 
 <a id="development"></a>
 ## 開発とビルド
@@ -89,12 +90,12 @@ Node.js **22.18 以降**と npm が必要です。ネイティブコンポーネ
 | macOS | Apple Silicon、macOS 14.2 以降、Xcode Command Line Tools |
 | Windows x64 | CMake 3.24 以降、Visual Studio 2022 の C++ デスクトップ開発ツール、Windows SDK |
 
-現在の Windows 開発は `codex/windows` ブランチで行っています。ロックされた依存関係を使い、ローカルのプロジェクトを起動します。
+`main` に Windows x64 対応が含まれています。ロックされた依存関係を使い、ローカルのプロジェクトを起動します。
 
 ```sh
 git clone https://github.com/seihn2/lingobar.git
 cd lingobar
-git switch codex/windows
+git switch main
 npm ci
 npm run build:icons
 npm run build:native
@@ -122,6 +123,8 @@ PR を提出する前に `npm run typecheck`、`npm test`、`npm run build` を�
 
 <a id="privacy-license"></a>
 ## プライバシーとライセンス
+
+ログイン時起動の登録や再有効化は行わず、旧設定の有効値も無効として扱います。起動や通常の設定保存では OS のログイン項目を変更しません。以前の登録は明示的な操作でのみ削除し、実際のシステム状態は別途確認が必要です。
 
 初回起動時に自動で収音することはなく、録音も保存しません。聴き取りを開始すると、設定した音声認識サービスに暗号化された接続で音声を送り、原文や手入力したテキストを翻訳サービスに送信します。キーはメインプロセスが Electron の `safeStorage` で暗号化します。暗号化が使えない場合や失敗した場合は保存を拒否し、平文での保存に切り替えることはありません。データの保持期間、システム権限、サービス提供者との責任範囲は[プライバシーの説明](docs/usage.ja.md#privacy)を参照してください。
 

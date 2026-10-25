@@ -48,6 +48,9 @@ function storedPreferences(value: unknown): Preferences {
   if (value.captureMode === 'system' || value.captureMode === 'microphone' || value.captureMode === 'both') result.captureMode = value.captureMode
   if (validMicrophoneDeviceId(value.microphoneDeviceId)) result.microphoneDeviceId = value.microphoneDeviceId
   for (const key of booleanKeys) if (typeof value[key] === 'boolean') result[key] = value[key]
+  // Startup is prohibited, including a legacy stored true. Reading preferences
+  // must not write or register/unregister anything with the operating system.
+  result.launchAtLogin = false
   for (const key of numberKeys) {
     if (typeof value[key] === 'number' && Number.isFinite(value[key])) result[key] = bounded(key, value[key])
   }
@@ -137,6 +140,7 @@ export class Storage {
   }
   save(input: SettingsInput): Settings {
     if (!record(input)) throw new Error('设置格式不正确。')
+    if (input.launchAtLogin !== undefined && input.launchAtLogin !== false) throw new Error('语伴不允许开机启动，不能启用登录项。')
     const next: Stored = { ...this.data, preferences: { ...this.data.preferences, targetLanguages: [...this.data.preferences.targetLanguages] } }
     const p = next.preferences
     if (input.targetLanguages !== undefined) {

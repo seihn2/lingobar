@@ -15,6 +15,10 @@ let snapshot: Snapshot = { settings, state: 'idle', message: '', captions: [], p
 const listeners = new Set<(snapshot: Snapshot) => void>()
 const saves: Array<Partial<Settings>> = []
 let audioStarts = 0
+let providerCalls = 0
+let hideCalls = 0
+let exportCalls = 0
+let exportAction = async () => false
 const emit = (next: Partial<Snapshot>) => {
   snapshot = structuredClone({ ...snapshot, ...next })
   for (const listener of listeners) listener(snapshot)
@@ -27,15 +31,20 @@ const api = {
   stop: async () => { emit({ state: 'idle' }) },
   pushMicrophone: () => { throw new Error('Audio is disabled in UI tests') },
   microphoneFailed: () => {}, microphoneReady: () => {},
-  translateText: async () => { throw new Error('Providers are disabled in UI tests') },
-  retry: async () => {}, toggleSaved: async () => {}, exportSaved: async () => false,
+  translateText: async () => { providerCalls++; throw new Error('Providers are disabled in UI tests') },
+  retry: async () => {}, toggleSaved: async () => {}, exportSaved: async () => { exportCalls++; return exportAction() },
   copyText: async () => {}, importLocalKey: async () => { throw new Error('No keys in UI tests') },
   setCollapsed: async (collapsed: boolean) => { emit({ collapsed }) },
-  setCompactHeight: async () => {}, hide: async () => {}, quit: async () => {},
+  setCompactHeight: async () => {}, hide: async () => { hideCalls++ }, quit: async () => {},
   onSnapshot: (listener: (snapshot: Snapshot) => void) => { listeners.add(listener); return () => listeners.delete(listener) },
   onMicrophone: () => () => {},
 } as LingoAPI
 window.lingo = api
+// Settings may query device metadata; this UI fixture never enumerates hardware.
+Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: {
+  enumerateDevices: async () => [], addEventListener() {}, removeEventListener() {},
+  getUserMedia: () => { throw new Error('Real media is forbidden in UI fixtures') },
+} })
 
 const frame = () => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
 const assert = (condition: unknown, message: string): void => { if (!condition) throw new Error(message) }
@@ -142,6 +151,112 @@ async function run() {
   slider.dispatchEvent(new PointerEvent('pointerup', { bubbles: true })); await frame()
   check(saves.some(input => input.opacity === 0.55) && getComputedStyle(query('.app-shell')).getPropertyValue('--surface-opacity').trim() === '0.55', 'opacity slider saves the background setting')
   check(getComputedStyle(query('.compact-row p')).opacity === '1', 'background transparency leaves subtitle glyph opacity intact')
+
+  // The real renderer searches local snapshots; no service, audio, or search-index dependency.
+  const lookup = [
+    caption('find-old', { original: 'First needle in synthetic history' }),
+    caption('find-saved', { original: 'Second NEEDLE in synthetic history', saved: true }),
+    caption('find-unicode', { original: '東京 Cafe\u0301 👩🏽‍💻 <img src=x onerror=alert(1)>' }),
+    caption('find-other-language', { original: 'A different synthetic source', translations: { de: 'Nicht gewählte Sprache Nadel', fr: 'Exemple' } }),
+    caption('find-latest', { original: 'Third needle in synthetic history' }),
+  ]
+  const priorFind = Array.from({ length: 20 }, (_, index) => caption(`find-prior-${index}`, { original: `Needle synthetic archive ${index}` }))
+  emit({ state: 'idle', captions: [...priorFind, ...lookup] }); await frame()
+  const shortcut = (target: EventTarget, key: string, options: KeyboardEventInit = {}) => {
+    const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...options })
+    target.dispatchEvent(event)
+    return event.defaultPrevented
+  }
+  const compactSurface = query('.compact-viewport')
+  shortcut(compactSurface, 'f', { ctrlKey: true, isComposing: true }); await frame()
+  check(!document.querySelector('.panel-history'), 'IME key events do not open history search')
+  compactSurface.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
+  shortcut(compactSurface, 'f', { ctrlKey: true }); await frame()
+  check(!document.querySelector('.panel-history'), 'composition state also protects shortcuts without an isComposing flag')
+  compactSurface.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true }))
+  check(shortcut(compactSurface, 'f', { ctrlKey: true }), 'Ctrl+F handles local search instead of browser find')
+  await frame()
+  const search = query<HTMLInputElement>('.history-search-input')
+  check(!snapshot.collapsed && document.activeElement === search, 'search from compact mode expands the window and focuses history input')
+  const setSearch = async (value: string) => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(search, value)
+    search.dispatchEvent(new Event('input', { bubbles: true })); search.dispatchEvent(new Event('change', { bubbles: true }))
+    await frame()
+  }
+  const matchId = () => document.querySelector('.history-match-current')?.getAttribute('data-history-id')
+  await setSearch('needle')
+  check(document.querySelectorAll('.history-item').length === 23 && matchId() === 'find-latest', 'local literal lookup finds original text in newest-first history')
+  shortcut(search, 'Enter'); await frame()
+  check(matchId() === 'find-saved', 'Enter selects the next matching segment')
+  shortcut(search, 'Enter', { shiftKey: true }); await frame()
+  check(matchId() === 'find-latest', 'Shift+Enter selects the previous matching segment')
+  query<HTMLButtonElement>('[aria-label="上一个匹配"]').click(); await frame()
+  check(matchId() === 'find-prior-0', 'previous-match button wraps by segment ID')
+  shortcut(search, 'Enter'); await frame()
+  shortcut(search, 'Enter'); await frame()
+  check(matchId() === 'find-saved', 'keyboard navigation keeps the input available while locating older matches')
+  const selectedTop = query('.history-match-current').getBoundingClientRect().top
+  const arrivals = Array.from({ length: 100 }, (_, index) => caption(`find-arrival-${index}`, { original: `Needle synthetic arrival ${index}` }))
+  emit({ captions: [...priorFind, ...lookup, ...arrivals] }); await frame()
+  check(matchId() === 'find-saved' && Math.abs(query('.history-match-current').getBoundingClientRect().top - selectedTop) < 2, '100 arriving segments preserve the selected match and its reading position')
+  const late = { ...lookup[3], translations: { ...lookup[3].translations, fr: 'needle from a delayed synthetic translation' } }
+  emit({ captions: [...priorFind, ...lookup.slice(0, 3), late, lookup[4], ...arrivals] }); await frame()
+  check(matchId() === 'find-saved' && Math.abs(query('.history-match-current').getBoundingClientRect().top - selectedTop) < 2, 'late translated matches do not steal the selected segment or scroll position')
+  search.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
+  shortcut(search, 'Enter'); shortcut(search, 'Escape'); await frame()
+  check(matchId() === 'find-saved' && Boolean(document.querySelector('.panel-history')), 'IME confirmation and cancellation do not navigate or close search')
+  search.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true }))
+  await setSearch('café')
+  check(matchId() === 'find-unicode', 'canonical combining-character search finds the original Unicode text')
+  await setSearch('東京')
+  check(matchId() === 'find-unicode', 'CJK search remains a local literal lookup')
+  await setSearch('👩🏽‍💻')
+  check(matchId() === 'find-unicode', 'emoji search preserves complete displayed sequences')
+  await setSearch('<img')
+  check(query('.history-original').textContent?.includes('<img src=x') && !query('.history-list').querySelector('img'), 'HTML-looking subtitles are displayed as text, never markup')
+  await setSearch('Nadel')
+  check(matchId() === 'find-other-language' && query('.history-match-language').textContent === 'Deutsch匹配', 'search includes an existing translation outside the displayed language selection')
+  await setSearch('needle')
+  query<HTMLButtonElement>('.history-tabs button:nth-child(2)').click(); await frame()
+  check(document.querySelectorAll('.history-item').length === 1 && matchId() === 'find-saved', 'saved-only filtering retains local search semantics')
+  query<HTMLButtonElement>('[aria-label="清空查找"]').click(); await frame()
+  check(search.value === '' && document.querySelectorAll('.history-item').length === 1 && document.activeElement === search, 'clearing a search restores the filtered history and input focus')
+  await setSearch('no synthetic match')
+  check(Boolean(document.querySelector('.empty-history')) && query<HTMLButtonElement>('[aria-label="下一个匹配"]').disabled, 'no-match state disables navigation without losing the query')
+  emit({ captions: [] }); await frame()
+  check(!document.querySelector('.history-match-current') && query('.history-search-count').textContent === '0 / 0', 'clearing history removes stale search selection')
+  shortcut(search, 'Escape'); await frame()
+  const historyButton = query<HTMLButtonElement>('[aria-label="历史与收藏"]')
+  historyButton.focus(); historyButton.click(); await frame()
+  check(query<HTMLInputElement>('.history-search-input').value === '', 'reopening history does not persist the search query')
+  shortcut(document.activeElement!, 'Escape'); await frame()
+  check(document.activeElement === historyButton && !document.querySelector('.panel-history'), 'Escape closes history and restores the invoking control focus')
+  emit({ captions: lookup }); await frame()
+  shortcut(historyButton, 'f', { metaKey: true }); await frame()
+  check(document.activeElement === document.querySelector('.history-search-input'), 'Cmd+F also opens and focuses local history search')
+  query<HTMLButtonElement>('.history-tabs button:first-child').click(); await frame()
+  query<HTMLButtonElement>('[data-history-id="find-old"] .history-select').click(); await frame()
+  check(!document.querySelector('.panel-history') && query('.focused-caption').getAttribute('data-caption-id') === 'find-old' && query('.stream-label').textContent?.includes('正在回看'), 'opening a history result locates its original segment and pauses live following')
+  emit({ captions: [...lookup, caption('after-search')] }); await frame()
+  check(query('.focused-caption').getAttribute('data-caption-id') === 'find-old', 'new subtitles do not replace a paragraph opened from search')
+  query<HTMLButtonElement>('[aria-label="输入文字翻译"]').click(); await frame()
+  const textInput = query<HTMLTextAreaElement>('#translation-input')
+  Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!.call(textInput, 'Synthetic typed sentence')
+  textInput.dispatchEvent(new Event('input', { bubbles: true })); await frame()
+  const submitButton = query<HTMLButtonElement>('.text-form button[type="submit"]')
+  submitButton.focus()
+  shortcut(submitButton, 'f', { ctrlKey: true }); await frame()
+  check(Boolean(document.querySelector('.panel-history')) && document.activeElement === document.querySelector('.history-search-input'), 'Find remains available when the text submit button has focus')
+  shortcut(document.activeElement!, 'Escape'); await frame()
+  query<HTMLButtonElement>('[aria-label="输入文字翻译"]').click(); await frame()
+  const composingInput = query<HTMLTextAreaElement>('#translation-input')
+  composingInput.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
+  shortcut(composingInput, 'Enter', { ctrlKey: true }); await frame()
+  check(providerCalls === 0, 'IME confirmation with Ctrl+Enter cannot submit typed text to a provider')
+  composingInput.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true }))
+  shortcut(composingInput, 'Enter', { metaKey: true, isComposing: true }); await frame()
+  check(providerCalls === 0, 'isComposing also blocks Cmd+Enter provider submission')
+  shortcut(composingInput, 'Escape'); await frame()
   check(audioStarts === 0, 'UI regression never starts audio or provider requests')
   return { checks, deviceScaleFactor: devicePixelRatio, platform: navigator.platform }
 }
@@ -154,5 +269,177 @@ async function preview(mode: 'expanded' | 'compact') {
   ] })
   await frame()
 }
-;(window as unknown as { __lingobarUiTest: { run: typeof run; preview: typeof preview } }).__lingobarUiTest = { run, preview }
+async function prepareHide(mode: 'expanded' | 'compact') {
+  await preview(mode)
+  const bounds = query('[aria-label="隐藏到系统托盘"]').getBoundingClientRect()
+  return { calls: hideCalls, x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 }
+}
+async function verifyHide(mode: 'expanded' | 'compact', before: number) {
+  await frame()
+  const button = query('[aria-label="隐藏到系统托盘"]'), bounds = button.getBoundingClientRect()
+  const hit = document.elementFromPoint(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2)
+  assert(hit && button.contains(hit) && getComputedStyle(button).getPropertyValue('-webkit-app-region') === 'no-drag', `${mode} hide button is pointer-accessible outside native drag regions`)
+  assert(hideCalls === before + 1 && snapshot.state === 'listening' && audioStarts === 0 && providerCalls === 0, `${mode} real browser pointer click forwards one hide call without changing capture or contacting services`)
+  return [`${mode} hide button is pointer-accessible outside native drag regions`, `${mode} real browser pointer click forwards one hide call without changing capture or contacting services`]
+}
+async function panelFocus() {
+  const checks: string[] = [], failures: string[] = []
+  const check = (value: unknown, message: string) => { checks.push(message); if (!value) failures.push(message) }
+  const key = (name: string, extra: KeyboardEventInit = {}) => {
+    const event = new KeyboardEvent('keydown', { key: name, bubbles: true, cancelable: true, ...extra })
+    ;(document.activeElement || document.body).dispatchEvent(event)
+    return event.defaultPrevented
+  }
+  const settingsButton = () => query<HTMLButtonElement>('[aria-label="设置"]')
+  emit({ state: 'idle', collapsed: true, settings: { ...settings }, captions: [caption('focus-synthetic', { saved: true })] }); await frame()
+  settingsButton().focus(); settingsButton().click(); await frame()
+  check(document.querySelector('.panel-settings')?.getAttribute('aria-label') === '设置' && document.querySelector('.panel-settings')?.contains(document.activeElement), 'compact settings opens a named dialog with focus inside')
+  key('Escape'); await frame()
+  check(document.activeElement === settingsButton(), 'Escape after compact settings restores the equivalent expanded settings trigger')
+
+  settingsButton().focus(); settingsButton().click(); await frame()
+  const close = query<HTMLButtonElement>('[aria-label="关闭面板"]')
+  close.focus(); check(key('Tab', { shiftKey: true }) && document.activeElement === query('.settings-form button[type="submit"]'), 'Shift+Tab wraps from dialog first to last enabled control')
+  check(key('Tab') && document.activeElement === close, 'Tab wraps from dialog last to first enabled control')
+  const nav = () => [...document.querySelectorAll<HTMLButtonElement>('.settings-nav button')]
+  nav()[0].click(); await frame()
+  check(nav().map(button => button.getAttribute('aria-pressed')).join('|') === 'true|false|false', 'settings navigation exposes the current language section')
+  const remove = query<HTMLButtonElement>('[aria-label="移除法语"]')
+  remove.focus(); remove.click(); await frame()
+  const frenchOption = [...document.querySelectorAll<HTMLButtonElement>('.language-options button')].find(button => button.textContent?.startsWith('法语'))!
+  check(!remove.isConnected && document.activeElement === frenchOption, 'removing a focused selected language moves focus to its stable language option')
+  frenchOption.click(); await frame()
+  check(frenchOption.getAttribute('aria-pressed') === 'true', 'the focused language option can re-add the removed language')
+  nav()[1].click(); await frame()
+  check(nav().map(button => button.getAttribute('aria-pressed')).join('|') === 'false|true|false', 'changing settings sections updates their accessible state')
+  close.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true })); key('Escape'); await frame()
+  check(Boolean(document.querySelector('.panel-settings')), 'IME Escape does not close settings during composition')
+  close.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true })); close.click(); await frame()
+  check(document.activeElement === settingsButton(), 'closing settings with its named button restores the original trigger')
+
+  settingsButton().focus(); settingsButton().click(); await frame()
+  query<HTMLFormElement>('.settings-form').requestSubmit(); await frame()
+  check(!document.querySelector('.panel') && document.activeElement === settingsButton(), 'saving settings restores focus without recording or service calls')
+  const textButton = query<HTMLButtonElement>('[aria-label="输入文字翻译"]')
+  textButton.focus(); textButton.click(); await frame()
+  check(document.activeElement === query('#translation-input'), 'text panel still initially focuses its named textarea')
+  key('Escape'); await frame()
+  check(document.activeElement === textButton, 'Escape from an autofocus textarea restores the text-panel trigger')
+  textButton.focus(); textButton.click(); await frame()
+  key('f', { ctrlKey: true }); await frame()
+  check(document.activeElement === query('.history-search-input'), 'Find from a text panel focuses history without retaining the removed textarea')
+  key('f', { ctrlKey: true }); await frame()
+  key('Escape'); await frame()
+  check(document.activeElement === textButton, 'switching panels and repeated Find retain the original outside invoker')
+
+  await api.setCollapsed(true); await frame()
+  query('.compact-viewport').focus(); key('f', { ctrlKey: true }); await frame()
+  const filter = () => [...document.querySelectorAll<HTMLButtonElement>('.history-tabs button')]
+  check(filter().map(button => button.getAttribute('aria-pressed')).join('|') === 'true|false', 'history exposes the current all-history filter')
+  filter()[1].click(); await frame()
+  check(filter().map(button => button.getAttribute('aria-pressed')).join('|') === 'false|true', 'saved-history filtering updates its accessible state')
+  key('Escape'); await frame()
+  check(document.activeElement === query('[aria-label="历史与收藏"]'), 'Find opened from compact reading returns focus to the expanded history control')
+  check(audioStarts === 0 && providerCalls === 0, 'panel focus tests never start media or call providers')
+  return { checks, failures }
+}
+async function preparePanelA11y(mode: 'settings' | 'history') {
+  const trigger = query<HTMLButtonElement>(mode === 'settings' ? '[aria-label="设置"]' : '[aria-label="历史与收藏"]')
+  trigger.focus(); trigger.click(); await frame()
+  query<HTMLButtonElement>(mode === 'settings' ? '.settings-nav button' : '.history-tabs button').click(); await frame()
+}
+async function exportRegression() {
+  const checks: string[] = [], failures: string[] = []
+  const check = (value: unknown, message: string) => { checks.push(message); if (!value) failures.push(message) }
+  const saved = caption('synthetic-export', { saved: true })
+  emit({ state: 'idle', message: '', captions: [saved], partial: {}, collapsed: false }); await frame()
+  const openHistory = async () => { query<HTMLButtonElement>('[aria-label="历史与收藏"]').click(); await frame() }
+  const close = async () => { query<HTMLButtonElement>('[aria-label="关闭面板"]').click(); await frame() }
+  const button = () => query<HTMLButtonElement>('.history-toolbar > button')
+  const exportToast = () => document.querySelector('.toast')?.textContent?.includes('收藏已导出')
+  await openHistory()
+  exportAction = async () => false
+  button().click(); await frame()
+  check(!exportToast() && !document.querySelector('.history-export-result'), 'cancelled export is silent and shows no success')
+  check(snapshot.captions[0].saved && snapshot.captions[0].id === saved.id, 'export cancellation retains the synthetic saved caption')
+
+  let reject!: (error: Error) => void
+  const pending = new Promise<boolean>((_yes, no) => { reject = no })
+  exportAction = () => pending; exportCalls = 0
+  button().focus(); button().click(); button().click(); await frame()
+  check(button().getAttribute('aria-disabled') === 'true' && button().getAttribute('aria-busy') === 'true' && document.activeElement === button() && exportCalls === 1, 'one pending export prevents duplicate dialogs, keeps focus and exposes its busy state')
+  await close()
+  query<HTMLButtonElement>('[aria-label="设置"]').click(); await frame()
+  emit({ state: 'error', message: 'Synthetic current capture error' }); await frame()
+  reject(new Error('Synthetic export write failure')); await frame()
+  check(!query('.panel-settings').textContent?.includes('Synthetic export write failure'), 'late export failure does not enter a different settings panel')
+  await close()
+  await openHistory()
+  check(Boolean(document.querySelector('.history-export-result[role="alert"]')?.textContent?.includes('导出未完成：Synthetic export write failure')), 'reopening history retains the failed export result in its own context')
+  check(!button().disabled && snapshot.captions[0].saved, 'a failed export releases its button and preserves the saved caption')
+
+  let rejectAgain!: (error: Error) => void
+  const another = new Promise<boolean>((_yes, no) => { rejectAgain = no })
+  exportAction = () => another
+  button().click(); await frame(); await close()
+  rejectAgain(new Error('Synthetic second export failure')); await frame()
+  check(query('.inline-notice').textContent?.includes('Synthetic current capture error') && !query('.inline-notice').textContent?.includes('Synthetic second export failure'), 'late export failure cannot hide the current capture error')
+  await openHistory()
+
+  exportAction = async () => true
+  button().click(); await frame()
+  check(Boolean(document.querySelector('.history-export-result[role="status"]')?.textContent?.includes('收藏已导出')) && !exportToast(), 'successful retry reports export success locally without a global toast')
+  exportAction = async () => false
+  button().click(); await frame()
+  check(!document.querySelector('.history-export-result') && !exportToast(), 'cancelling another export clears its previous result without claiming success')
+  await close()
+  check(snapshot.state === 'error' && snapshot.message === 'Synthetic current capture error' && audioStarts === 0 && providerCalls === 0, 'export feedback never changes capture state or calls audio/providers')
+  emit({ state: 'idle', message: '' }); await frame()
+  return { checks, failures }
+}
+async function loginItemRegression() {
+  const checks: string[] = []
+  const check = (ok: unknown, label: string) => { assert(ok, label); checks.push(label) }
+  const originalSave = api.saveSettings
+  let removals = 0, pending = true
+  let reject!: (error: Error) => void
+  const refusal = new Promise<void>((_yes, no) => { reject = no })
+  const requests: Array<Partial<Settings>> = []
+  api.saveSettings = async input => {
+    requests.push(structuredClone(input))
+    if (Object.keys(input).length === 1 && input.launchAtLogin === false) {
+      removals++
+      if (pending) await refusal
+    }
+    if (input.launchAtLogin === true) throw new Error('Startup registration is prohibited in this fixture')
+    return originalSave(input)
+  }
+  try {
+    emit({ state: 'idle', message: '', settings: { ...settings, launchAtLogin: false } }); await frame()
+    query<HTMLButtonElement>('[aria-label="设置"]').click(); await frame()
+    const appearance = [...document.querySelectorAll<HTMLButtonElement>('.settings-nav button')].find(button => button.textContent?.includes('显示与启动'))!
+    appearance.click(); await frame()
+    const startup = [...document.querySelectorAll<HTMLLabelElement>('.toggle-setting')].find(label => label.textContent?.includes('不允许开机启动'))!.querySelector<HTMLInputElement>('input')!
+    check(startup.disabled && !startup.checked && query('.settings-content').textContent?.includes('不会创建或恢复'), 'startup stays visibly off and cannot be enabled in settings')
+    const remove = [...document.querySelectorAll<HTMLButtonElement>('.settings-content button')].find(button => button.textContent?.includes('移除语伴登录项'))!
+    remove.focus(); remove.click(); remove.click(); await frame()
+    query<HTMLFormElement>('.settings-form').requestSubmit(); await frame()
+    check(removals === 1 && requests.length === 1 && remove.getAttribute('aria-busy') === 'true' && document.activeElement === remove, 'one explicit removal keeps focus and prevents duplicate removal or concurrent form save')
+    reject(new Error('系统尚未确认移除语伴登录项。')); await frame()
+    check(Boolean(document.querySelector('.panel-settings')) && query('.panel-notice').textContent?.includes('尚未确认移除') && remove.getAttribute('aria-busy') === 'false', 'failed removal is reported without claiming success or closing settings')
+    emit({ captions: [caption('login-item-status-update')] }); await frame()
+    check(removals === 1 && snapshot.settings.launchAtLogin === false, 'ordinary snapshots do not retry removal or enable startup')
+    pending = false; remove.click(); await frame()
+    check(removals === 2 && Boolean(document.querySelector('.panel-settings')) && query('.settings-content [role="status"]').textContent?.includes('登录项关闭'), 'only an explicit removal retry reports its result while retaining the settings draft')
+    query<HTMLFormElement>('.settings-form').requestSubmit(); await frame()
+    check(!document.querySelector('.panel') && removals === 2 && requests.every(input => input.launchAtLogin !== true), 'ordinary preference save keeps startup off and does not submit another removal')
+    check(audioStarts === 0 && providerCalls === 0, 'startup-policy UI tests never start audio or call providers')
+  } finally {
+    api.saveSettings = originalSave
+    emit({ state: 'idle', message: '', settings: { ...settings } }); await frame()
+  }
+  return { checks }
+}
+
+;(window as unknown as { __lingobarUiTest: { run: typeof run; preview: typeof preview; prepareHide: typeof prepareHide; verifyHide: typeof verifyHide; panelFocus: typeof panelFocus; preparePanelA11y: typeof preparePanelA11y; exportRegression: typeof exportRegression; loginItemRegression: typeof loginItemRegression } }).__lingobarUiTest = { run, preview, prepareHide, verifyHide, panelFocus, preparePanelA11y, exportRegression, loginItemRegression }
 createRoot(document.getElementById('root')!).render(<App />)
