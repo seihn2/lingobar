@@ -374,7 +374,7 @@ export default function App() {
 
       {(notice || (snapshot.state === 'error' && snapshot.message)) && !panel && <div className="inline-notice" role="alert"><span>{notice || snapshot.message}</span><button aria-label="关闭提示" onClick={() => setNotice('')}><X size={12} /></button></div>}
       <footer className="bottom-bar" inert={panel !== null}>
-        <div className="stream-footer-note">{preview ? <button className="text-button" onClick={() => { setPreview(false); setSelectedId(null) }}>退出示例预览</button> : <><span className="small-dot" />{snapshot.captions.length ? '段落持续保留 · 向上滚动回看' : '实时译文持续更新，旧内容留在这里'}</>}</div>
+        <div className="stream-footer-note">{preview && <button className="text-button" onClick={() => { setPreview(false); setSelectedId(null) }}>退出示例预览</button>}</div>
         <div className="footer-actions"><IconButton title="输入文字翻译" onClick={() => { rememberPanelFocus('输入文字翻译'); setNotice(''); setPanel('text') }}><Keyboard size={15} /></IconButton><IconButton title="历史与收藏" active={panel === 'history'} onClick={() => { rememberPanelFocus('历史与收藏'); setNotice(''); setPanel('history') }}><History size={15} /></IconButton></div>
       </footer>
     </>}
