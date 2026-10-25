@@ -81,6 +81,9 @@ async function main() {
       assert.ok(ready, 'Renderer fixture startup timed out')
       const result = await send('Runtime.evaluate', { expression: 'window.__lingobarUiTest.run()', awaitPromise: true, returnByValue: true })
       if (result.exceptionDetails) throw new Error(`UI scale ${scale}: ${result.exceptionDetails.exception?.description || result.exceptionDetails.text}`)
+      const login = await send('Runtime.evaluate', { expression: 'window.__lingobarUiTest.loginItemRegression()', awaitPromise: true, returnByValue: true })
+      if (login.exceptionDetails) throw new Error(`Login-item feedback: ${login.exceptionDetails.exception?.description}`)
+      result.result.value.checks.push(...login.result.value.checks)
       results.push(result.result.value)
       console.log(`UI synthetic regression: ${result.result.value.checks.length} checks at Chromium scale ${scale}`)
     }

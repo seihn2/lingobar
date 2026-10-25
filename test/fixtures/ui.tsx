@@ -15,6 +15,7 @@ let snapshot: Snapshot = { settings, state: 'idle', message: '', captions: [], p
 const listeners = new Set<(snapshot: Snapshot) => void>()
 const saves: Array<Partial<Settings>> = []
 let audioStarts = 0
+let providerCalls = 0
 const emit = (next: Partial<Snapshot>) => {
   snapshot = structuredClone({ ...snapshot, ...next })
   for (const listener of listeners) listener(snapshot)
@@ -30,7 +31,7 @@ const api = {
   },
   pushMicrophone: () => { throw new Error('Audio is disabled in UI tests') },
   microphoneFailed: () => {}, microphoneReady: () => {},
-  translateText: async () => { throw new Error('Providers are disabled in UI tests') },
+  translateText: async () => { providerCalls++; throw new Error('Providers are disabled in UI tests') },
   retry: async () => {}, toggleSaved: async () => {}, exportSaved: async () => false,
   copyText: async () => {}, importLocalKey: async () => { throw new Error('No keys in UI tests') },
   setCollapsed: async (collapsed: boolean) => { emit({ collapsed }) },
@@ -39,6 +40,11 @@ const api = {
   onMicrophone: () => () => {},
 } as LingoAPI
 window.lingo = api
+// Settings may query device metadata; this UI fixture never enumerates hardware.
+Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: {
+  enumerateDevices: async () => [], addEventListener() {}, removeEventListener() {},
+  getUserMedia: () => { throw new Error('Real media is forbidden in UI fixtures') },
+} })
 
 const frame = () => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
 const assert = (condition: unknown, message: string): void => { if (!condition) throw new Error(message) }
@@ -206,5 +212,49 @@ async function preview(mode: 'expanded' | 'compact') {
   ] })
   await frame()
 }
-;(window as unknown as { __lingobarUiTest: { run: typeof run; preview: typeof preview } }).__lingobarUiTest = { run, preview }
+async function loginItemRegression() {
+  const checks: string[] = []
+  const check = (ok: unknown, label: string) => { assert(ok, label); checks.push(label) }
+  const originalSave = api.saveSettings
+  let removals = 0, pending = true
+  let reject!: (error: Error) => void
+  const refusal = new Promise<void>((_yes, no) => { reject = no })
+  const requests: Array<Partial<Settings>> = []
+  api.saveSettings = async input => {
+    requests.push(structuredClone(input))
+    if (Object.keys(input).length === 1 && input.launchAtLogin === false) {
+      removals++
+      if (pending) await refusal
+    }
+    if (input.launchAtLogin === true) throw new Error('Startup registration is prohibited in this fixture')
+    return originalSave(input)
+  }
+  try {
+    emit({ state: 'idle', message: '', settings: { ...settings, launchAtLogin: false } }); await frame()
+    query<HTMLButtonElement>('[aria-label="设置"]').click(); await frame()
+    const appearance = [...document.querySelectorAll<HTMLButtonElement>('.settings-nav button')].find(button => button.textContent?.includes('显示与启动'))!
+    appearance.click(); await frame()
+    const startup = [...document.querySelectorAll<HTMLLabelElement>('.toggle-setting')].find(label => label.textContent?.includes('不允许开机启动'))!.querySelector<HTMLInputElement>('input')!
+    check(startup.disabled && !startup.checked && query('.settings-content').textContent?.includes('不会创建或恢复'), 'startup stays visibly off and cannot be enabled in settings')
+    const remove = [...document.querySelectorAll<HTMLButtonElement>('.settings-content button')].find(button => button.textContent?.includes('移除语伴登录项'))!
+    remove.focus(); remove.click(); remove.click(); await frame()
+    query<HTMLFormElement>('.settings-form').requestSubmit(); await frame()
+    check(removals === 1 && requests.length === 1 && remove.getAttribute('aria-busy') === 'true' && document.activeElement === remove, 'one explicit removal keeps focus and prevents duplicate removal or concurrent form save')
+    reject(new Error('系统尚未确认移除语伴登录项。')); await frame()
+    check(Boolean(document.querySelector('.panel-settings')) && query('.panel-notice').textContent?.includes('尚未确认移除') && remove.getAttribute('aria-busy') === 'false', 'failed removal is reported without claiming success or closing settings')
+    emit({ captions: [caption('login-item-status-update')] }); await frame()
+    check(removals === 1 && snapshot.settings.launchAtLogin === false, 'ordinary snapshots do not retry removal or enable startup')
+    pending = false; remove.click(); await frame()
+    check(removals === 2 && Boolean(document.querySelector('.panel-settings')) && query('.settings-content [role="status"]').textContent?.includes('登录项关闭'), 'only an explicit removal retry reports its result while retaining the settings draft')
+    query<HTMLFormElement>('.settings-form').requestSubmit(); await frame()
+    check(!document.querySelector('.panel') && removals === 2 && requests.every(input => input.launchAtLogin !== true), 'ordinary preference save keeps startup off and does not submit another removal')
+    check(audioStarts === 0 && providerCalls === 0, 'startup-policy UI tests never start audio or call providers')
+  } finally {
+    api.saveSettings = originalSave
+    emit({ state: 'idle', message: '', settings: { ...settings } }); await frame()
+  }
+  return { checks }
+}
+
+;(window as unknown as { __lingobarUiTest: { run: typeof run; preview: typeof preview; loginItemRegression: typeof loginItemRegression } }).__lingobarUiTest = { run, preview, loginItemRegression }
 createRoot(document.getElementById('root')!).render(<App />)
