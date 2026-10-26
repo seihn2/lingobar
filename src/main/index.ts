@@ -49,6 +49,7 @@ function stop(): void {
   microphoneRun = null
   microphone(false)
   audio.stop()
+  queue?.cancelAnnotationRetries()
   queue?.finishPartials()
   partial = {}
   partialIds = {}
@@ -64,6 +65,7 @@ function fail(error: unknown): void {
 }
 async function start(): Promise<void> {
   if (state === 'listening' || state === 'starting') return
+  queue?.cancelAnnotationRetries()
   const generation = ++startGeneration
   try {
     const settings = storage.settings()
@@ -137,6 +139,7 @@ function wireIPC(): void {
   handle('lingo:snapshot', snapshot)
   handle('lingo:settings', (input: SettingsInput) => {
     if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('设置格式不正确。')
+    const previousSettings = storage.settings()
     if (state === 'starting' || state === 'listening') {
       const serviceKeys: (keyof SettingsInput)[] = ['captureMode', 'microphoneDeviceId', 'asrEndpoint', 'asrModel', 'asrApiKey', 'translationBaseUrl', 'translationModel', 'translationApiKey']
       const current = storage.settings()
@@ -153,6 +156,8 @@ function wireIPC(): void {
       if (removeLoginItem) throw new Error('语伴登录项已确认关闭，但本地设置未能保存；应用不会恢复或启用它。')
       throw error
     }
+    if (settings.showFurigana !== previousSettings.showFurigana || settings.targetLanguages.join('|') !== previousSettings.targetLanguages.join('|') ||
+      settings.translationBaseUrl !== previousSettings.translationBaseUrl || settings.translationModel !== previousSettings.translationModel || Boolean(input.translationApiKey?.trim())) queue.cancelAnnotationRetries()
     applyPreferences()
     publish()
     return settings
@@ -165,6 +170,10 @@ function wireIPC(): void {
     queue.add(text, 'text')
   })
   handle('lingo:retry', (id: unknown) => { if (typeof id === 'string') queue.retry(id) })
+  handle('lingo:retry-annotation', (id: unknown) => {
+    if (typeof id !== 'string' || !id.trim() || id.length > 512) throw new Error('请选择有效的字幕段落。')
+    queue.retryAnnotation(id)
+  })
   handle('lingo:save-caption', (id: unknown) => { if (typeof id === 'string') queue.toggleSaved(id) })
   handle('lingo:copy', (text: unknown) => {
     if (typeof text !== 'string' || text.length > 100000) throw new Error('复制内容过长。')

@@ -11,6 +11,10 @@ export interface WorkerEnv {
 }
 const MODELS: readonly AsrModel[] = ['qwen-audio-3.1-asr-flash-streaming', 'qwen-audio-3.0-asr-flash-streaming', 'qwen3-asr-flash-realtime']
 const key = (value: unknown): value is string => typeof value === 'string' && Boolean(value.trim()) && value.length <= 4096 && !/[\u0000-\u001f\u007f]/u.test(value)
+export function annotationConfig(env: WorkerEnv): { translationKey: string } | null {
+  if (env.WEB_ENABLED !== '1' || !env.AUTH_SERVICE || typeof env.AUTH_SERVICE.fetch !== 'function' || !key(env.TRANSLATION_API_KEY)) return null
+  return { translationKey: env.TRANSLATION_API_KEY.trim() }
+}
 /** These are future server bindings, never files/process.env or browser configuration. */
 export function serverConfig(env: WorkerEnv): RelayConfig | null {
   const model = env.ASR_MODEL || MODELS[0]
@@ -19,7 +23,7 @@ export function serverConfig(env: WorkerEnv): RelayConfig | null {
   return { asrKey: env.ASR_API_KEY.trim(), translationKey: env.TRANSLATION_API_KEY.trim(), model: model as AsrModel }
 }
 /** An internal service binding must verify identity and access policy; raw request headers are not proof. */
-export async function authorized(request: Request, binding: Binding): Promise<boolean> {
+export async function authorized(request: Request, binding: Binding, path: '/api/session' | '/api/annotation' = '/api/session'): Promise<boolean> {
   const controller = new AbortController()
   let expire!: () => void
   const deadline = new Promise<Response>(resolve => { expire = () => { controller.abort(); resolve(new Response(null, { status: 408 })) } })
@@ -34,7 +38,7 @@ export async function authorized(request: Request, binding: Binding): Promise<bo
   try {
     if (request.signal.aborted) return false
     const response = await Promise.race([deadline, binding.fetch(new Request('https://auth.internal/authorize', {
-      method: 'POST', headers, body: JSON.stringify({ origin: new URL(request.url).origin, path: '/api/session' }),
+      method: 'POST', headers, body: JSON.stringify({ origin: new URL(request.url).origin, path }),
       redirect: 'error', signal: controller.signal
     }))])
     void response.body?.cancel().catch(() => {})

@@ -22,7 +22,7 @@ const f = vi.hoisted(() => {
   const storage = { settings: vi.fn(() => ({ ...preferences })), saved: () => [], key: vi.fn(() => 'synthetic-only-key'), save: vi.fn(), saveCaptions: vi.fn() }
   const audio = { start: vi.fn().mockResolvedValue(undefined), stop: vi.fn(), pause: vi.fn(), pushMicrophone: vi.fn() }
   const callbacks = { changed: null as null | (() => void), audio: null as any }
-  const queue = { captions: [], finishPartials: vi.fn(), close: vi.fn(), updatePartial: vi.fn(() => callbacks.changed?.()) }
+  const queue = { captions: [], finishPartials: vi.fn(), cancelAnnotationRetries: vi.fn(), close: vi.fn(), updatePartial: vi.fn(() => callbacks.changed?.()) }
   const session = { setPermissionRequestHandler: vi.fn(), setPermissionCheckHandler: vi.fn() }
   const app = { setName: vi.fn(), setPath: vi.fn(), setAppUserModelId: vi.fn(), getPath: () => '/synthetic/lingobar', isPackaged: false,
     requestSingleInstanceLock: () => true, on: vi.fn(), quit: vi.fn(), whenReady: () => Promise.resolve(), getAppPath: () => '/synthetic-app' }
@@ -60,6 +60,7 @@ beforeEach(async () => {
   vi.clearAllMocks()
   f.handlers.clear(); f.listeners.clear()
   f.frame.url = 'http://127.0.0.1:5173/'
+  f.storage.save.mockImplementation(input => ({ ...f.preferences, ...input }))
   f.preferences.captureMode = 'microphone'
   f.visibility.value = false
   f.callbacks.audio = null; f.callbacks.changed = null

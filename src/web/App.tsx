@@ -46,7 +46,7 @@ export default function WebApp({ session }: { session: BrowserSession }) {
       }
       capturing.current = nextActive; setSnapshot(next)
     })
-    const suspend = () => { if (capturing.current) { action.current++; session.stop() } }
+    const suspend = () => { action.current++; session.stop() }
     const visibility = () => { if (document.hidden) suspend() }
     document.addEventListener('visibilitychange', visibility)
     window.addEventListener('pagehide', suspend)
@@ -59,7 +59,7 @@ export default function WebApp({ session }: { session: BrowserSession }) {
   }, [session])
   const run = async (work: () => unknown | Promise<unknown>) => {
     setNotice('')
-    try { await work() } catch (error) { setNotice(error instanceof Error ? error.message : '操作未完成。') }
+    try { await work() } catch (error) { if (!(error instanceof Error && error.name === 'AbortError')) setNotice(error instanceof Error ? error.message : '操作未完成。') }
   }
   const toggle = async () => {
     const current = ++action.current
@@ -81,6 +81,7 @@ export default function WebApp({ session }: { session: BrowserSession }) {
   })
   const save = (caption: Caption) => void run(() => session.toggleSaved(caption.id))
   const retry = (caption: Caption) => void run(() => session.retry(caption.id))
+  const retryAnnotation = (caption: Caption) => void run(() => session.retryAnnotation(caption.id))
   const exportSaved = () => {
     const saved = snapshot.captions.filter(caption => caption.saved)
     if (!saved.length) return
@@ -108,8 +109,8 @@ export default function WebApp({ session }: { session: BrowserSession }) {
     {message && <p className="web-notice" role="alert">{message}</p>}
     <div className="web-reading" hidden={panel !== null}>
       {snapshot.captions.length ? compact
-        ? <CompactCaption key={`compact:${readingEpoch}`} captions={snapshot.captions} settings={snapshot.settings} readingSession={reading.current} preview={false} partial={[]} listening={snapshot.state === 'listening'} notice="" onRetry={retry} onReturnLive={() => setSelectedId(null)} controls={<></>} />
-        : <CaptionStream allowRemoveSaved key={`expanded:${readingEpoch}`} captions={snapshot.captions} settings={snapshot.settings} readingSession={reading.current} preview={false} focusId={selectedId} focusVersion={focusVersion} copiedId={copiedId} onCopy={copy} onSave={save} onRetry={retry} onReturnLive={() => setSelectedId(null)} />
+        ? <CompactCaption key={`compact:${readingEpoch}`} captions={snapshot.captions} settings={snapshot.settings} readingSession={reading.current} preview={false} partial={[]} listening={snapshot.state === 'listening'} notice="" onRetry={retry} onRetryAnnotation={retryAnnotation} onReturnLive={() => setSelectedId(null)} controls={<></>} />
+        : <CaptionStream allowRemoveSaved key={`expanded:${readingEpoch}`} captions={snapshot.captions} settings={snapshot.settings} readingSession={reading.current} preview={false} focusId={selectedId} focusVersion={focusVersion} copiedId={copiedId} onCopy={copy} onSave={save} onRetry={retry} onRetryAnnotation={retryAnnotation} onReturnLive={() => setSelectedId(null)} />
         : <p className="web-empty">暂无字幕</p>}
     </div>
     {panel && <section className={`web-panel panel-${panel}`} aria-label={panel === 'settings' ? '字幕设置' : '历史与收藏'}>

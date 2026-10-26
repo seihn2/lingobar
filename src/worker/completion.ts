@@ -11,7 +11,7 @@ export interface CompletionService {
 }
 
 /** A per-connection request budget leaves headroom below the documented free invocation subrequest limit. */
-export function createCompletion(config: RelayConfig, transport: WorkerFetch): CompletionService {
+export function createCompletion(config: Pick<RelayConfig, 'translationKey'>, transport: WorkerFetch, requestLimit = MAX_COMPLETION_REQUESTS): CompletionService {
   let requests = 0
   async function bounded<T>(signal: AbortSignal, work: (signal: AbortSignal) => Promise<T>): Promise<T> {
     const controller = new AbortController()
@@ -30,7 +30,7 @@ export function createCompletion(config: RelayConfig, transport: WorkerFetch): C
     const guarded: typeof fetch = async (input, init) => {
       if (signal.aborted) throw new RelayError('unavailable')
       if (String(input) !== TRANSLATION_ENDPOINT || init?.method !== 'POST' || init.redirect !== 'error') throw new RelayError('protocol')
-      if (requests >= MAX_COMPLETION_REQUESTS) { code = 'quota'; throw new RelayError('quota') }
+      if (requests >= requestLimit) { code = 'quota'; throw new RelayError('quota') }
       requests++
       const response = await transport(TRANSLATION_ENDPOINT, init)
       if (!response.ok) {

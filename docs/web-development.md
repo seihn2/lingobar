@@ -31,7 +31,7 @@ The shipped public `app-config.json` is `{"version":1,"backend":null}`.
 The real page shows **后端未配置**, disables start, and requests neither audio
 nor a service socket. There is no built-in simulated transcript/provider. All
 synthetic implementations are confined to test entries excluded from the build.
-The only accepted future route is the same-origin `/api/session`; a public
+The only configurable audio route is the same-origin `/api/session`; a public
 configuration file cannot redirect audio to an arbitrary provider or carry keys.
 The first batch does not implement or deploy that server route. The subsequent
 [fixed-upstream relay batch](workers-relay.md) implements its server contract,
@@ -58,10 +58,17 @@ explicitly authorized server configuration before real use.
   row when all500 are saved. Per-run revision tombstones are bounded at2000; an
   evicted row cannot reappear from a late revision. Export requests a Markdown
   download; the browser cannot confirm a successful filesystem write.
-- Retry uses only the current connected session's captions. Older-session rows
+- Translation retry uses only the current connected session's captions. Older-session rows
   remain readable, copyable and savable. Changing target languages or furigana
   stops capture before applying the new settings. No desktop pin/tray/global
   shortcut/login-item UI is presented, and startup enable requests are rejected.
+
+A separate [annotation-only retry](annotation-retry.md) now accepts finalized
+Japanese text while paused via fixed same-origin POST `/api/annotation`. It does
+not start capture, reconnect ASR, or retranslate. It requires the same verified
+server authentication boundary; it is unavailable in the shipped unconfigured
+build. Cancel, settings/revision changes, row eviction and page hiding invalidate
+text requests independently of the audio session.
 
 ## Version1 transport contract
 

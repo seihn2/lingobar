@@ -32,7 +32,7 @@ vi.mock('electron', () => ({
 }))
 vi.mock('../src/shared/platform', async original => ({ ...await original<object>(), desktopPlatform: () => f.platform }))
 vi.mock('../src/main/audio', () => ({ AudioEngine: vi.fn(function () { return { stop: vi.fn() } }) }))
-vi.mock('../src/main/captions', () => ({ CaptionQueue: vi.fn(function () { return { captions: [], close: vi.fn(), finishPartials: vi.fn() } }) }))
+vi.mock('../src/main/captions', () => ({ CaptionQueue: vi.fn(function () { return { captions: [], close: vi.fn(), finishPartials: vi.fn(), cancelAnnotationRetries: vi.fn() } }) }))
 vi.mock('../src/main/diagnostics', () => ({ trace: vi.fn() }))
 const event = () => ({ sender: f.contents, senderFrame: f.frame })
 const snapshot = () => f.handlers.get('lingo:snapshot')!(event())
