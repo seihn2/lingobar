@@ -1,5 +1,6 @@
 import { EventEmitter } from 'node:events'
 import WebSocket from 'ws'
+import type { FinalizedLimits } from '../src/shared/finalized-utterances'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { QwenAsrSession, realtimeSessionConfig, transcriptionEvent, asrConnection, streamingTranscriptionEvent, streamingTranscriptionEvents, DEFAULT_ASR_MODEL } from '../src/main/audio/qwen'
 
@@ -21,18 +22,55 @@ class FakeSocket extends EventEmitter {
   message(value: unknown): void { this.emit('message', Buffer.from(JSON.stringify(value))) }
 }
 const options = { apiKey: 'synthetic-test-key', model: 'qwen3-asr-flash-realtime', endpoint: 'wss://example.invalid/realtime' }
-function fixture() {
+function fixture(finalizedLimits?: FinalizedLimits) {
   const sockets: FakeSocket[] = []
   const callbacks = { onPartial: vi.fn(), onSentence: vi.fn(), onError: vi.fn() }
   const session = new QwenAsrSession(callbacks, {
     createSocket: () => { const socket = new FakeSocket(); sockets.push(socket); return socket as unknown as WebSocket },
-    startupTimeoutMs: 1000
+    startupTimeoutMs: 1000, finalizedLimits
   })
   return { session, sockets, callbacks }
 }
 afterEach(() => vi.useRealTimers())
 
 describe('Qwen protocol and session ownership', () => {
+  it.each(['streaming', 'realtime'] as const)('ends %s explicitly on finalized ID count/size exhaustion and only an explicit start permits reused IDs', async protocol => {
+    for (const budget of ['count', 'units']) {
+      const streaming = protocol === 'streaming'
+      const { session, sockets, callbacks } = fixture(budget === 'count' ? { maxIds: 2, maxUnits: 100 } : { maxIds: 100, maxUnits: streaming ? 2 : 12 })
+      const selected = streaming ? streamingOptions : options
+      const start = session.start(selected), socket = sockets[0]
+      const acknowledge = (peer: FakeSocket) => { peer.open(); peer.message(streaming ? taskEvent(peer, 'task-started') : { type: 'session.updated' }) }
+      const packet = (peer: FakeSocket, id: number) => streaming ? taskEvent(peer, 'result-generated', { sentence_id: id, text: 'Synthetic final', sentence_end: true })
+        : { type: 'conversation.item.input_audio_transcription.completed', item_id: `item-${id}`, transcript: 'Synthetic final' }
+      acknowledge(socket); await start
+      socket.message(packet(socket, 1)); socket.message(packet(socket, 2)); socket.message(packet(socket, 1))
+      expect(callbacks.onSentence).toHaveBeenCalledTimes(2); expect(callbacks.onError).not.toHaveBeenCalled()
+      const oldId = callbacks.onSentence.mock.calls[0][1]
+      socket.message(packet(socket, 3)); socket.message(packet(socket, 1)); socket.message(packet(socket, 4)); session.stop()
+      expect(callbacks.onSentence).toHaveBeenCalledTimes(2)
+      expect(callbacks.onError).toHaveBeenCalledExactlyOnceWith('本次识别记录已满，请重新开始。')
+      expect(socket.terminate).toHaveBeenCalledOnce(); expect(sockets).toHaveLength(1)
+      const again = session.start(selected), next = sockets[1]; acknowledge(next); await again
+      socket.message(packet(socket, 4)); next.message(packet(next, 1))
+      expect(callbacks.onSentence).toHaveBeenCalledTimes(3); expect(callbacks.onSentence.mock.calls[2][1]).not.toBe(oldId)
+      session.stop()
+    }
+  })
+  it.each(['streaming', 'realtime'] as const)('does not forget early completed IDs after 257 %s finals', async protocol => {
+    const { session, sockets, callbacks } = fixture()
+    const start = session.start(protocol === 'streaming' ? streamingOptions : options)
+    const socket = sockets[0]; socket.open(); socket.message(protocol === 'streaming' ? taskEvent(socket, 'task-started') : { type: 'session.updated' }); await start
+    const packet = (id: number, partial = false) => protocol === 'streaming'
+      ? taskEvent(socket, 'result-generated', { sentence_id: id, text: `Synthetic source ${id}`, sentence_end: !partial })
+      : { type: partial ? 'conversation.item.input_audio_transcription.text' : 'conversation.item.input_audio_transcription.completed', item_id: `item-${id}`, ...(partial ? { text: `Synthetic source ${id}` } : { transcript: `Synthetic source ${id}` }) }
+    for (let id = 1; id <= 257; id++) socket.message(packet(id))
+    callbacks.onPartial.mockClear(); callbacks.onSentence.mockClear()
+    socket.message(packet(1, true)); socket.message(packet(1))
+    expect(callbacks.onPartial).not.toHaveBeenCalled(); expect(callbacks.onSentence).not.toHaveBeenCalled()
+    socket.message(packet(258)); expect(callbacks.onSentence).toHaveBeenCalledOnce()
+    session.stop()
+  })
   it('combines confirmed prefix with draft suffix and retains final Unicode text', () => {
     expect(transcriptionEvent({ type: 'conversation.item.input_audio_transcription.text', text: '今日は', stash: 'いい天気' }))
       .toEqual({ partial: true, text: '今日はいい天気', id: undefined })
