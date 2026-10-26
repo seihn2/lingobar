@@ -134,6 +134,25 @@ async function main() {
         console.log('Synthetic touch observation: ' + JSON.stringify({ width, ...checked.result.value }))
         result.result.value.checks.push(...checked.result.value.checks)
         touchFailures.push(...checked.result.value.failures)
+        const tap = async point => {
+          await send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: point.x, y: point.y, id: 1, radiusX: 5, radiusY: 5 }] })
+          await new Promise(resolve => setTimeout(resolve, 50))
+          await send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+          await pause()
+        }
+        const getPoint = async expression => {
+          const value = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true })
+          if (value.exceptionDetails) throw new Error('Touch control: ' + (value.exceptionDetails.exception?.description || value.exceptionDetails.text))
+          return value.result.value
+        }
+        await tap(await getPoint('window.__lingobarWebTest.prepareTouchReturn(' + JSON.stringify(point) + ')'))
+        const returned = await getPoint('window.__lingobarWebTest.verifyTouchReturn(' + JSON.stringify(point) + ')')
+        result.result.value.checks.push(...returned.checks)
+        await tap(await getPoint('window.__lingobarWebTest.touchPoint(".web-footer button:last-child")'))
+        const historyPoint = await getPoint('window.__lingobarWebTest.prepareTouchHistory()')
+        await tap(historyPoint)
+        const selected = await getPoint('window.__lingobarWebTest.verifyTouchHistory(' + JSON.stringify(historyPoint.id) + ')')
+        result.result.value.checks.push(...selected.checks)
       }
       results.push({ width, height, scale, ...result.result.value })
       screenshot = await send('Page.captureScreenshot', { format: 'png' })
