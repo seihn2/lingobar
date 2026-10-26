@@ -39,7 +39,7 @@ function identifier(value: unknown): string {
   return result
 }
 
-function japaneseSegments(value: unknown, japanese: string): NonNullable<Caption['jaSegments']> {
+export function parseJapaneseSegments(value: unknown, japanese: string): NonNullable<Caption['jaSegments']> {
   if (!japanese || !Array.isArray(value) || value.length < 1 || value.length > 1000) invalid()
   const result: NonNullable<Caption['jaSegments']> = []
   let combined = ''
@@ -105,7 +105,7 @@ function caption(value: unknown): Caption {
     if (value.furiganaStatus !== 'pending' && value.furiganaStatus !== 'ready' && value.furiganaStatus !== 'error') invalid()
     result.furiganaStatus = value.furiganaStatus
   }
-  if (Object.hasOwn(value, 'jaSegments')) result.jaSegments = japaneseSegments(value.jaSegments, result.ja)
+  if (Object.hasOwn(value, 'jaSegments')) result.jaSegments = parseJapaneseSegments(value.jaSegments, result.ja)
   // saved belongs to this browser. Free-form upstream errors, settings, keys
   // and all other non-protocol fields never enter the returned caption.
   return result

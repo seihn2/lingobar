@@ -83,6 +83,8 @@ Open **设置 → 字幕语言** (Settings → Caption languages):
 
 Furigana never blocks the translation, and a failed reading request does not remove the Japanese text. Check personal names, words with multiple readings, and unusual expressions yourself. These readings are LLM output, not a dictionary or a guarantee of correct pronunciation.
 
+If the Japanese translation is complete but its readings failed, choose **重试日语注音** (Retry Japanese readings). This retries only the readings, without retranslating or starting recording, including while paused. Japanese and furigana must remain enabled and the service must be configured. Retrying readings may still incur API charges. Canceling, changing languages, or leaving the Web page cancels pending manual reading requests.
+
 <a id="history"></a>
 ## 6. Follow live captions, look back, save, and export
 

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { ArrowDown, Bookmark, Check, Copy, LoaderCircle, RotateCcw } from 'lucide-react'
 import type { Caption, Settings } from '../shared/types'
+import { annotationText } from '../shared/annotation-protocol'
 import { DEFAULT_LANGUAGES, languageInfo } from '../shared/languages'
 import { alignedOriginal, survivingCaptionId, translationFor, untranslatedErrorSource } from './caption-text'
 import { advanceReading, initialReadingClock, type ReadingSession } from './reading-schedule'
@@ -15,6 +16,7 @@ type Props = {
   onCopy: (caption: Caption) => void
   onSave: (caption: Caption) => void
   onRetry: (caption: Caption) => void
+  onRetryAnnotation?: (caption: Caption) => void
   onReturnLive: () => void
   readingSession: ReadingSession
   allowRemoveSaved?: boolean
@@ -23,9 +25,17 @@ type Anchor = { id: string; offset: number }
 const sourceNames = { system: '电脑声音', microphone: '麦克风', text: '文字输入' }
 
 /** A translation fills its existing card; only new source segments append cards. */
-export default function CaptionStream({ captions, settings, preview, focusId, focusVersion, copiedId, onCopy, onSave, onRetry, onReturnLive, readingSession, allowRemoveSaved = false }: Props) {
+export default function CaptionStream({ captions, settings, preview, focusId, focusVersion, copiedId, onCopy, onSave, onRetry, onRetryAnnotation, onReturnLive, readingSession, allowRemoveSaved = false }: Props) {
   const viewport = useRef<HTMLDivElement>(null)
   const content = useRef<HTMLDivElement>(null)
+  const annotationFocus = useRef<HTMLButtonElement | null>(null)
+  useLayoutEffect(() => {
+    const button = annotationFocus.current
+    if (button && (!button.isConnected || button.disabled)) {
+      annotationFocus.current = null
+      if (document.activeElement === document.body && viewport.current?.getClientRects().length) viewport.current.focus()
+    }
+  })
   const followRef = useRef(readingSession.following)
   const anchor = useRef<Anchor | null>(readingSession.anchor)
   const fingerprints = useRef(new Map<string, string>())
@@ -177,6 +187,7 @@ export default function CaptionStream({ captions, settings, preview, focusId, fo
               {settings.showOriginal && <CaptionRow label="原文" lang="auto" text={alignedOriginal(caption)} original />}
               {targets.map((code, targetIndex) => <CaptionRow key={code} label={languageInfo(code).nativeName} lang={languageInfo(code).lang} text={translationFor(caption, code)} primary={targetIndex === 0} segments={code === 'ja' && settings.showFurigana ? caption.jaSegments : undefined} pending={(caption.status === 'translating' || caption.translationPending) && (!caption.targetLanguages || caption.targetLanguages.includes(code))} />)}
             </div>
+            {onRetryAnnotation && settings.showFurigana && targets.includes('ja') && annotationText(caption) && (caption.furiganaStatus === 'error' || caption.furiganaStatus === 'pending' || !caption.jaSegments?.length) && <div className="caption-missing"><button type="button" aria-label="重试日语注音" aria-busy={caption.furiganaStatus === 'pending'} aria-disabled={caption.furiganaStatus === 'pending'} disabled={preview || retainedOnly} onClick={event => { if (caption.furiganaStatus !== 'pending') { annotationFocus.current = event.currentTarget; onRetryAnnotation(caption) } }}><RotateCcw size={11} />重试日语注音</button></div>}
             {untranslated && <div className="caption-untranslated"><b>{untranslated.label}</b><p dir="auto">{untranslated.text}</p></div>}
             {missingTargets && caption.status === 'ready' && !caption.live && !caption.translationPending && !preview && !retainedOnly && <div className="caption-missing"><span>部分所选语言尚未生成</span><button onClick={() => onRetry(caption)}><RotateCcw size={11} />按当前语言重新翻译</button></div>}
             {caption.status === 'error' && <div className="caption-error"><span>{caption.error || '这段翻译暂时没有完成。'}</span>{!retainedOnly && !caption.live && !caption.translationPending && <button onClick={() => onRetry(caption)}><RotateCcw size={11} />重试</button>}</div>}

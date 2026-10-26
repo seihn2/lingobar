@@ -9,14 +9,14 @@ const f = vi.hoisted(() => {
   const webContents = { mainFrame: frame, send: vi.fn(), setWindowOpenHandler: vi.fn(), on: vi.fn() }
   const image = { setTemplateImage: vi.fn() }
   const window = { webContents, isDestroyed: () => false, on: vi.fn(), once: vi.fn(), setVisibleOnAllWorkspaces: vi.fn(),
-    loadURL: vi.fn().mockResolvedValue(undefined), loadFile: vi.fn().mockResolvedValue(undefined), show: vi.fn(), focus: vi.fn() }
+    setAlwaysOnTop: vi.fn(), loadURL: vi.fn().mockResolvedValue(undefined), loadFile: vi.fn().mockResolvedValue(undefined), show: vi.fn(), focus: vi.fn() }
   const preferences = { captureMode: 'microphone', microphoneDeviceId: 'fixture-microphone', targetLanguages: ['en'],
     showOriginal: true, showFurigana: true, alwaysOnTop: true, opacity: .94, fontSize: 16, launchAtLogin: false,
     asrEndpoint: 'wss://fixture.invalid', asrModel: 'fixture', translationBaseUrl: 'https://fixture.invalid', translationModel: 'fixture',
     hasAsrKey: true, hasTranslationKey: true }
   const storage = { settings: vi.fn(() => ({ ...preferences })), saved: () => [], key: vi.fn(() => 'synthetic-only-key'), save: vi.fn(), saveCaptions: vi.fn() }
   const audio = { start: vi.fn().mockResolvedValue(undefined), stop: vi.fn(), pushMicrophone: vi.fn() }
-  const queue = { captions: [], finishPartials: vi.fn(), close: vi.fn() }
+  const queue = { captions: [], finishPartials: vi.fn(), close: vi.fn(), retryAnnotation: vi.fn(), cancelAnnotationRetries: vi.fn() }
   const session = { setPermissionRequestHandler: vi.fn(), setPermissionCheckHandler: vi.fn() }
   const app = { setName: vi.fn(), setPath: vi.fn(), setAppUserModelId: vi.fn(), getPath: () => '/synthetic/lingobar', isPackaged: false,
     requestSingleInstanceLock: () => true, on: vi.fn(), quit: vi.fn(), whenReady: () => Promise.resolve(), getAppPath: () => '/synthetic-app' }
@@ -48,6 +48,7 @@ beforeEach(async () => {
   vi.clearAllMocks()
   f.handlers.clear(); f.listeners.clear()
   f.frame.url = 'http://127.0.0.1:5173/'
+  f.storage.save.mockImplementation(input => ({ ...f.preferences, ...input }))
   f.preferences.captureMode = 'microphone'
   vi.stubEnv('ELECTRON_RENDERER_URL', 'http://127.0.0.1:5173')
   await import('../src/main/index')
@@ -73,6 +74,25 @@ describe('installed main-process IPC and permission handlers', () => {
     expect(() => invoke('lingo:settings', null)).toThrow('设置格式')
     expect(() => invoke('lingo:settings', [])).toThrow('设置格式')
     expect(f.storage.save).not.toHaveBeenCalled()
+  })
+
+  it('annotation retry accepts only a trusted main frame and never starts audio or reads ASR credentials', () => {
+    const handler = f.handlers.get('lingo:retry-annotation')!
+    for (const event of [{ sender: {}, senderFrame: f.frame }, { sender: f.webContents, senderFrame: { ...f.frame } }]) expect(() => handler(event, 'synthetic-caption')).toThrow('无法访问')
+    for (const id of [null, 42, {}, '', ' ', 'x'.repeat(513)]) expect(() => invoke('lingo:retry-annotation', id)).toThrow('有效的字幕')
+    invoke('lingo:retry-annotation', 'synthetic-caption')
+    expect(f.queue.retryAnnotation).toHaveBeenCalledExactlyOnceWith('synthetic-caption')
+    expect(f.audio.start).not.toHaveBeenCalled(); expect(f.storage.key).not.toHaveBeenCalled()
+    expect(f.webContents.send.mock.calls.some(call => call[0] === 'lingo:microphone')).toBe(false)
+  })
+
+  it('cancels only manual annotation retries at stop/start or meaningful preference changes', async () => {
+    invoke('lingo:settings', { fontSize: 20 }); expect(f.queue.cancelAnnotationRetries).not.toHaveBeenCalled()
+    invoke('lingo:settings', { showFurigana: false }); expect(f.queue.cancelAnnotationRetries).toHaveBeenCalledOnce()
+    invoke('lingo:settings', { targetLanguages: ['ja'] }); expect(f.queue.cancelAnnotationRetries).toHaveBeenCalledTimes(2)
+    invoke('lingo:settings', { translationApiKey: 'synthetic-only-key' }); expect(f.queue.cancelAnnotationRetries).toHaveBeenCalledTimes(3)
+    await invoke('lingo:start'); expect(f.queue.cancelAnnotationRetries).toHaveBeenCalledTimes(4)
+    invoke('lingo:stop'); expect(f.queue.cancelAnnotationRetries).toHaveBeenCalledTimes(5)
   })
 
   it('allows only an explicitly started microphone and denies camera, subframe and foreign URL access', async () => {

@@ -61,6 +61,7 @@ export interface LingoAPI {
   microphoneReady(run: number): void
   translateText(text: string): Promise<void>
   retry(id: string): Promise<void>
+  retryAnnotation(id: string): Promise<void>
   toggleSaved(id: string): Promise<void>
   exportSaved(): Promise<boolean>
   copyText(text: string): Promise<void>

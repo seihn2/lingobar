@@ -2,6 +2,7 @@ import type { AudioSource, Caption } from './types'
 import { translateCaption, type TranslationConfig } from '../main/translation'
 import { annotateJapanese } from '../main/japanese'
 import { DEFAULT_LANGUAGES, isTargetLanguage } from './languages'
+import { annotationText } from './annotation-protocol'
 
 interface AnnotationJob {
   caption: Caption
@@ -10,6 +11,7 @@ interface AnnotationJob {
   config: TranslationConfig
   controller: AbortController
   timeout: ReturnType<typeof setTimeout>
+  manual: boolean
 }
 
 interface TranslationState {
@@ -266,6 +268,23 @@ export class CaptionQueue {
     delete caption.error
     this.enqueue(caption)
   }
+  retryAnnotation(id: string): void {
+    const caption = this.captions.find(item => item.id === id)
+    if (this.closed || !caption || !annotationText(caption)) throw new Error('请等待这段日语译文定稿后重试注音。')
+    if (this.annotations.has(id) || caption.furiganaStatus === 'pending') return
+    const config = this.config()
+    if (config.generateFurigana === false || !(config.targetLanguages || DEFAULT_LANGUAGES).includes('ja')) throw new Error('请先开启日语注音。')
+    this.enqueueAnnotation(caption, config, true)
+    this.changed()
+  }
+  cancelAnnotationRetries(): void {
+    let changed = false
+    for (const job of [...this.annotations.values()]) {
+      if (!job.manual) continue
+      this.cancelAnnotation(job.caption.id); changed = true
+    }
+    if (changed && !this.closed) { this.changed(); this.drainAnnotations() }
+  }
   toggleSaved(id: string): void {
     const caption = this.captions.find(c => c.id === id)
     if (!caption || caption.live || caption.translationPending || caption.status !== 'ready') return
@@ -370,11 +389,11 @@ export class CaptionQueue {
     job.controller.abort()
     if (job.caption.furiganaStatus === 'pending') job.caption.furiganaStatus = 'error'
   }
-  private enqueueAnnotation(caption: Caption, config: TranslationConfig): void {
+  private enqueueAnnotation(caption: Caption, config: TranslationConfig, manual = false): void {
     this.cancelAnnotation(caption.id)
     if (this.annotationWaiting.length >= 20) this.cancelAnnotation(this.annotationWaiting[0].caption.id)
     const controller = new AbortController()
-    const job: AnnotationJob = { caption, original: caption.translatedOriginal || caption.original, japanese: caption.ja, config, controller,
+    const job: AnnotationJob = { caption, original: caption.translatedOriginal || caption.original, japanese: caption.ja, config, controller, manual,
       timeout: setTimeout(() => {
         if (this.annotations.get(caption.id) !== job) return
         this.cancelAnnotation(caption.id)
@@ -393,7 +412,10 @@ export class CaptionQueue {
       const job = this.annotationWaiting.shift()!
       if (this.annotations.get(job.caption.id) !== job) continue
       this.annotationRunning.add(job)
-      void Promise.resolve().then(() => this.annotator(job.original, job.japanese, job.config, job.controller.signal))
+      void Promise.resolve().then(() => {
+        if (!this.annotationCurrent(job)) throw new Error('Annotation cancelled')
+        return this.annotator(job.original, job.japanese, job.config, job.controller.signal)
+      })
         .then(result => {
           if (!this.annotationCurrent(job)) return
           Object.assign(job.caption, result, { furiganaStatus: 'ready' })
@@ -404,7 +426,10 @@ export class CaptionQueue {
         }).finally(() => {
           clearTimeout(job.timeout)
           this.annotationRunning.delete(job)
-          if (this.annotations.get(job.caption.id) === job) this.annotations.delete(job.caption.id)
+          if (this.annotations.get(job.caption.id) === job) {
+            if (job.caption.furiganaStatus === 'pending') job.caption.furiganaStatus = 'error'
+            this.annotations.delete(job.caption.id)
+          }
           // Publish the final annotation state before a later add can evict it.
           if (!this.closed) { this.changed(); this.drainAnnotations() }
         })
@@ -412,7 +437,7 @@ export class CaptionQueue {
   }
   private annotationCurrent(job: AnnotationJob): boolean {
     return !this.closed && !job.controller.signal.aborted && this.annotations.get(job.caption.id) === job &&
-      this.captions.includes(job.caption) && job.caption.ja === job.japanese
+      this.captions.includes(job.caption) && job.caption.ja === job.japanese && (job.caption.translatedOriginal || job.caption.original) === job.original
   }
   close(): void {
     this.closed = true

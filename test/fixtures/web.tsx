@@ -2,6 +2,7 @@
 import { createRoot } from 'react-dom/client'
 import WebApp from '../../src/web/App'
 import { BrowserSession, type WebSocketPort } from '../../src/web/session'
+import type { AnnotationRequest } from '../../src/shared/annotation-protocol'
 import type { Caption } from '../../src/shared/types'
 import '../../src/renderer/style.css'
 import '../../src/web/style.css'
@@ -19,10 +20,12 @@ class FixtureSocket extends EventTarget {
   packet(type: string, extra = {}) { this.dispatchEvent(new MessageEvent('message', { data: JSON.stringify({ version: 1, type, sessionId: this.sessionId, ...extra }) })) }
 }
 const sockets: FixtureSocket[] = []
+const annotations: Array<{ input: AnnotationRequest; signal: AbortSignal; resolve(response: Response): void }> = []
 let captures = 0, cleanups = 0
 let pcm!: (value: ArrayBuffer) => void
 const session = new BrowserSession({ backend: '/api/session', origin: location.origin,
   id: () => `fixture-${sockets.length + 1}`,
+  annotationFetch: async (_url, init) => new Promise<Response>(resolve => { annotations.push({ input: JSON.parse(init!.body as string), signal: init!.signal!, resolve }) }),
   socket: () => { const socket = new FixtureSocket(`fixture-${sockets.length + 1}`); sockets.push(socket); return socket as unknown as WebSocketPort },
   capture: async (chunk, _error, signal) => { captures++; pcm = chunk; if (signal.aborted) throw new Error('Cancelled fixture'); return () => { cleanups++ } }
 })
@@ -96,6 +99,30 @@ async function run() {
   check(document.documentElement.scrollWidth <= innerWidth, 'phone-width layout does not overflow horizontally')
   const safety = (window as unknown as { __webSafety: { media: number; sockets: number } }).__webSafety
   check(safety.media === 0 && safety.sockets === 0, 'all regression media and service connections were synthetic, never real devices or providers')
+  // Annotation retries use a paused retained row and injected HTTP, never capture or a socket.
+  query<HTMLButtonElement>('.listen-button').click(); await frame()
+  sockets[2].packet('caption', { revision: 1, caption: row('annotation-expanded', { furiganaStatus: 'error', jaSegments: undefined }) })
+  sockets[2].packet('caption', { revision: 1, caption: row('annotation-compact', { furiganaStatus: 'error', jaSegments: undefined }) }); await frame()
+  session.toggleSaved('fixture-3:annotation-expanded'); session.stop(); await frame()
+  const captureCount = captures, socketCount = sockets.length
+  const button = query<HTMLButtonElement>('[data-caption-id="fixture-3:annotation-expanded"] [aria-label="重试日语注音"]')
+  button.focus(); button.click(); await frame()
+  check(annotations.length === 1 && button === document.activeElement && button.getAttribute('aria-busy') === 'true', 'paused web annotation sends one text-only request and keeps pending-action focus')
+  button.click(); await frame()
+  check(annotations.length === 1 && captures === captureCount && sockets.length === socketCount, 'duplicate web annotation clicks neither repeat the request nor resume capture/socket')
+  const success = (index: number) => { const { original: _source, japanese: _text, ...identity } = annotations[index].input; return new Response(JSON.stringify({ ...identity, reading: '', jaSegments: [{ text: '天気', reading: 'てんき' }] })) }
+  annotations[0].resolve(success(0)); await frame()
+  check(!document.querySelector('[data-caption-id="fixture-3:annotation-expanded"] [aria-label="重试日语注音"]') && document.activeElement === document.querySelector('.stream-viewport'), 'web annotation success restores removed-action focus to the reader')
+  check(session.snapshot().captions.find(row => row.id === 'fixture-3:annotation-expanded')?.saved && query('[data-caption-id="fixture-3:annotation-expanded"] ruby rt').textContent === 'てんき', 'web annotation preserves saved source/translation and adds matching ruby')
+  query<HTMLButtonElement>('.stream-follow').click(); query<HTMLButtonElement>('.web-header button').click(); await frame()
+  check(!document.querySelector('[aria-label="重新翻译这段"]'), 'compact annotation failure offers annotation-only retry instead of retranslating valid text')
+  query<HTMLButtonElement>('[aria-label="重试日语注音"]').click(); await frame()
+  annotations[1].resolve(new Response(JSON.stringify({ version: 1, error: 'upstream', raw: 'discarded synthetic upstream data' }), { status: 502 })); await frame()
+  check(query('.web-notice').textContent?.includes('注音服务暂不可用') && !document.body.textContent?.includes('discarded synthetic'), 'annotation failure uses fixed feedback and keeps primary translation ready')
+  check(session.snapshot().captions.at(-1)?.status === 'ready' && captures === captureCount && sockets.length === socketCount, 'paused annotation failure cannot change audio or primary translation state')
+  query<HTMLButtonElement>('[aria-label="重试日语注音"]').click(); await frame()
+  window.dispatchEvent(new Event('pagehide')); await frame(); annotations[2].resolve(success(2)); await frame()
+  check(annotations[2].signal.aborted && session.snapshot().captions.at(-1)?.furiganaStatus === 'error' && !document.querySelector('.web-notice'), 'page hiding cancels paused annotation and ignores its late result without a stale notice')
   return { checks }
 }
 

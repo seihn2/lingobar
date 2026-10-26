@@ -1,6 +1,7 @@
 import { authorized, serverConfig, type WorkerEnv } from './config'
 import { RelaySession } from './session'
 import type { WorkerSocket, WorkerFetch } from './types'
+import { createAnnotationHandler } from './annotation'
 
 declare const WebSocketPair: { new(): { 0: WorkerSocket; 1: WorkerSocket } }
 export interface WorkerContext { waitUntil(promise: Promise<unknown>): void }
@@ -21,9 +22,11 @@ export function createWorker(overrides: Partial<Dependencies> = {}) {
     upgrade: client => new Response(null, { status: 101, webSocket: client } as ResponseInit),
     id: () => crypto.randomUUID(), ...overrides
   }
+  const annotation = createAnnotationHandler(deps.fetch)
   return {
     async fetch(request: Request, env: WorkerEnv, context: WorkerContext): Promise<Response> {
       const url = new URL(request.url)
+      if (url.pathname === '/api/annotation') return annotation(request, env)
       if (!['/api/session', '/app-config.json'].includes(url.pathname)) {
         if (url.pathname.startsWith('/api/')) return json({ error: 'protocol' }, 404)
         if (!env.ASSETS || !['GET', 'HEAD'].includes(request.method)) return new Response('Not found', { status: 404 })

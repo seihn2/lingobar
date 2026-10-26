@@ -14,7 +14,9 @@ PR4's desktop pause drain and PR5's annotation timing changes remain separate.
 | Alternate ASR | `https://dashscope.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime` with WebSocket Upgrade | `session.update`/`session.updated`, base64 PCM append, transcription text/completion events |
 | Translation and optional ruby | `https://api.deepseek.com/chat/completions` | `deepseek-flash`, non-streaming JSON Chat Completions; existing selected-language prompts and validated kanji/kana slots |
 
-The browser supplies only selected languages and display preferences. It cannot
+Audio sessions accept selected languages and display preferences. The separate
+[annotation-only route](annotation-retry.md) accepts bounded finalized source/Japanese
+text and versioned identity, including while paused. The browser cannot
 supply a destination, model, provider key, custom headers or general proxy request.
 Provider authorization stays in server request headers. Redirects are rejected.
 The adapters target these documented protocols; model entitlement, regional key
@@ -42,7 +44,8 @@ An enabled server requires all of the following future server bindings:
 If a required value is absent or invalid, `/app-config.json` returns only
 `{"version":1,"backend":null}` and `/api/session` refuses with503. The browser
 shows **后端未配置**, disables start and requests no microphone. A denied verifier
-returns401; the page shows **服务未授权**. Neither route returns provider settings.
+returns401; the page shows **服务未授权**. Neither route returns provider settings. `/api/annotation` also defaults to503;
+it needs only the translation secret and verifier, never an ASR key or socket.
 
 `AUTH_SERVICE` is an explicit **integration placeholder**, not an implemented
 login system. Before enabling any provider use, its owner must implement and
@@ -50,17 +53,17 @@ verify identity, session expiry/revocation, access policy and account-wide
 connection/usage limits. The relay itself does not provide cross-connection or
 cross-isolate billing enforcement. A client-supplied header is never proof:
 
-1. For same-origin HTTPS config/session requests, the relay calls the service
+1. For same-origin HTTPS config/session/annotation requests, the relay calls the service
    binding at the fixed internal URL `https://auth.internal/authorize` with POST.
 2. It forwards bounded Cookie and Cf-Access-Jwt-Assertion values as **untrusted
-   evidence**, plus JSON `{origin, path:"/api/session"}`. It does not forward a
+   evidence**, plus JSON `{origin, path:"/api/session"}` (or fixed `"/api/annotation"` for text-only annotation). It does not forward a
    browser Authorization header or an asserted authorization flag.
 3. Only a204 response authorizes. Any other response, exception, abort or3s
    timeout denies access. The response body is discarded. No auth response
    or cookie is returned to the browser. The binding must independently validate
    signatures and audience; returning204 unconditionally would be unsafe.
 
-The relay rejects cross-origin WebSockets, non-GET control requests, query-string
+The relay rejects cross-origin WebSockets, non-GET audio-session controls, query-string
 proxy options, unknown API paths and malformed controls before starting ASR.
 Connecting the verifier, choosing an account/hostname, configuring secrets and
 deploying remain separate steps requiring the user's authorization. None has

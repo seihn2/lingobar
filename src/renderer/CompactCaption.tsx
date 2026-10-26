@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { ArrowDown, ChevronLeft, ChevronRight, LoaderCircle, RotateCcw } from 'lucide-react'
 import type { Caption, Settings } from '../shared/types'
+import { annotationText } from '../shared/annotation-protocol'
 import { DEFAULT_LANGUAGES } from '../shared/languages'
 import { compactRows, incomingText, survivingCaptionId, untranslatedErrorSource } from './caption-text'
 import { advanceReading, initialReadingClock, type ReadingSession } from './reading-schedule'
@@ -14,15 +15,24 @@ type Props = {
   listening: boolean
   notice: string
   onRetry: (caption: Caption) => void
+  onRetryAnnotation?: (caption: Caption) => void
   onReturnLive?: () => void
   controls?: ReactNode
 }
 
 /** One readable paragraph, paired across languages, with a separate incoming audio line. */
-export default function CompactCaption({ captions, settings, preview, readingSession, partial, listening, notice, onRetry, onReturnLive, controls }: Props) {
+export default function CompactCaption({ captions, settings, preview, readingSession, partial, listening, notice, onRetry, onRetryAnnotation, onReturnLive, controls }: Props) {
   const dragEdge = useRef<HTMLDivElement>(null)
   const viewport = useRef<HTMLDivElement>(null)
   const content = useRef<HTMLDivElement>(null)
+  const annotationFocus = useRef<HTMLButtonElement | null>(null)
+  useLayoutEffect(() => {
+    const button = annotationFocus.current
+    if (button && (!button.isConnected || button.disabled)) {
+      annotationFocus.current = null
+      if (document.activeElement === document.body && viewport.current?.getClientRects().length) viewport.current.focus()
+    }
+  })
   const retained = useRef(captions)
   const clock = useRef(readingSession.clock || initialReadingClock(captions, preview))
   const followRef = useRef(readingSession.following)
@@ -137,7 +147,8 @@ export default function CompactCaption({ captions, settings, preview, readingSes
     </div>
     <div className="compact-controls" role="group" aria-label="小窗控制，悬停或键盘聚焦时显示">
       <div className="compact-navigation">
-        {caption && (caption.status === 'error' || missing || caption.furiganaStatus === 'error') && caption.status !== 'translating' && !caption.live && !caption.translationPending && <button type="button" className="compact-retry" aria-label="重新翻译这段" title="按当前语言重新翻译这段" disabled={preview || !updates.has(caption.id)} onClick={() => onRetry(caption)}><RotateCcw size={11} /></button>}
+        {caption && (caption.status === 'error' || missing) && caption.status !== 'translating' && !caption.live && !caption.translationPending && <button type="button" className="compact-retry" aria-label="重新翻译这段" title="按当前语言重新翻译这段" disabled={preview || !updates.has(caption.id)} onClick={() => onRetry(caption)}><RotateCcw size={11} /></button>}
+        {caption && onRetryAnnotation && settings.showFurigana && targets.includes('ja') && annotationText(caption) && (caption.furiganaStatus === 'error' || caption.furiganaStatus === 'pending' || !caption.jaSegments?.length) && <button type="button" className="compact-retry" aria-label="重试日语注音" title="重试日语注音" aria-busy={caption.furiganaStatus === 'pending'} aria-disabled={caption.furiganaStatus === 'pending'} disabled={preview || !updates.has(caption.id)} onClick={event => { if (caption.furiganaStatus !== 'pending') { annotationFocus.current = event.currentTarget; onRetryAnnotation(caption) } }}><RotateCcw size={11} />重试注音</button>}
         <button type="button" title="上一段" aria-label="上一段" disabled={index <= 0} onClick={() => navigate(-1)}><ChevronLeft size={13} /></button>
         <button type="button" title="下一段" aria-label="下一段" disabled={index < 0 || index >= visible.length - 1} onClick={() => navigate(1)}><ChevronRight size={13} /></button>
         <button type="button" className="compact-live" title={following ? '正在跟随；跳到最新一段' : '回到实时'} aria-label="回到实时" onClick={resume} disabled={!captions.length}><ArrowDown size={12} /></button>

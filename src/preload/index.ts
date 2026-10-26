@@ -11,6 +11,7 @@ const api: LingoAPI = {
   microphoneReady: run => ipcRenderer.send('lingo:microphone-ready', run),
   translateText: text => ipcRenderer.invoke('lingo:text', text),
   retry: id => ipcRenderer.invoke('lingo:retry', id),
+  retryAnnotation: id => ipcRenderer.invoke('lingo:retry-annotation', id),
   toggleSaved: id => ipcRenderer.invoke('lingo:save-caption', id),
   exportSaved: () => ipcRenderer.invoke('lingo:export'),
   copyText: text => ipcRenderer.invoke('lingo:copy', text),

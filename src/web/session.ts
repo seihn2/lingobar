@@ -2,6 +2,8 @@ import type { Caption, Settings, SettingsInput, Snapshot } from '../shared/types
 import { validTargetLanguages } from '../shared/languages'
 import { parseServerMessage, MAX_WEB_CAPTIONS, type WebClientMessage } from '../shared/web-protocol'
 import { startMicrophone } from '../renderer/microphone'
+import { annotationText, type AnnotationRequest } from '../shared/annotation-protocol'
+import { annotationCancelled, requestAnnotation } from './annotation-client'
 
 export type WebSocketPort = Pick<WebSocket, 'readyState' | 'bufferedAmount' | 'send' | 'close' | 'addEventListener' | 'removeEventListener'>
 export type WebCapture = (onChunk: (pcm: ArrayBuffer) => void, onError: (message: string) => void, signal: AbortSignal) => Promise<() => void>
@@ -13,6 +15,7 @@ interface Options {
   id?: () => string
   startupMs?: number
   disabledReason?: 'unauthorized'
+  annotationFetch?: typeof fetch
 }
 interface Run {
   id: string
@@ -26,6 +29,7 @@ interface Run {
   resolve(): void
   reject(error: Error): void
 }
+interface AnnotationJob { request: AnnotationRequest; abort: AbortController; epoch: number }
 const MAX_BUFFERED_AUDIO = 512_000
 const errors = {
   unauthorized: '服务未授权，请检查服务端配置。', quota: '服务额度已用尽。',
@@ -44,6 +48,10 @@ export class BrowserSession {
   private state: Snapshot
   private owner: Run | null = null
   private revisions = new Map<string, number>()
+  private captionRevisions = new Map<string, number>()
+  private annotations = new Map<string, AnnotationJob>()
+  private annotationEpoch = 0
+  private annotationSession = crypto.randomUUID()
   private listeners = new Set<(snapshot: Snapshot) => void>()
   private socket: (url: string) => WebSocketPort
   private capture: WebCapture
@@ -66,6 +74,7 @@ export class BrowserSession {
   start(): Promise<void> {
     if (!this.configured) return Promise.reject(new Error('后端未配置，暂不能开始录音。'))
     if (this.owner) return Promise.reject(new Error('请先暂停当前录音。'))
+    this.cancelAnnotations()
     const url = new URL('/api/session', this.options.origin)
     url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
     return new Promise<void>((resolve, reject) => {
@@ -104,6 +113,7 @@ export class BrowserSession {
             if (!owner.ready) return
             const id = `${owner.id}:${message.id}`
             this.state = { ...this.state, captions: this.state.captions.filter(caption => caption.id !== id || !caption.live || caption.saved) }
+            if (!this.state.captions.some(caption => caption.id === id)) { this.cancelAnnotation(id); this.captionRevisions.delete(id) }
             this.publish()
           } else if (owner.ready) {
             const prior = this.revisions.get(message.caption.id) || 0
@@ -115,13 +125,16 @@ export class BrowserSession {
             if (this.revisions.size >= MAX_WEB_CAPTIONS * 4 && !prior) { this.fail(owner, '本次录音记录已满，请重新开始。'); return }
             if (!current && this.state.captions.length >= MAX_WEB_CAPTIONS && this.state.captions.every(item => item.saved)) { this.fail(owner, '本页记录已满，请先导出收藏。'); return }
             this.revisions.set(message.caption.id, message.revision)
+            this.cancelAnnotation(id)
+            this.captionRevisions.set(id, message.revision)
             owner.ids.set(id, message.caption.id)
             const caption = { ...message.caption, id, saved: current?.saved || false }
             const captions = current ? this.state.captions.map(item => item.id === caption.id ? caption : item) : [...this.state.captions, caption]
             while (captions.length > MAX_WEB_CAPTIONS) {
               const index = captions.findIndex(item => !item.saved)
               if (index < 0) { this.fail(owner, '本页记录已满，请先导出收藏。'); return }
-              captions.splice(index, 1)
+              const [evicted] = captions.splice(index, 1)
+              this.cancelAnnotation(evicted.id); this.captionRevisions.delete(evicted.id)
             }
             this.state = { ...this.state, captions }; this.publish()
           }
@@ -167,11 +180,13 @@ export class BrowserSession {
   }
   private fail(owner: Run, message: string): void {
     if (!this.owns(owner)) return
+    this.cancelAnnotations()
     if (!owner.settled) { owner.settled = true; owner.reject(new Error(message)) }
     this.release(owner)
     this.state = { ...this.state, state: 'error', message }; this.publish()
   }
   stop(): void {
+    this.cancelAnnotations()
     const owner = this.owner
     if (owner) { if (owner.socket.readyState === 1) this.send(owner, { version: 1, type: 'stop', sessionId: owner.id }); this.release(owner) }
     this.state = { ...this.state, state: 'idle', message: this.configured ? '已暂停' : this.options.disabledReason === 'unauthorized' ? '服务未授权' : '后端未配置' }; this.publish()
@@ -184,7 +199,7 @@ export class BrowserSession {
     if (input.fontSize !== undefined && (!Number.isFinite(input.fontSize) || input.fontSize < 14 || input.fontSize > 24)) throw new Error('字号须为14–24。')
     if (input.opacity !== undefined && (!Number.isFinite(input.opacity) || input.opacity < 0.45 || input.opacity > 1)) throw new Error('不透明度须为45–100%。')
     const changesTranslation = (input.targetLanguages !== undefined && input.targetLanguages.join('|') !== this.state.settings.targetLanguages.join('|')) || (input.showFurigana !== undefined && input.showFurigana !== this.state.settings.showFurigana)
-    if (changesTranslation && this.owner) this.stop()
+    if (changesTranslation) { if (this.owner) this.stop(); else this.cancelAnnotations() }
     this.state = { ...this.state, settings: { ...this.state.settings, ...input, targetLanguages: [...(input.targetLanguages || this.state.settings.targetLanguages)] } }
     this.publish(); return structuredClone(this.state.settings)
   }
@@ -199,9 +214,55 @@ export class BrowserSession {
     if (!caption || caption.live || caption.translationPending) throw new Error('这段尚未定稿。')
     const upstreamId = this.owner.ids.get(id)
     if (!upstreamId) throw new Error('这段属于已结束的连接，仍可复制或收藏。')
+    this.cancelAnnotation(id)
     this.state = { ...this.state, captions: this.state.captions.map(item => item === caption ? { ...item, translationPending: true } : item) }
     this.publish()
     this.send(this.owner, { version: 1, type: 'retry', sessionId: this.owner.id, id: upstreamId })
+  }
+  /** Retained finalized text can be annotated while paused, without an audio socket or capture. */
+  async retryAnnotation(id: string): Promise<void> {
+    if (!this.configured) throw new Error('注音服务尚未配置完成。')
+    if (this.annotations.has(id)) return
+    const caption = this.state.captions.find(item => item.id === id)
+    const text = caption && annotationText(caption), revision = this.captionRevisions.get(id)
+    if (!caption || !text || !revision || !this.state.settings.showFurigana || !this.state.settings.targetLanguages.includes('ja') || caption.furiganaStatus === 'pending') throw new Error('请等待日语译文定稿后重试注音。')
+    if (this.annotations.size >= 2) throw new Error('注音请求较多，请稍后重试。')
+    const job: AnnotationJob = { abort: new AbortController(), epoch: this.annotationEpoch, request: {
+      version: 1, type: 'annotation', requestId: crypto.randomUUID(), sessionId: this.annotationSession,
+      captionId: id, sourceRevision: revision, language: 'ja', ...text
+    } }
+    this.annotations.set(id, job)
+    this.state = { ...this.state, captions: this.state.captions.map(item => item.id === id ? { ...item, furiganaStatus: 'pending' } : item) }; this.publish()
+    try {
+      const result = await requestAnnotation(job.request, this.options.origin, job.abort.signal, this.options.annotationFetch)
+      if (!this.annotationCurrent(job)) throw annotationCancelled()
+      this.state = { ...this.state, captions: this.state.captions.map(item => item.id === id ? { ...item, reading: result.reading, jaSegments: result.jaSegments, furiganaStatus: 'ready' } : item) }
+    } catch (error) {
+      if (!this.annotationCurrent(job)) throw annotationCancelled()
+      this.state = { ...this.state, captions: this.state.captions.map(item => item.id === id ? { ...item, furiganaStatus: 'error' } : item) }
+      throw error
+    } finally {
+      if (this.annotations.get(id) === job) { this.annotations.delete(id); this.publish() }
+    }
+  }
+  private annotationCurrent(job: AnnotationJob): boolean {
+    const { captionId, sourceRevision, original, japanese } = job.request
+    const caption = this.state.captions.find(item => item.id === captionId), text = caption && annotationText(caption)
+    return !job.abort.signal.aborted && job.epoch === this.annotationEpoch && this.annotations.get(captionId) === job &&
+      this.captionRevisions.get(captionId) === sourceRevision && text?.original === original && text.japanese === japanese &&
+      this.state.settings.showFurigana && this.state.settings.targetLanguages.includes('ja')
+  }
+  private cancelAnnotation(id: string): void {
+    const job = this.annotations.get(id)
+    if (!job) return
+    this.annotations.delete(id); job.abort.abort()
+    this.state = { ...this.state, captions: this.state.captions.map(item => item.id === id && item.furiganaStatus === 'pending' ? { ...item, furiganaStatus: 'error' } : item) }
+  }
+  private cancelAnnotations(): void {
+    const changed = this.annotations.size > 0
+    this.annotationEpoch++; this.annotationSession = crypto.randomUUID()
+    for (const id of [...this.annotations.keys()]) this.cancelAnnotation(id)
+    if (changed) this.publish()
   }
   dispose(): void { this.stop(); this.listeners.clear() }
 }

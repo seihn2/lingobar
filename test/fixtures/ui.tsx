@@ -32,7 +32,7 @@ const api = {
   pushMicrophone: () => { throw new Error('Audio is disabled in UI tests') },
   microphoneFailed: () => {}, microphoneReady: () => {},
   translateText: async () => { providerCalls++; throw new Error('Providers are disabled in UI tests') },
-  retry: async () => {}, toggleSaved: async () => {}, exportSaved: async () => { exportCalls++; return exportAction() },
+  retry: async () => {}, retryAnnotation: async () => {}, toggleSaved: async () => {}, exportSaved: async () => { exportCalls++; return exportAction() },
   copyText: async () => {}, importLocalKey: async () => { throw new Error('No keys in UI tests') },
   setCollapsed: async (collapsed: boolean) => { emit({ collapsed }) },
   setCompactHeight: async () => {}, hide: async () => { hideCalls++ }, quit: async () => {},
@@ -258,7 +258,43 @@ async function run() {
   check(providerCalls === 0, 'isComposing also blocks Cmd+Enter provider submission')
   shortcut(composingInput, 'Escape'); await frame()
   check(audioStarts === 0, 'UI regression never starts audio or provider requests')
+  checks.push(...await annotationRegression())
   return { checks, deviceScaleFactor: devicePixelRatio, platform: navigator.platform }
+}
+
+async function annotationRegression() {
+  const checks: string[] = []
+  const check = (ok: unknown, message: string) => { assert(ok, message); checks.push(message) }
+  const originalRetry = api.retry, originalAnnotation = api.retryAnnotation
+  let annotationCalls = 0, translations = 0
+  api.retry = async () => { translations++ }
+  api.retryAnnotation = async id => {
+    annotationCalls++
+    emit({ captions: snapshot.captions.map(row => row.id === id ? { ...row, furiganaStatus: 'pending' } : row) })
+  }
+  try {
+    for (const mode of ['expanded', 'compact'] as const) {
+      const row = caption('annotation-' + mode, { jaSegments: undefined, furiganaStatus: 'error', saved: true })
+      emit({ state: 'idle', collapsed: mode === 'compact', settings: { ...settings }, captions: [row] }); await frame()
+      const before = annotationCalls
+      const button = query<HTMLButtonElement>('[aria-label="重试日语注音"]'); button.focus(); button.click(); await frame()
+      const pending = query<HTMLButtonElement>('[aria-label="重试日语注音"]')
+      check(annotationCalls === before + 1 && pending === document.activeElement && pending.getAttribute('aria-busy') === 'true', mode + ' annotation-only action keeps keyboard focus and exposes pending state')
+      pending.click(); await frame()
+      check(annotationCalls === before + 1 && translations === 0, mode + ' repeated annotation clicks never invoke translation or duplicate pending work')
+      emit({ captions: [{ ...row, furiganaStatus: 'error' }] }); await frame()
+      check(query<HTMLButtonElement>('[aria-label="重试日语注音"]') === pending && snapshot.captions[0].saved, mode + ' annotation failure keeps readable saved text and its focused retry action')
+      pending.click(); await frame()
+      emit({ captions: [{ ...row, furiganaStatus: 'ready', jaSegments: [{ text: '天気', reading: 'てんき' }] }] }); await frame()
+      const viewport = query(mode === 'compact' ? '.compact-viewport' : '.stream-viewport')
+      check(!document.querySelector('[aria-label="重试日语注音"]') && document.activeElement === viewport, mode + ' successful annotation returns removed-action focus to the reader')
+      check(query('ruby rt').textContent === 'てんき' && snapshot.captions[0].original === row.original && snapshot.captions[0].translations?.fr === row.translations?.fr, mode + ' retry changes only ruby while preserving source and selected translations')
+      emit({ captions: [row], settings: { ...settings, showFurigana: false } }); await frame()
+      check(!document.querySelector('[aria-label="重试日语注音"]'), mode + ' disabled furigana hides annotation-only actions')
+    }
+    check(audioStarts === 0 && providerCalls === 0 && translations === 0, 'annotation UI regression never starts audio, translation or real providers')
+  } finally { api.retry = originalRetry; api.retryAnnotation = originalAnnotation }
+  return checks
 }
 
 async function preview(mode: 'expanded' | 'compact') {
