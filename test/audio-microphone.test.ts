@@ -84,7 +84,8 @@ describe('microphone permission lifecycle', () => {
 })
 
 function activeFixture(deviceId = 'fixture-a') {
-  const track = { stop: vi.fn(), onended: null as (() => void) | null }
+  const track = { stop: vi.fn(), readyState: 'live', onended: null as (() => void) | null }
+  track.stop.mockImplementation(() => { track.readyState = 'ended' })
   const stream = { getTracks: () => [track], getAudioTracks: () => [track] }
   const events = new Map<string, () => void>()
   const mediaDevices = {
@@ -108,6 +109,49 @@ function activeFixture(deviceId = 'fixture-a') {
 
 describe('active microphone device lifecycle', () => {
   afterEach(() => vi.restoreAllMocks())
+  it('rejects a grant that has already ended without constructing an audio graph', async () => {
+    vi.useFakeTimers()
+    const f = activeFixture(), onError = vi.fn()
+    f.track.readyState = 'ended'
+    let outcome = ''
+    await startMicrophone(vi.fn(), onError).then(stop => { outcome = 'resolved'; stop() }, error => { outcome = error.message })
+    expect(outcome).toContain('麦克风连接已断开')
+    expect(AudioContext).not.toHaveBeenCalled(); expect(onError).not.toHaveBeenCalled()
+    expect(f.track.stop).toHaveBeenCalledOnce(); expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it.each(['worklet', 'resume'] as const)('rejects immediately when a track ends during pending %s initialization and ignores the late continuation', async stage => {
+    vi.useFakeTimers()
+    const f = activeFixture(), onChunk = vi.fn(), onError = vi.fn()
+    let finish!: () => void
+    const pending = new Promise<void>(resolve => { finish = resolve })
+    if (stage === 'worklet') f.context.audioWorklet.addModule.mockReturnValueOnce(pending)
+    else f.context.resume.mockReturnValueOnce(pending)
+    let outcome = 'pending'
+    const starting = startMicrophone(onChunk, onError).then(stop => { outcome = 'resolved'; stop() }, error => { outcome = error.message })
+    await vi.advanceTimersByTimeAsync(1)
+    expect(stage === 'worklet' ? f.context.audioWorklet.addModule : f.context.resume).toHaveBeenCalledOnce()
+    f.track.readyState = 'ended'; f.track.onended?.()
+    await vi.advanceTimersByTimeAsync(1)
+    const afterInterruption = outcome
+    finish(); await starting; await vi.advanceTimersByTimeAsync(1)
+    expect(afterInterruption).toContain('麦克风连接已断开')
+    expect(outcome).toBe(afterInterruption)
+    expect(onChunk).not.toHaveBeenCalled(); expect(onError).not.toHaveBeenCalled()
+    expect(f.track.stop).toHaveBeenCalledOnce(); expect(f.context.close).toHaveBeenCalledOnce()
+    expect(f.events.size).toBe(0); expect(f.track.onended).toBeNull(); expect(vi.getTimerCount()).toBe(0)
+    if (stage === 'worklet') expect(AudioWorkletNode).not.toHaveBeenCalled()
+  })
+
+  it('reports a track ending after startup once and drops every later callback', async () => {
+    const f = activeFixture(), onError = vi.fn(), onChunk = vi.fn()
+    const stop = await startMicrophone(onChunk, onError)
+    const ended = f.track.onended!, pcm = f.worklet.port.onmessage!
+    f.track.readyState = 'ended'; ended(); ended(); pcm({ data: new ArrayBuffer(3200) }); stop()
+    expect(onError).toHaveBeenCalledExactlyOnceWith('麦克风连接已断开，请重新开始。')
+    expect(onChunk).not.toHaveBeenCalled(); expect(f.track.stop).toHaveBeenCalledOnce(); expect(f.context.close).toHaveBeenCalledOnce()
+  })
+
   it('stops every resource on unplug, rejects subsequent PCM and permits a fresh device start', async () => {
     const f = activeFixture()
     const onChunk = vi.fn(), onError = vi.fn()

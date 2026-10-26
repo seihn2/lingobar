@@ -111,6 +111,17 @@ export async function startMicrophone(
     })
     if (stopped) { acquired.getTracks().forEach((track) => track.stop()); throw new Error('已取消麦克风启动。') }
     stream = acquired
+    const tracks = stream.getAudioTracks()
+    const disconnected = (): void => {
+      if (stopped) return
+      const message = '麦克风连接已断开，请重新开始。'
+      if (started) fail(message)
+      else { stop(); rejectTimeout(new Error(message)) }
+    }
+    // Own track termination before the first audio-graph await. An ended grant
+    // has already fired its event, so it also needs an explicit state check.
+    for (const track of tracks) track.onended = disconnected
+    if (!tracks.length || tracks.some(track => track.readyState === 'ended')) throw new Error('麦克风连接已断开，请重新开始。')
     context = new AudioContext({ sampleRate: 16000, latencyHint: 'interactive' })
     url = URL.createObjectURL(new Blob([MICROPHONE_WORKLET], { type: 'application/javascript' }))
     await context.audioWorklet.addModule(url)
@@ -125,7 +136,6 @@ export async function startMicrophone(
       try { onChunk(event.data) } catch { fail('麦克风音频发送失败，请重新开始。') }
     }
     worklet.onprocessorerror = () => fail('麦克风音频处理失败，请重新开始。')
-    for (const track of stream.getAudioTracks()) track.onended = () => fail('麦克风连接已断开，请重新开始。')
     context.onstatechange = () => {
       if (started && context?.state !== 'running') fail('麦克风被系统暂停，请重新开始。')
     }
@@ -134,6 +144,7 @@ export async function startMicrophone(
     muted.connect(context.destination)
     await context.resume()
     if (stopped) throw new Error('已取消麦克风启动。')
+    if (tracks.some(track => track.readyState === 'ended')) throw new Error('麦克风连接已断开，请重新开始。')
     if (context.state !== 'running') throw new Error('麦克风未能启动，请重新开始。')
     started = true
     deviceChange = () => {
