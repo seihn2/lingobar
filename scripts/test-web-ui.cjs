@@ -122,7 +122,12 @@ async function main() {
         if (prepared.exceptionDetails) throw new Error('Touch preparation: ' + (prepared.exceptionDetails.exception?.description || prepared.exceptionDetails.text))
         const point = prepared.result.value
         assert.ok(point.overflow > 180, 'Synthetic touch caption must actually overflow')
-        await send('Input.synthesizeScrollGesture', { x: point.x, y: point.y, yDistance: 110, speed: 500, gestureSourceType: 'touch', preventFling: true })
+        await send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: point.x, y: point.y, id: 1, radiusX: 5, radiusY: 5 }] })
+        for (let step = 1; step <= 20; step++) {
+          await send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: point.x, y: point.y + step * 5, id: 1, radiusX: 5, radiusY: 5 }] })
+          await new Promise(resolve => setTimeout(resolve, 20))
+        }
+        await send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
         await pause()
         const checked = await send('Runtime.evaluate', { expression: 'window.__lingobarWebTest.verifyTouch(' + JSON.stringify(point) + ')', awaitPromise: true, returnByValue: true })
         if (checked.exceptionDetails) throw new Error('Touch review: ' + (checked.exceptionDetails.exception?.description || checked.exceptionDetails.text))
