@@ -103,7 +103,8 @@ async function main() {
     mkdirSync(output, { recursive: true })
     let screenshot = await send('Page.captureScreenshot', { format: 'png' })
     writeFileSync(join(output, 'unconfigured-phone.png'), Buffer.from(screenshot.data, 'base64'))
-    const results = []
+    const results = [], touchFailures = []
+    await send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 })
     for (const [width, height, scale] of [[375, 812, 1], [390, 844, 2], [860, 560, 1]]) {
       await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: scale, mobile: true })
       await send('Page.navigate', { url: `${origin}/test/fixtures/web.html` })
@@ -116,12 +117,50 @@ async function main() {
       assert.ok(ready, 'Web fixture did not mount')
       const result = await send('Runtime.evaluate', { expression: 'window.__lingobarWebTest.run()', awaitPromise: true, returnByValue: true })
       if (result.exceptionDetails) throw new Error(`Web ${width}px: ${result.exceptionDetails.exception?.description || result.exceptionDetails.text}`)
+      for (const mode of ['expanded', 'compact']) {
+        const prepared = await send('Runtime.evaluate', { expression: 'window.__lingobarWebTest.prepareTouch(' + JSON.stringify(mode) + ')', awaitPromise: true, returnByValue: true })
+        if (prepared.exceptionDetails) throw new Error('Touch preparation: ' + (prepared.exceptionDetails.exception?.description || prepared.exceptionDetails.text))
+        const point = prepared.result.value
+        assert.ok(point.overflow > 180, 'Synthetic touch caption must actually overflow')
+        await send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: point.x, y: point.y, id: 1, radiusX: 5, radiusY: 5 }] })
+        for (let step = 1; step <= 20; step++) {
+          await send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: point.x, y: point.y + step * 5, id: 1, radiusX: 5, radiusY: 5 }] })
+          await new Promise(resolve => setTimeout(resolve, 20))
+        }
+        await send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+        await pause()
+        const checked = await send('Runtime.evaluate', { expression: 'window.__lingobarWebTest.verifyTouch(' + JSON.stringify(point) + ')', awaitPromise: true, returnByValue: true })
+        if (checked.exceptionDetails) throw new Error('Touch review: ' + (checked.exceptionDetails.exception?.description || checked.exceptionDetails.text))
+        console.log('Synthetic touch observation: ' + JSON.stringify({ width, ...checked.result.value }))
+        result.result.value.checks.push(...checked.result.value.checks)
+        touchFailures.push(...checked.result.value.failures)
+        const tap = async point => {
+          await send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: point.x, y: point.y, id: 1, radiusX: 5, radiusY: 5 }] })
+          await new Promise(resolve => setTimeout(resolve, 50))
+          await send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+          await pause()
+        }
+        const getPoint = async expression => {
+          const value = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true })
+          if (value.exceptionDetails) throw new Error('Touch control: ' + (value.exceptionDetails.exception?.description || value.exceptionDetails.text))
+          return value.result.value
+        }
+        await tap(await getPoint('window.__lingobarWebTest.prepareTouchReturn(' + JSON.stringify(point) + ')'))
+        const returned = await getPoint('window.__lingobarWebTest.verifyTouchReturn(' + JSON.stringify(point) + ')')
+        result.result.value.checks.push(...returned.checks)
+        await tap(await getPoint('window.__lingobarWebTest.touchPoint(".web-footer button:last-child")'))
+        const historyPoint = await getPoint('window.__lingobarWebTest.prepareTouchHistory()')
+        await tap(historyPoint)
+        const selected = await getPoint('window.__lingobarWebTest.verifyTouchHistory(' + JSON.stringify(historyPoint.id) + ')')
+        result.result.value.checks.push(...selected.checks)
+      }
       results.push({ width, height, scale, ...result.result.value })
       screenshot = await send('Page.captureScreenshot', { format: 'png' })
       writeFileSync(join(output, `synthetic-${width}.png`), Buffer.from(screenshot.data, 'base64'))
       console.log(`Web synthetic regression: ${result.result.value.checks.length} checks at ${width}x${height} scale ${scale}`)
     }
-    writeFileSync(join(output, 'results.json'), JSON.stringify({ productionUnconfigured: unconfigured.result.value, results, note: 'Linux Chromium emulation and synthetic transport/media only. No iPhone/Safari, live Workers, provider or real microphone acceptance.' }, null, 2))
+    writeFileSync(join(output, 'results.json'), JSON.stringify({ touchFailures, productionUnconfigured: unconfigured.result.value, results, note: 'Linux Chromium emulation and synthetic transport/media only. No iPhone/Safari, live Workers, provider or real microphone acceptance.' }, null, 2))
+    assert.deepEqual(touchFailures, [], 'Native touch review regressions')
   } finally {
     for (const request of pending.values()) { clearTimeout(request.timer); request.reject(new Error('UI test finished')) }
     socket?.close()
