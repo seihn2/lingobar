@@ -28,7 +28,10 @@
     "build:web": "vite build --config vite.web.config.ts",
     "test:web": "vitest run test/web-",
     "test:web-ui": "node scripts/test-web-ui.cjs",
-    "verify:web": "node scripts/verify-web.cjs"
+    "verify:web": "node scripts/verify-web.cjs",
+    "build:worker": "node scripts/build-worker.cjs",
+    "test:worker": "vitest run test/worker-",
+    "verify:worker": "node scripts/verify-worker.cjs"
   },
   "devDependencies": {
     "@types/node": "22.17.2",

@@ -17,6 +17,7 @@ export type WebClientMessage =
 export type WebServerMessage =
   | { version: 1; type: 'ready'; sessionId: string }
   | { version: 1; type: 'caption'; sessionId: string; revision: number; caption: Caption }
+  | { version: 1; type: 'retract'; sessionId: string; id: string }
   | { version: 1; type: 'error'; sessionId: string; code: WebErrorCode }
 
 const MAX_TEXT_UNITS = 8000
@@ -118,6 +119,7 @@ export function parseServerMessage(data: unknown): WebServerMessage {
   if (!record(value) || value.version !== 1) invalid()
   const sessionId = identifier(value.sessionId)
   if (value.type === 'ready') return { version: 1, type: 'ready', sessionId }
+  if (value.type === 'retract') return { version: 1, type: 'retract', sessionId, id: identifier(value.id) }
   if (value.type === 'error') {
     if (typeof value.code !== 'string' || !ERROR_CODES.includes(value.code as WebErrorCode)) invalid()
     return { version: 1, type: 'error', sessionId, code: value.code as WebErrorCode }
@@ -127,4 +129,22 @@ export function parseServerMessage(data: unknown): WebServerMessage {
     return { version: 1, type: 'caption', sessionId, revision: value.revision as number, caption: caption(value.caption) }
   }
   return invalid()
+}
+
+/** Strict client controls: endpoints, models, provider keys and arbitrary proxy options are never accepted. */
+export function parseClientMessage(data: unknown): WebClientMessage {
+  if (typeof data !== 'string' || data.length > MAX_WEB_MESSAGE_BYTES || new TextEncoder().encode(data).byteLength > MAX_WEB_MESSAGE_BYTES) invalid()
+  let value: unknown
+  try { value = JSON.parse(data) } catch { return invalid() }
+  if (!record(value) || value.version !== 1) invalid()
+  const sessionId = identifier(value.sessionId)
+  const fields = value.type === 'start' ? ['version', 'type', 'sessionId', 'settings'] : value.type === 'retry' ? ['version', 'type', 'sessionId', 'id'] : ['version', 'type', 'sessionId']
+  if (Object.keys(value).some(key => !fields.includes(key))) invalid()
+  if (value.type === 'stop') return { version: 1, type: 'stop', sessionId }
+  if (value.type === 'retry') return { version: 1, type: 'retry', sessionId, id: identifier(value.id) }
+  if (value.type !== 'start' || !record(value.settings)) invalid()
+  const settings = value.settings
+  if (Object.keys(settings).some(key => !['targetLanguages', 'showOriginal', 'showFurigana'].includes(key)) ||
+    !validTargetLanguages(settings.targetLanguages) || typeof settings.showOriginal !== 'boolean' || typeof settings.showFurigana !== 'boolean') invalid()
+  return { version: 1, type: 'start', sessionId, settings: { targetLanguages: [...settings.targetLanguages], showOriginal: settings.showOriginal, showFurigana: settings.showFurigana } }
 }

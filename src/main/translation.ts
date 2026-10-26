@@ -9,6 +9,8 @@ export interface TranslationConfig {
   targetLanguages?: TargetLanguage[]
   generateFurigana?: boolean
   partial?: boolean
+  /** Optional platform transport; desktop uses the existing global fetch by default. */
+  fetch?: typeof fetch
 }
 
 export interface CaptionTranslation {
@@ -214,7 +216,7 @@ export async function requestJsonCompletion(
     endpoint.hostname.endsWith('.maas.aliyuncs.com')
   const isDeepSeek = endpoint.hostname === 'api.deepseek.com'
   try {
-    const response = await fetch(endpoint.toString(), {
+    const response = await (config.fetch || fetch)(endpoint.toString(), {
       method: 'POST',
       redirect: 'error',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },

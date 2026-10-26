@@ -12,6 +12,7 @@ interface Options {
   capture?: WebCapture
   id?: () => string
   startupMs?: number
+  disabledReason?: 'unauthorized'
 }
 interface Run {
   id: string
@@ -56,7 +57,7 @@ export class BrowserSession {
     this.configured = options.backend === '/api/session'
     this.socket = options.socket || (url => new WebSocket(url))
     this.capture = options.capture || ((chunk, error, signal) => startMicrophone(chunk, error, { signal, platform: 'other' }))
-    this.state = { settings: structuredClone(WEB_SETTINGS), state: 'idle', message: this.configured ? '尚未连接' : '后端未配置', captions: [], partial: {}, collapsed: false }
+    this.state = { settings: structuredClone(WEB_SETTINGS), state: 'idle', message: this.configured ? '尚未连接' : options.disabledReason === 'unauthorized' ? '服务未授权' : '后端未配置', captions: [], partial: {}, collapsed: false }
   }
   snapshot(): Snapshot { return structuredClone(this.state) }
   subscribe(listener: (snapshot: Snapshot) => void): () => void { this.listeners.add(listener); return () => { this.listeners.delete(listener) } }
@@ -99,6 +100,11 @@ export class BrowserSession {
               this.state = { ...this.state, state: 'listening', message: '正在聆听' }
               owner.settled = true; owner.resolve(); this.publish()
             }).catch(() => this.fail(owner, '无法使用麦克风，请检查浏览器权限后重新开始。'))
+          } else if (message.type === 'retract') {
+            if (!owner.ready) return
+            const id = `${owner.id}:${message.id}`
+            this.state = { ...this.state, captions: this.state.captions.filter(caption => caption.id !== id || !caption.live || caption.saved) }
+            this.publish()
           } else if (owner.ready) {
             const prior = this.revisions.get(message.caption.id) || 0
             if (message.revision <= prior) return
@@ -168,7 +174,7 @@ export class BrowserSession {
   stop(): void {
     const owner = this.owner
     if (owner) { if (owner.socket.readyState === 1) this.send(owner, { version: 1, type: 'stop', sessionId: owner.id }); this.release(owner) }
-    this.state = { ...this.state, state: 'idle', message: this.configured ? '已暂停' : '后端未配置' }; this.publish()
+    this.state = { ...this.state, state: 'idle', message: this.configured ? '已暂停' : this.options.disabledReason === 'unauthorized' ? '服务未授权' : '后端未配置' }; this.publish()
   }
   saveSettings(input: SettingsInput): Settings {
     const allowed = ['targetLanguages', 'showOriginal', 'showFurigana', 'fontSize', 'opacity']
@@ -193,6 +199,8 @@ export class BrowserSession {
     if (!caption || caption.live || caption.translationPending) throw new Error('这段尚未定稿。')
     const upstreamId = this.owner.ids.get(id)
     if (!upstreamId) throw new Error('这段属于已结束的连接，仍可复制或收藏。')
+    this.state = { ...this.state, captions: this.state.captions.map(item => item === caption ? { ...item, translationPending: true } : item) }
+    this.publish()
     this.send(this.owner, { version: 1, type: 'retry', sessionId: this.owner.id, id: upstreamId })
   }
   dispose(): void { this.stop(); this.listeners.clear() }
