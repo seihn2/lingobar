@@ -93,7 +93,7 @@ async function main() {
       if (login.exceptionDetails) throw new Error(`Login-item feedback: ${login.exceptionDetails.exception?.description}`)
       result.result.value.checks.push(...login.result.value.checks)
       const press = async (key, code, virtualKey, modifiers = 0) => {
-        await send('Input.dispatchKeyEvent', { type: 'keyDown', key, code, windowsVirtualKeyCode: virtualKey, modifiers })
+        await send('Input.dispatchKeyEvent', { type: 'keyDown', key, code, windowsVirtualKeyCode: virtualKey, modifiers, ...(key === ' ' ? { text: ' ', unmodifiedText: ' ' } : {}) })
         await send('Input.dispatchKeyEvent', { type: 'keyUp', key, code, windowsVirtualKeyCode: virtualKey, modifiers })
       }
       for (const mode of ['settings', 'history']) {
@@ -119,6 +119,20 @@ async function main() {
         await press('Escape', 'Escape', 27)
         await pause()
       }
+      const spaceFailures = []
+      for (const mode of ['expanded', 'compact']) {
+        for (const [reverse, action] of [[false, 'scroll'], [true, 'scroll'], [false, 'modified'], ...(mode === 'expanded' ? [[false, 'copy']] : [])]) {
+          const prepared = await send('Runtime.evaluate', { expression: `window.__lingobarUiTest.prepareSpaceScroll('${mode}', ${reverse}, '${action}')`, awaitPromise: true, returnByValue: true })
+          if (prepared.exceptionDetails) throw new Error(`Space preparation: ${prepared.exceptionDetails.exception?.description}`)
+          assert.ok(prepared.result.value.overflow > 120, 'Synthetic caption viewport must actually overflow')
+          await press(' ', 'Space', 32, action === 'modified' ? 2 : reverse ? 8 : 0)
+          await new Promise(resolve => setTimeout(resolve, 350))
+          const checked = await send('Runtime.evaluate', { expression: `window.__lingobarUiTest.verifySpaceScroll('${mode}', ${reverse}, ${JSON.stringify(prepared.result.value)}, '${action}')`, awaitPromise: true, returnByValue: true })
+          if (checked.exceptionDetails) throw new Error(`Space review: ${checked.exceptionDetails.exception?.description}`)
+          result.result.value.checks.push(...checked.result.value.checks); spaceFailures.push(...checked.result.value.failures)
+        }
+      }
+      assert.deepEqual(spaceFailures, [], `Trusted Space reading regressions at scale ${scale}`)
       for (const mode of ['expanded', 'compact']) {
         const prepared = await send('Runtime.evaluate', { expression: `window.__lingobarUiTest.prepareHide('${mode}')`, awaitPromise: true, returnByValue: true })
         if (prepared.exceptionDetails) throw new Error(`Hide preparation: ${prepared.exceptionDetails.exception?.description}`)

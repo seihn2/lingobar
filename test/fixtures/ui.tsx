@@ -343,6 +343,38 @@ async function panelFocus() {
   check(audioStarts === 0 && providerCalls === 0, 'panel focus tests never start media or call providers')
   return { checks, failures }
 }
+
+async function prepareSpaceScroll(mode: 'expanded' | 'compact', reverse: boolean, action: 'scroll' | 'copy' | 'modified' = 'scroll') {
+  emit({ state: 'idle', captions: [], collapsed: mode === 'compact' }); await frame()
+  const long = caption('space-current', { original: 'Synthetic source line. '.repeat(100), translations: { fr: 'Synthetic translation line. '.repeat(100), ja: '天気' } })
+  emit({ state: 'listening', captions: [caption('space-previous'), long], collapsed: mode === 'compact' }); await frame()
+  query<HTMLButtonElement>(mode === 'expanded' ? '.stream-follow' : '.compact-live').click(); await frame()
+  const surface = query(mode === 'expanded' ? '.stream-viewport' : '.compact-viewport')
+  surface.style.flex = '0 0 120px'; surface.style.height = '120px'; await frame()
+  surface.focus(); surface.scrollTop = reverse ? surface.scrollHeight - surface.clientHeight : 0; await frame()
+  if (action === 'copy') query<HTMLButtonElement>('[data-caption-id="space-current"] [aria-label="复制这段多语对照"]').focus()
+  return { top: surface.scrollTop, overflow: surface.scrollHeight - surface.clientHeight, current: mode === 'expanded' ? currentId() : compactId() }
+}
+
+async function verifySpaceScroll(mode: 'expanded' | 'compact', reverse: boolean, before: { top: number; current: string }, action: 'scroll' | 'copy' | 'modified' = 'scroll') {
+  const checks: string[] = [], failures: string[] = []
+  const check = (condition: unknown, message: string) => { checks.push(message); if (!condition) failures.push(message) }
+  const surface = query(mode === 'expanded' ? '.stream-viewport' : '.compact-viewport')
+  const reviewing = () => mode === 'expanded' ? query('.stream-label').textContent?.includes('正在回看') : Boolean(document.querySelector('.compact-review'))
+  if (action === 'scroll') {
+    check(reverse ? surface.scrollTop < before.top - 1 : surface.scrollTop > before.top + 1, `${mode} trusted ${reverse ? 'Shift+Space' : 'Space'} retains native page scrolling`)
+    check(reviewing(), `${mode} trusted ${reverse ? 'Shift+Space' : 'Space'} pauses live following`)
+    const top = surface.scrollTop
+    emit({ captions: [...snapshot.captions, caption('space-arrival')] }); await frame()
+    check(reviewing() && (mode === 'expanded' ? Math.abs(surface.scrollTop - top) < 2 : compactId() === before.current), `${mode} arriving translation respects Space keyboard review`)
+    query<HTMLButtonElement>(mode === 'expanded' ? '.stream-follow' : '.compact-live').click(); await frame()
+    check(!reviewing() && (mode === 'expanded' ? currentId() : compactId()) === 'space-arrival', `${mode} explicit return resumes latest translation`)
+  } else {
+    check(!reviewing(), `${mode} ${action === 'copy' ? 'Space on a caption action' : 'Ctrl+Space'} does not pause following`)
+    if (action === 'copy') check(Boolean(document.querySelector('[data-caption-id="space-current"] [aria-label="复制这段多语对照"] .lucide-check')), 'Space still activates the focused copy button')
+  }
+  return { checks, failures }
+}
 async function preparePanelA11y(mode: 'settings' | 'history') {
   const trigger = query<HTMLButtonElement>(mode === 'settings' ? '[aria-label="设置"]' : '[aria-label="历史与收藏"]')
   trigger.focus(); trigger.click(); await frame()
@@ -441,5 +473,5 @@ async function loginItemRegression() {
   return { checks }
 }
 
-;(window as unknown as { __lingobarUiTest: { run: typeof run; preview: typeof preview; prepareHide: typeof prepareHide; verifyHide: typeof verifyHide; panelFocus: typeof panelFocus; preparePanelA11y: typeof preparePanelA11y; exportRegression: typeof exportRegression; loginItemRegression: typeof loginItemRegression } }).__lingobarUiTest = { run, preview, prepareHide, verifyHide, panelFocus, preparePanelA11y, exportRegression, loginItemRegression }
+;(window as unknown as { __lingobarUiTest: { run: typeof run; preview: typeof preview; prepareHide: typeof prepareHide; verifyHide: typeof verifyHide; panelFocus: typeof panelFocus; preparePanelA11y: typeof preparePanelA11y; exportRegression: typeof exportRegression; loginItemRegression: typeof loginItemRegression; prepareSpaceScroll: typeof prepareSpaceScroll; verifySpaceScroll: typeof verifySpaceScroll } }).__lingobarUiTest = { run, preview, prepareHide, verifyHide, panelFocus, preparePanelA11y, exportRegression, loginItemRegression, prepareSpaceScroll, verifySpaceScroll }
 createRoot(document.getElementById('root')!).render(<App />)
