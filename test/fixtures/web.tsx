@@ -144,5 +144,54 @@ async function verifyTouch(before: TouchState) {
   return { checks, failures, details: { before, afterGesture: initial, afterUpdates: { top: surface.scrollTop, reviewing: Boolean(reviewing()) } } }
 }
 
-;(window as unknown as { __lingobarWebTest: { run: typeof run; prepareTouch: typeof prepareTouch; verifyTouch: typeof verifyTouch } }).__lingobarWebTest = { run, prepareTouch, verifyTouch }
+
+function touchPoint(selector: string) {
+  const button = query<HTMLButtonElement>(selector)
+  button.scrollIntoView({ block: 'nearest' })
+  const box = button.getBoundingClientRect(), x = box.x + box.width / 2, y = box.y + box.height / 2
+  assert(button.contains(document.elementFromPoint(x, y)), 'Touch action must be visible and hit-testable')
+  return { x, y }
+}
+function prepareTouchReturn(before: TouchState) {
+  return touchPoint(before.mode === 'expanded' ? '.stream-follow' : '.compact-review button')
+}
+async function verifyTouchReturn(before: TouchState) {
+  const checks: string[] = []
+  const check = (ok: unknown, message: string) => { assert(ok, message); checks.push(message) }
+  await frame()
+  const reviewing = () => before.mode === 'expanded' ? query('.stream-label').textContent?.includes('正在回看') : Boolean(document.querySelector('.compact-review'))
+  const current = () => before.mode === 'expanded' ? document.querySelector('.reading-current')?.getAttribute('data-caption-id') : query('.compact-rows').getAttribute('data-caption-id')
+  check(!reviewing() && current() === session.snapshot().captions.at(-1)!.id, before.mode + ' native Return to live tap follows the latest translation')
+  const surface = query(before.mode === 'expanded' ? '.stream-viewport' : '.compact-viewport')
+  const source = query(before.mode === 'expanded' ? '.reading-current .original-row p' : '.compact-original p')
+  const text = source.firstChild!, range = document.createRange(), selection = window.getSelection()!
+  range.setStart(text, 0); range.setEnd(text, Math.min(8, text.textContent!.length))
+  selection.removeAllRanges(); selection.addRange(range)
+  const selected = selection.toString()
+  // This checks the existing DOM selection guard, not native Safari long press.
+  surface.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerType: 'touch' })); await frame()
+  check(selected.length > 0 && reviewing(), before.mode + ' existing DOM selection guard pauses reading')
+  sockets.at(-1)!.packet('caption', { revision: 1, caption: row('touch-selection-arrival-' + sockets.length, { live: true, translationPending: true }) }); await frame()
+  check(reviewing() && selection.toString() === selected, before.mode + ' selected text survives a new translated partial')
+  selection.removeAllRanges()
+  return { checks }
+}
+function prepareTouchHistory() {
+  const target = document.querySelectorAll<HTMLButtonElement>('.history-select')[1]
+  assert(target, 'History fixture needs an older segment')
+  const id = target!.closest<HTMLElement>('[data-history-id]')!.dataset.historyId!
+  target!.scrollIntoView({ block: 'nearest' })
+  const box = target!.getBoundingClientRect(), x = box.x + box.width / 2, y = box.y + box.height / 2
+  assert(target!.contains(document.elementFromPoint(x, y)), 'History touch target must be hit-testable')
+  return { id, x, y }
+}
+async function verifyTouchHistory(id: string) {
+  await frame()
+  assert(!document.querySelector('.web-panel') && query('.focused-caption').getAttribute('data-caption-id') === id, 'Native history tap must locate the selected segment')
+  sockets.at(-1)!.packet('caption', { revision: 1, caption: row('touch-history-arrival-' + sockets.length) }); await frame()
+  assert(query('.stream-label').textContent?.includes('正在回看') && query('.focused-caption').getAttribute('data-caption-id') === id, 'History touch selection must survive new translation')
+  assert(session.snapshot().state === 'listening', 'History review must not stop the synthetic audio session')
+  return { checks: ['native history tap locates its stable segment', 'new translation preserves history touch selection and active capture'] }
+}
+;(window as unknown as { __lingobarWebTest: { run: typeof run; prepareTouch: typeof prepareTouch; verifyTouch: typeof verifyTouch; touchPoint: typeof touchPoint; prepareTouchReturn: typeof prepareTouchReturn; verifyTouchReturn: typeof verifyTouchReturn; prepareTouchHistory: typeof prepareTouchHistory; verifyTouchHistory: typeof verifyTouchHistory } }).__lingobarWebTest = { run, prepareTouch, verifyTouch, touchPoint, prepareTouchReturn, verifyTouchReturn, prepareTouchHistory, verifyTouchHistory }
 createRoot(document.getElementById('root')!).render(<WebApp session={session} />)
