@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import WebSocket from 'ws'
 import { trace } from '../diagnostics'
+import { FinalizedUtterances, type FinalizedLimits } from '../../shared/finalized-utterances'
 import { asrConnection, realtimeSessionConfig, streamingTask, streamingTranscriptionEvents, transcriptionEvent } from '../../shared/asr-protocol'
 export { DEFAULT_ASR_MODEL, DEFAULT_ASR_ENDPOINT, REALTIME_ASR_MODEL, isStreamingModel, asrConnection, realtimeSessionConfig, streamingTask, streamingTranscriptionEvent, streamingTranscriptionEvents, transcriptionEvent } from '../../shared/asr-protocol'
 
@@ -22,6 +23,7 @@ export interface AsrSession {
 interface Dependencies {
   createSocket(url: string, apiKey: string): WebSocket
   startupTimeoutMs: number
+  finalizedLimits?: Readonly<FinalizedLimits>
 }
 interface Session {
   socket: WebSocket
@@ -35,7 +37,7 @@ interface Session {
   timer?: ReturnType<typeof setTimeout>
   buffered: Buffer[]
   bytes: number
-  completed: Set<string>
+  completed: FinalizedUtterances
   apiKey: string
 }
 
@@ -67,7 +69,7 @@ export class QwenAsrSession implements AsrSession {
       catch { reject(new Error('无法建立语音识别连接，请检查地址与网络。')); return }
       const owner: Session = {
         socket, streaming: connection.streaming, taskId: randomUUID(), resolve, reject, ready: false, settled: false, stopped: false,
-        buffered: [], bytes: 0, completed: new Set(), apiKey: options.apiKey
+        buffered: [], bytes: 0, completed: new FinalizedUtterances(this.dependencies.finalizedLimits), apiKey: options.apiKey
       }
       this.owner = owner
       owner.timer = setTimeout(() => this.fail(owner, '语音识别连接超时，请检查网络、地区与 API Key。'), this.dependencies.startupTimeoutMs)
@@ -191,9 +193,9 @@ export class QwenAsrSession implements AsrSession {
       const utteranceId = transcript.id ? `${owner.taskId}:${transcript.id}` : undefined
       if (transcript.partial) this.callbacks.onPartial(transcript.text, utteranceId)
       else {
-        if (transcript.id) {
-          owner.completed.add(transcript.id)
-          if (owner.completed.size > 256) owner.completed.delete(owner.completed.values().next().value!)
+        if (transcript.id && !owner.completed.remember(transcript.id)) {
+          this.fail(owner, '本次识别记录已满，请重新开始。')
+          return
         }
         this.callbacks.onPartial('', utteranceId)
         if (this.owns(owner)) this.callbacks.onSentence(transcript.text, utteranceId)
@@ -214,6 +216,7 @@ export class QwenAsrSession implements AsrSession {
     if (this.owner === owner) this.owner = null
     if (owner.timer) clearTimeout(owner.timer)
     owner.buffered = []; owner.bytes = 0; owner.apiKey = ''
+    owner.completed.clear()
     // terminate also aborts a pending upgrade; error listener above remains to consume its error.
     try { owner.socket.terminate() } catch { /* Already closed. */ }
   }

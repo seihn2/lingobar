@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createWorkerAsr } from '../src/worker/asr'
+import type { FinalizedLimits } from '../src/shared/finalized-utterances'
 import { RelayError, type AsrModel, type RelayConfig, type UpgradeResponse, type WorkerAsr, type WorkerFetch, type WorkerSocket } from '../src/worker/types'
 
 vi.mock('electron', () => { throw new Error('Workers ASR must not load Electron') })
@@ -35,7 +36,7 @@ const settle = async () => { for (let count = 0; count < 12; count++) await Prom
 const instances = new Set<WorkerAsr>()
 const key = 'SYNTHETIC-ASR-SERVER-SECRET'
 const translationKey = 'SYNTHETIC-TRANSLATION-SERVER-SECRET'
-function fixture(model: AsrModel = 'qwen-audio-3.1-asr-flash-streaming') {
+function fixture(model: AsrModel = 'qwen-audio-3.1-asr-flash-streaming', finalizedLimits?: FinalizedLimits) {
   const sockets: Socket[] = [], ids: string[] = []
   const controller = new AbortController()
   const callbacks = { onTranscript: vi.fn(), onError: vi.fn() }
@@ -44,7 +45,7 @@ function fixture(model: AsrModel = 'qwen-audio-3.1-asr-flash-streaming') {
     return { status: 101, webSocket: socket } as unknown as UpgradeResponse
   })
   const asr = createWorkerAsr({ asrKey: key, translationKey, model }, callbacks, {
-    fetch, signal: controller.signal, startupMs: 1000, id: () => { const id = `synthetic-task-${ids.length + 1}`; ids.push(id); return id }
+    fetch, signal: controller.signal, startupMs: 1000, finalizedLimits, id: () => { const id = `synthetic-task-${ids.length + 1}`; ids.push(id); return id }
   })
   instances.add(asr)
   const streaming = model !== 'qwen3-asr-flash-realtime'
@@ -68,6 +69,34 @@ afterEach(async () => {
 })
 
 describe('Workers ASR fixed upstream and synthetic lifecycle', () => {
+  it.each(['qwen-audio-3.1-asr-flash-streaming', 'qwen3-asr-flash-realtime'] as const)('fails closed on finalized ID count/size exhaustion for %s and requires an explicit new owner', async model => {
+    for (const budget of ['count', 'units']) {
+      const streaming = model !== 'qwen3-asr-flash-realtime'
+      const f = fixture(model, budget === 'count' ? { maxIds: 2, maxUnits: 100 } : { maxIds: 100, maxUnits: streaming ? 2 : 12 }), socket = await f.ready()
+      const item = (id: number) => f.streaming ? id : `item-${id}`
+      f.transcript(socket, 'Synthetic first', false, item(1)); f.transcript(socket, 'Synthetic second', false, item(2))
+      f.transcript(socket, 'Synthetic duplicate', false, item(1))
+      expect(f.callbacks.onTranscript).toHaveBeenCalledTimes(2); expect(f.callbacks.onError).not.toHaveBeenCalled()
+      const oldId = f.callbacks.onTranscript.mock.calls[0][0].id
+      f.transcript(socket, 'Over budget', false, item(3)); f.transcript(socket, 'Late old', true, item(1)); f.asr.stop()
+      expect(f.callbacks.onTranscript).toHaveBeenCalledTimes(2); expect(f.callbacks.onError).toHaveBeenCalledExactlyOnceWith(new RelayError('quota'))
+      expect(socket.close).toHaveBeenCalledOnce(); expect(f.fetch).toHaveBeenCalledOnce()
+      const next = await f.ready()
+      f.transcript(socket, 'Late old owner', false, item(4)); f.transcript(next, 'Synthetic fresh', false, item(1))
+      expect(f.callbacks.onTranscript).toHaveBeenCalledTimes(3); expect(f.callbacks.onTranscript.mock.calls[2][0].id).not.toBe(oldId)
+      f.asr.stop()
+    }
+  })
+  it.each(['qwen-audio-3.1-asr-flash-streaming', 'qwen3-asr-flash-realtime'] as const)('retains early finalized %s IDs after 257 finals', async model => {
+    const f = fixture(model), socket = await f.ready()
+    for (let id = 1; id <= 257; id++) f.transcript(socket, `Synthetic final ${id}`, false, f.streaming ? id : `item-${id}`)
+    f.callbacks.onTranscript.mockClear()
+    f.transcript(socket, 'Late synthetic partial', true, f.streaming ? 1 : 'item-1')
+    f.transcript(socket, 'Duplicate synthetic final', false, f.streaming ? 1 : 'item-1')
+    expect(f.callbacks.onTranscript).not.toHaveBeenCalled()
+    f.transcript(socket, 'Synthetic current final', false, f.streaming ? 258 : 'item-258')
+    expect(f.callbacks.onTranscript).toHaveBeenCalledOnce()
+  })
   it.each(['qwen-audio-3.1-asr-flash-streaming', 'qwen-audio-3.0-asr-flash-streaming', 'qwen3-asr-flash-realtime'] as const)('uses only the fixed %s route and server-side authorization', async model => {
     const f = fixture(model)
     expect(f.fetch).not.toHaveBeenCalled()

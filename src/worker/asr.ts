@@ -1,9 +1,10 @@
 import { realtimeSessionConfig, streamingTask, streamingTranscriptionEvents, transcriptionEvent } from '../shared/asr-protocol'
 import { MAX_WEB_MESSAGE_BYTES } from '../shared/web-protocol'
+import { FinalizedUtterances, type FinalizedLimits } from '../shared/finalized-utterances'
 import { RelayError, upstreamStatus, type AsrTranscript, type RelayConfig, type WorkerAsr, type WorkerFetch, type WorkerSocket } from './types'
 
 interface Callbacks { onTranscript(value: AsrTranscript): void; onError(error: RelayError): void }
-interface Dependencies { fetch: WorkerFetch; signal: AbortSignal; id(): string; startupMs?: number }
+interface Dependencies { fetch: WorkerFetch; signal: AbortSignal; id(): string; startupMs?: number; finalizedLimits?: Readonly<FinalizedLimits> }
 interface Run {
   taskId: string
   streaming: boolean
@@ -14,7 +15,7 @@ interface Run {
   configured: boolean
   settled: boolean
   stopped: boolean
-  completed: Set<string>
+  completed: FinalizedUtterances
   listeners: Array<[string, (event: Event) => void]>
   timer?: ReturnType<typeof setTimeout>
   resolve(): void
@@ -81,10 +82,7 @@ export function createWorkerAsr(config: RelayConfig, callbacks: Callbacks, deps:
     for (const transcript of transcripts) {
       if (!owns(run)) return
       if (transcript.id && run.completed.has(transcript.id)) continue
-      if (!transcript.partial && transcript.id) {
-        run.completed.add(transcript.id)
-        if (run.completed.size > 256) run.completed.delete(run.completed.values().next().value!)
-      }
+      if (!transcript.partial && transcript.id && !run.completed.remember(transcript.id)) { fail(run, 'quota'); return }
       callbacks.onTranscript({ partial: transcript.partial, text: transcript.text,
         ...(transcript.id ? { id: `${run.taskId}:${transcript.id}` } : {}) })
     }
@@ -130,7 +128,7 @@ export function createWorkerAsr(config: RelayConfig, callbacks: Callbacks, deps:
       return new Promise<void>((resolve, reject) => {
         const run: Run = { taskId, streaming: config.model !== 'qwen3-asr-flash-realtime', abort: new AbortController(),
           externalAbort: () => release(run), ready: false, configured: false, settled: false, stopped: false,
-          completed: new Set(), listeners: [], resolve, reject }
+          completed: new FinalizedUtterances(deps.finalizedLimits), listeners: [], resolve, reject }
         current = run
         deps.signal.addEventListener('abort', run.externalAbort, { once: true })
         run.timer = setTimeout(() => fail(run, 'upstream'), deps.startupMs ?? 20_000)
