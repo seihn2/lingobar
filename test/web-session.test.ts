@@ -29,6 +29,23 @@ function fixture(options: { capture?: WebCapture; backend?: '/api/session' | nul
 }
 afterEach(() => { for (const session of sessions) session.dispose(); sessions.clear(); vi.useRealTimers() })
 describe('browser session, synthetic transport and capture only', () => {
+  it('retracts only current live unsaved captions and keeps tombstones against later updates', async () => {
+    const f = fixture(), s = await f.start()
+    s.packet('caption', { revision: 1, caption: caption('Synthetic live', { live: true }) })
+    s.packet('retract', { id: 'one' }, 'old-run'); expect(f.session.snapshot().captions).toHaveLength(1)
+    s.packet('retract', { id: 'one' }); expect(f.session.snapshot().captions).toHaveLength(0)
+    s.packet('caption', { revision: 99, caption: caption('Late removed draft') }); expect(f.session.snapshot().captions).toHaveLength(0)
+    s.packet('caption', { revision: 1, caption: caption('Synthetic saved final', { id: 'saved' }) }); f.session.toggleSaved('run-1:saved')
+    s.packet('caption', { revision: 2, caption: caption('Synthetic saved live', { id: 'saved', live: true }) }); s.packet('retract', { id: 'saved' })
+    s.packet('caption', { revision: 1, caption: caption('Synthetic final', { id: 'final' }) }); s.packet('retract', { id: 'final' })
+    expect(f.session.snapshot().captions.map(caption => caption.id)).toEqual(['run-1:saved', 'run-1:final'])
+  })
+  it('blocks duplicate local retry before the relay replies', async () => {
+    const f = fixture(), s = await f.start(); s.packet('caption', { revision: 1, caption: caption('Synthetic retry', { status: 'error' }) })
+    f.session.retry('run-1:one'); expect(() => f.session.retry('run-1:one')).toThrow('尚未定稿')
+    expect(s.sent.filter(value => typeof value === 'string' && JSON.parse(value).type === 'retry')).toHaveLength(1)
+    expect(f.session.snapshot().captions[0].translationPending).toBe(true)
+  })
   it('unconfigured start never opens a socket or requests media; public config has no provider-key fields', async () => {
     const f = fixture({ backend: null }); expect(f.session.snapshot().message).toBe('后端未配置')
     await expect(f.session.start()).rejects.toThrow('后端未配置'); expect(f.sockets).toHaveLength(0); expect(f.capture).not.toHaveBeenCalled()

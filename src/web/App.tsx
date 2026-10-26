@@ -102,7 +102,7 @@ export default function WebApp({ session }: { session: BrowserSession }) {
     onKeyDown={event => { if (event.key === 'Escape' && panel && !event.nativeEvent.isComposing && !composing.current) { event.preventDefault(); close() } }}>
     <header className="web-header"><strong>LingoBar · 语伴</strong>{controls}</header>
     <div className="web-capture">
-      <span role="status">{!session.configured ? '后端未配置' : snapshot.state === 'starting' ? '正在连接' : snapshot.state === 'listening' ? '正在聆听' : snapshot.state === 'error' ? '连接中断' : '已暂停'}</span>
+      <span role="status">{!session.configured ? snapshot.message : snapshot.state === 'starting' ? '正在连接' : snapshot.state === 'listening' ? '正在聆听' : snapshot.state === 'error' ? '连接中断' : '已暂停'}</span>
       <button type="button" className="listen-button" disabled={!session.configured} onClick={() => void toggle()}>{snapshot.state === 'starting' ? '取消' : active ? '暂停' : '开始聆听'}</button>
     </div>
     {message && <p className="web-notice" role="alert">{message}</p>}

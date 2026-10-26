@@ -1,0 +1,41 @@
+name: Fixed-upstream relay build and synthetic sessions
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: worker-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  worker:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run test:worker
+      - run: npm run test:web
+      - run: npm run build:web && npm run verify:web
+      - run: npm run build:worker && npm run verify:worker
+      - run: node scripts/archive-worker.cjs
+        env:
+          LINGOBAR_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+          LINGOBAR_SOURCE_BASE: ${{ github.event.pull_request.base.sha || '' }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: workers-relay-disabled-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            dist/worker/
+            dist/web/
+            dist/RELAY-MANIFEST.json
+            dist/RELAY-SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14

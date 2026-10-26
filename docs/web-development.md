@@ -33,7 +33,10 @@ nor a service socket. There is no built-in simulated transcript/provider. All
 synthetic implementations are confined to test entries excluded from the build.
 The only accepted future route is the same-origin `/api/session`; a public
 configuration file cannot redirect audio to an arbitrary provider or carry keys.
-This first batch does not implement or deploy that server route.
+The first batch does not implement or deploy that server route. The subsequent
+[fixed-upstream relay batch](workers-relay.md) implements its server contract,
+default denied and not deployed; it still requires a verified auth service and
+explicitly authorized server configuration before real use.
 
 ## Browser behavior
 
@@ -69,7 +72,7 @@ Every JSON control message has `version:1` and an opaque `sessionId`.
 | --- | --- |
 | Browser → server | `start` with selected `targetLanguages`, `showOriginal`, `showFurigana`; `stop`; `retry` with the upstream caption ID |
 | Browser → server | Raw bounded PCM16 `ArrayBuffer` frames after readiness |
-| Server → browser | `ready`; `caption` with a positive safe-integer per-caption `revision` and bounded caption data; `error` with `unauthorized`, `quota`, `upstream`, `protocol` or `unavailable` |
+| Server → browser | `ready`; `caption` with a positive safe-integer per-caption `revision` and bounded caption data; `retract` for a removed speculative live chunk; `error` with `unauthorized`, `quota`, `upstream`, `protocol` or `unavailable` |
 
 Text frames are limited to128KiB UTF8 and caption text to8000 UTF16 units.
 Only known translation languages and at most8 targets are accepted. Ruby must
@@ -78,8 +81,8 @@ kanji. Unknown fields are not copied; server-provided saved flags and free-form
 provider errors are not trusted. Audio is capped at64000 bytes per frame with
 a512000-byte socket-buffer budget. Malformed/overloaded sessions stop visibly.
 
-The future Worker must authenticate access, implement that contract, attach
-provider authorization only server-side and bound its own sessions/queues.
+The [relay](workers-relay.md) requires an internal authorization verifier, attaches
+provider authorization only server-side and bounds its own sessions/queues.
 Workers' WebSocket support does not by itself validate this application's
 provider handshake, quota or CPU usage. No Cloudflare resource, token, secret,
 live provider call or deploy workflow is created here.
