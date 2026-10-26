@@ -23,7 +23,12 @@
     "package:win": "npm run build:icons && npm run build:native && npm run build && electron-builder --win --x64 --publish never",
     "verify:package": "node scripts/verify-package.cjs",
     "archive:mac": "node scripts/archive-macos.cjs",
-    "checksums:win": "node scripts/checksums-windows.cjs"
+    "checksums:win": "node scripts/checksums-windows.cjs",
+    "dev:web": "vite --config vite.web.config.ts",
+    "build:web": "vite build --config vite.web.config.ts",
+    "test:web": "vitest run test/web-",
+    "test:web-ui": "node scripts/test-web-ui.cjs",
+    "verify:web": "node scripts/verify-web.cjs"
   },
   "devDependencies": {
     "@types/node": "22.17.2",

@@ -15,12 +15,13 @@ type Props = {
   onSave: (caption: Caption) => void
   onExport: () => void
   exporting: boolean
+  allowRemoveSaved?: boolean
   exportResult: { text: string; error: boolean } | null
 }
 const sourceNames = { system: '电脑声音', microphone: '麦克风', text: '文字输入' }
 const timeText = (value: number) => new Date(value).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
 
-export default function HistoryPanel({ captions, settings, filter, focusVersion, onFilter, onSelect, onSave, onExport, exporting, exportResult }: Props) {
+export default function HistoryPanel({ captions, settings, filter, focusVersion, onFilter, onSelect, onSave, onExport, exporting, exportResult, allowRemoveSaved = false }: Props) {
   const [query, setQuery] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [navigationVersion, setNavigationVersion] = useState(0)
@@ -110,7 +111,7 @@ export default function HistoryPanel({ captions, settings, filter, focusVersion,
           <span className="history-original" dir="auto">{match?.text || preferredTranslation(caption, targets) || (settings.showOriginal ? alignedOriginal(caption) : '所选语言尚未生成')}</span>
           {settings.showOriginal && (match ? match.language !== 'original' : preferredTranslation(caption, targets)) && <span className="history-translation" dir="auto">{alignedOriginal(caption)}</span>}
         </button>
-        <button type="button" className={`icon-button ${caption.saved ? 'active' : ''}`} title={caption.saved ? '取消收藏' : '收藏'} aria-label={caption.saved ? '取消收藏' : '收藏'} aria-pressed={caption.saved} disabled={caption.status !== 'ready' || caption.live || caption.translationPending} onClick={() => onSave(caption)}><Bookmark size={14} fill={caption.saved ? 'currentColor' : 'none'} /></button>
+        <button type="button" className={`icon-button ${caption.saved ? 'active' : ''}`} title={caption.saved ? '取消收藏' : '收藏'} aria-label={caption.saved ? '取消收藏' : '收藏'} aria-pressed={caption.saved} disabled={!(allowRemoveSaved && caption.saved) && (caption.status !== 'ready' || caption.live || caption.translationPending)} onClick={() => onSave(caption)}><Bookmark size={14} fill={caption.saved ? 'currentColor' : 'none'} /></button>
       </div>)}
       {!results.length && <div className="empty-history">{searching ? <Search size={24} strokeWidth={1.3} /> : <Bookmark size={24} strokeWidth={1.3} />}<p>{searching ? '没有匹配的原文或已有译文，试试其他文字。' : filter === 'saved' ? '值得再读一遍的句子，就收藏在这里。' : '开始聆听或输入文字后，对照字幕会出现在这里。'}</p>{searching && <button className="text-button" onClick={clear}>清空查找</button>}</div>}
     </div>
