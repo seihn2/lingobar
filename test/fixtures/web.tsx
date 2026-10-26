@@ -98,5 +98,43 @@ async function run() {
   check(safety.media === 0 && safety.sockets === 0, 'all regression media and service connections were synthetic, never real devices or providers')
   return { checks }
 }
-;(window as unknown as { __lingobarWebTest: { run: typeof run } }).__lingobarWebTest = { run }
+
+type TouchState = { mode: 'expanded' | 'compact'; id: string; top: number; x: number; y: number; overflow: number }
+async function prepareTouch(mode: TouchState['mode']): Promise<TouchState> {
+  session.stop(); await frame()
+  if (document.querySelector('.web-panel-heading button')) query<HTMLButtonElement>('.web-panel-heading button').click()
+  if (Boolean(document.querySelector('.compact-viewport')) !== (mode === 'compact')) query<HTMLButtonElement>('.web-header button').click()
+  await frame(); await session.start(); await frame()
+  const peer = sockets.at(-1)!, id = 'touch-long-' + sockets.length
+  peer.packet('caption', { revision: 1, caption: row(id, { original: 'Synthetic touch source line. '.repeat(140), translations: { fr: 'Traduction tactile synthétique. '.repeat(140), ja: '天気' } }) })
+  await frame()
+  query<HTMLButtonElement>(mode === 'expanded' ? '.stream-follow' : '.compact-live').click(); await frame()
+  const surface = query(mode === 'expanded' ? '.stream-viewport' : '.compact-viewport')
+  surface.style.flex = '0 0 180px'; surface.style.height = '180px'; await frame()
+  surface.focus(); surface.scrollTop = surface.scrollHeight - surface.clientHeight; await frame()
+  const box = surface.getBoundingClientRect()
+  return { mode, id: peer.sessionId + ':' + id, top: surface.scrollTop, x: box.x + box.width * 0.65, y: box.y + box.height * 0.5, overflow: surface.scrollHeight - surface.clientHeight }
+}
+async function verifyTouch(before: TouchState) {
+  const checks: string[] = [], failures: string[] = []
+  const check = (ok: unknown, message: string) => { checks.push(message); if (!ok) failures.push(message) }
+  const surface = query(before.mode === 'expanded' ? '.stream-viewport' : '.compact-viewport')
+  const reviewing = () => before.mode === 'expanded' ? query('.stream-label').textContent?.includes('正在回看') : Boolean(document.querySelector('.compact-review'))
+  const initial = { top: surface.scrollTop, reviewing: Boolean(reviewing()), overflow: surface.scrollHeight - surface.clientHeight }
+  check(surface.scrollTop < before.top - 5, before.mode + ' native touch swipe actually scrolls captions')
+  check(reviewing(), before.mode + ' native touch swipe pauses following')
+  const top = surface.scrollTop, peer = sockets.at(-1)!, id = 'touch-arrival-' + sockets.length
+  const stable = () => before.mode === 'expanded' ? Math.abs(surface.scrollTop - top) < 2 : query('.compact-rows').getAttribute('data-caption-id') === before.id
+  peer.packet('caption', { revision: 1, caption: row(id, { live: true, translationPending: true, furiganaStatus: 'pending' }) }); await frame()
+  check(reviewing() && stable(), before.mode + ' touch review survives translated partial arrival')
+  peer.packet('caption', { revision: 2, caption: row(id, { furiganaStatus: 'pending' }) }); await frame()
+  peer.packet('caption', { revision: 3, caption: row(id, { furiganaStatus: 'ready' }) }); await frame()
+  check(reviewing() && stable(), before.mode + ' touch review survives final and ruby updates')
+  check(session.snapshot().state === 'listening', before.mode + ' review keeps the synthetic capture session active')
+  const safety = (window as unknown as { __webSafety: { media: number; sockets: number } }).__webSafety
+  check(safety.media === 0 && safety.sockets === 0, before.mode + ' touch test uses no real media or service sockets')
+  return { checks, failures, details: { before, afterGesture: initial, afterUpdates: { top: surface.scrollTop, reviewing: Boolean(reviewing()) } } }
+}
+
+;(window as unknown as { __lingobarWebTest: { run: typeof run; prepareTouch: typeof prepareTouch; verifyTouch: typeof verifyTouch } }).__lingobarWebTest = { run, prepareTouch, verifyTouch }
 createRoot(document.getElementById('root')!).render(<WebApp session={session} />)
