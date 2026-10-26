@@ -112,7 +112,15 @@ async function prepareTouch(mode: TouchState['mode']): Promise<TouchState> {
   const surface = query(mode === 'expanded' ? '.stream-viewport' : '.compact-viewport')
   surface.style.flex = '0 0 180px'; surface.style.height = '180px'; await frame()
   surface.focus(); surface.scrollTop = surface.scrollHeight - surface.clientHeight; await frame()
+  const events = { start: 0, move: 0, end: 0, pointer: 0, cancel: 0 }
+  surface.addEventListener('touchstart', () => { events.start++ }, { passive: true })
+  surface.addEventListener('touchmove', () => { events.move++ }, { passive: true })
+  surface.addEventListener('touchend', () => { events.end++ }, { passive: true })
+  surface.addEventListener('pointerdown', () => { events.pointer++ }, { passive: true })
+  surface.addEventListener('pointercancel', () => { events.cancel++ }, { passive: true })
+  ;(surface as HTMLElement & { __touchEvents?: typeof events }).__touchEvents = events
   const box = surface.getBoundingClientRect()
+  console.log('Touch target diagnostics', JSON.stringify({ width: innerWidth, scale: visualViewport?.scale, box: { x: box.x, y: box.y, w: box.width, h: box.height }, hit: document.elementFromPoint(box.x + box.width * 0.65, box.y + box.height * 0.5)?.className, touchAction: getComputedStyle(surface).touchAction, bodyTouchAction: getComputedStyle(document.body).touchAction }))
   return { mode, id: peer.sessionId + ':' + id, top: surface.scrollTop, x: box.x + box.width * 0.65, y: box.y + box.height * 0.5, overflow: surface.scrollHeight - surface.clientHeight }
 }
 async function verifyTouch(before: TouchState) {
@@ -120,7 +128,7 @@ async function verifyTouch(before: TouchState) {
   const check = (ok: unknown, message: string) => { checks.push(message); if (!ok) failures.push(message) }
   const surface = query(before.mode === 'expanded' ? '.stream-viewport' : '.compact-viewport')
   const reviewing = () => before.mode === 'expanded' ? query('.stream-label').textContent?.includes('正在回看') : Boolean(document.querySelector('.compact-review'))
-  const initial = { top: surface.scrollTop, reviewing: Boolean(reviewing()), overflow: surface.scrollHeight - surface.clientHeight }
+  const initial = { events: (surface as HTMLElement & { __touchEvents?: unknown }).__touchEvents, pageTop: document.scrollingElement?.scrollTop, top: surface.scrollTop, reviewing: Boolean(reviewing()), overflow: surface.scrollHeight - surface.clientHeight }
   check(surface.scrollTop < before.top - 5, before.mode + ' native touch swipe actually scrolls captions')
   check(reviewing(), before.mode + ' native touch swipe pauses following')
   const top = surface.scrollTop, peer = sockets.at(-1)!, id = 'touch-arrival-' + sockets.length
