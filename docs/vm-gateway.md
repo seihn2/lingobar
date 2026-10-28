@@ -6,6 +6,12 @@ ASR/translation/annotation/session code and the unchanged browser contract.
 It does not include an active provider account, keys, free balance, or hardware
 acceptance. PR4's independent desktop pause drain is not included.
 
+**Current live-test authorization is one RMB total across all providers, not per
+day.** The ordinary gateway limits below are not a monetary cap. Keep it disabled
+for that test; use the [one-RMB preparation and unresolved proof requirements](one-rmb-test.md).
+The offline plan/accounting module includes no live executor and does not retrofit
+a monetary guard onto this gateway.
+
 ## Runtime and data flow
 
 Run the gateway on the existing Linux VM, listening on `127.0.0.1:8788` only.

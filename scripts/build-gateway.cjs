@@ -13,6 +13,8 @@ async function main() {
   for (const name of ['LICENSE', 'NOTICE.md', 'gateway.env.example']) copyFileSync(join(root, name), join(out, name))
   cpSync(join(root, 'licenses'), join(out, 'licenses'), { recursive: true })
   copyFileSync(join(root, 'docs/vm-gateway.md'), join(out, 'DEPLOYMENT.md'))
+  copyFileSync(join(root, 'docs/one-rmb-test.md'), join(out, 'one-rmb-test.md'))
+  copyFileSync(join(root, 'scripts/plan-one-rmb-test.cjs'), join(out, 'plan-one-rmb-test.cjs'))
   writeFileSync(join(out, 'BUILD-INPUTS.json'), JSON.stringify({ runtime: 'Node.js 22 Linux, loopback HTTP/ws, existing ws 8.22.0 (MIT), no runtime npm install', inputs }, null, 2) + '\n')
   console.log(`Disabled Node gateway built from ${inputs.length} project/ws inputs. No deployment or real service test.`)
 }

@@ -34,7 +34,8 @@
     "verify:worker": "node scripts/verify-worker.cjs",
     "build:gateway": "node scripts/build-gateway.cjs",
     "test:gateway": "vitest run test/gateway-",
-    "verify:gateway": "node scripts/verify-gateway.cjs"
+    "verify:gateway": "node scripts/verify-gateway.cjs",
+    "plan:test-budget": "node scripts/plan-one-rmb-test.cjs"
   },
   "devDependencies": {
     "@types/node": "22.17.2",
