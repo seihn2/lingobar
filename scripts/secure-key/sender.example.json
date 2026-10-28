@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "enabled": false,
+  "targetId": "lingobar-deepseek-primary",
+  "host": null,
+  "port": 22,
+  "user": null,
+  "hostKey": null
+}

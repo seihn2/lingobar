@@ -36,7 +36,10 @@
     "test:gateway": "vitest run test/gateway-",
     "verify:gateway": "node scripts/verify-gateway.cjs",
     "plan:test-budget": "node scripts/plan-one-rmb-test.cjs",
-    "run:test-budget": "node scripts/run-one-rmb-text-test.cjs"
+    "run:test-budget": "node scripts/run-one-rmb-text-test.cjs",
+    "test:key-transfer": "python3 -B -m unittest discover -s test -p 'key_transfer_*_test.py' -v",
+    "build:key-transfer": "node scripts/archive-key-transfer.cjs",
+    "verify:key-transfer": "node scripts/verify-key-transfer.cjs"
   },
   "devDependencies": {
     "@types/node": "22.17.2",

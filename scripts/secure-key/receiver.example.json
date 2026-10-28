@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "enabled": false,
+  "targetId": "lingobar-deepseek-primary",
+  "credentialsFile": null
+}
