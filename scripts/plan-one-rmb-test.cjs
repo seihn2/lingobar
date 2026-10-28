@@ -1,12 +1,13 @@
 // Offline preparation only: no network, environment/credential reads, recording, deployment or API execution.
 const fs = require('node:fs')
 const path = require('node:path')
+const { createHash } = require('node:crypto')
 
 const BATCH = 'lingobar-test-2026-10-28'
 const LIMIT_MICRO_CNY = 1_000_000 // Total lifetime allowance for this batch, not per day.
 const PRICE_CHECKED_ON = '2026-10-28'
 const STEPS = Object.freeze({
-  asr: Object.freeze({ reservationMicroCny: 10_000 }),
+  asr: Object.freeze({ reservationMicroCny: null }), // Selected3.1 is not priced by PCM duration; reservation is refused.
   translation: Object.freeze({ reservationMicroCny: 20_000 }),
   ruby: Object.freeze({ reservationMicroCny: 20_000 })
 })
@@ -16,12 +17,6 @@ const whole = (n, max) => Number.isSafeInteger(n) && n > 0 && n <= max
 /** Catalog calculation only. Account currency, endpoint entitlement and metering must still be confirmed. */
 function quote(input) {
   if (!input || input.currency !== 'CNY') failure()
-  if (input.provider === 'dashscope' && input.endpoint === 'wss://dashscope.aliyuncs.com/api-ws/v1/inference' &&
-      input.model === 'qwen-audio-3.0-asr-flash-streaming' && input.region === 'cn-beijing' &&
-      input.format === 'pcm16-mono-16000' && whole(input.pcmBytes, 160_000) && input.pcmBytes % 2 === 0) {
-    return { maximumMicroCny: Math.ceil(input.pcmBytes / 32_000) * 330,
-      basis: 'ceil(input PCM seconds) x 0.00033 CNY; assumes confirmed catalog billing without another minimum/surcharge' }
-  }
   if (input.provider === 'deepseek' && input.endpoint === 'https://api.deepseek.com/chat/completions' &&
       input.model === 'deepseek-flash' && input.thinking === 'disabled' && input.tools === false &&
       whole(input.fullPromptTokens, 4096) && whole(input.maxTokens, 128)) {
@@ -32,26 +27,51 @@ function quote(input) {
   failure()
 }
 
+/** Exact synthetic payloads for a future one-shot executor. Construction does not send or authorize them. */
+function textRequest(step) {
+  const tasks = {
+    translation: ['Return JSON only: translate source_text into Japanese as {"ja":"..."}. Do not add readings.', { source_text: 'Hello.' }],
+    ruby: ['Return JSON only: supply hiragana for the given Japanese slot as {"readings":[{"id":"h0","reading":"..."}]}. Do not rewrite the text.', { source_text: 'school', japanese: '学校', slots: [{ id: 'h0', text: '学校' }] }]
+  }
+  if (!Object.hasOwn(tasks, step)) failure()
+  const [system, data] = tasks[step]
+  const body = { model: 'deepseek-flash', messages: [{ role: 'system', content: system }, { role: 'user', content: JSON.stringify(data) }],
+    stream: false, max_tokens: 128, thinking: { type: 'disabled' }, tool_choice: 'none', response_format: { type: 'json_object' } }
+  const serialized = JSON.stringify(body)
+  return { endpoint: 'https://api.deepseek.com/chat/completions', method: 'POST', body, attempts: 1,
+    serializedBytes: Buffer.byteLength(serialized), requestSha256: createHash('sha256').update(serialized).digest('hex'),
+    fullPromptBoundProved: false, executionAllowed: false }
+}
+
 function plan() {
-  const asr = quote({ provider: 'dashscope', endpoint: 'wss://dashscope.aliyuncs.com/api-ws/v1/inference',
-    model: 'qwen-audio-3.0-asr-flash-streaming', currency: 'CNY', region: 'cn-beijing', format: 'pcm16-mono-16000', pcmBytes: 160_000 })
   const text = quote({ provider: 'deepseek', endpoint: 'https://api.deepseek.com/chat/completions', model: 'deepseek-flash', currency: 'CNY',
     thinking: 'disabled', tools: false, fullPromptTokens: 4096, maxTokens: 128 })
   return { batchId: BATCH, limitMicroCny: LIMIT_MICRO_CNY, priceCheckedOn: PRICE_CHECKED_ON, executionAllowed: false,
     actualCallsThisPreparation: 0, actualCostThisPreparationMicroCny: 0,
+    profile: { evidence: 'Parent-reported non-secret local metadata; no credential values read',
+      asr: { host: 'dashscope.aliyuncs.com', model: 'qwen-audio-3.1-asr-flash-streaming', keyReportedPresent: true },
+      translation: { host: 'api.deepseek.com', model: 'deepseek-flash', keyReportedPresent: true },
+      credentialMigrationAuthorized: false, accountCurrencyVerified: false },
     steps: [
-      { step: 'asr', model: 'qwen-audio-3.0-asr-flash-streaming', attempts: 1, pcmBytes: 160_000, durationSeconds: 5, conditionalMaximumMicroCny: asr.maximumMicroCny, ...STEPS.asr },
-      { step: 'translation', model: 'deepseek-flash', attempts: 1, fullPromptTokenUpperBound: 4096, maxTokens: 128, conditionalMaximumMicroCny: text.maximumMicroCny, ...STEPS.translation },
-      { step: 'ruby', model: 'deepseek-flash', attempts: 1, fullPromptTokenUpperBound: 4096, maxTokens: 128, conditionalMaximumMicroCny: text.maximumMicroCny, ...STEPS.ruby }
-    ], conditionalMaximumMicroCny: asr.maximumMicroCny + text.maximumMicroCny * 2,
-    totalReservationMicroCny: Object.values(STEPS).reduce((n, v) => n + v.reservationMicroCny, 0),
-    blockers: ['Actual stored provider/model/region and CNY catalog account terms not verified',
+      { step: 'asr', model: 'qwen-audio-3.1-asr-flash-streaming', attempts: 1, pcmBytes: 160_000, durationSeconds: 5,
+        maximumOutputTokens: null, status: 'blocked', conditionalMaximumMicroCny: null, ...STEPS.asr },
+      ...['translation', 'ruby'].map(step => {
+        const request = textRequest(step)
+        return { step, model: 'deepseek-flash', attempts: 1, status: 'blocked', fullPromptTokenUpperBound: 4096, fullPromptBoundProved: false,
+          maxTokens: request.body.max_tokens, requestSha256: request.requestSha256, serializedBytes: request.serializedBytes,
+          conditionalMaximumMicroCny: text.maximumMicroCny, ...STEPS[step] }
+      })
+    ], conditionalMaximumMicroCny: null, totalReservationMicroCny: null, // An unknown ASR bound must not turn into a known total.
+    conditionalTextMaximumMicroCny: text.maximumMicroCny * 2, plannedTextReservationMicroCny: 40_000,
+    blockers: ['Actual provider/model hosts are confirmed; account currency/region/entitlement and CNY catalog terms remain unverified',
       'Full DeepSeek chat-template/tokenizer input bound not proved; 4096 is a required ceiling, not a measured count',
       'Default Qwen3.1 token-priced ASR has no established input/output cost ceiling and is refused',
       'Existing shared helpers use max_tokens=8192 and annotation format retry; they are not this one-shot 128-token harness',
       'Credential source/migration and canonical server-side budget ledger not authorized/connected',
       'No live executor is included; WEB_ENABLED must remain off for this preparation'],
-    sources: ['https://help.aliyun.com/zh/model-studio/model-pricing', 'https://api-docs.deepseek.com/zh-cn/quick_start/pricing/',
+    sources: ['https://help.aliyun.com/zh/model-studio/model-pricing',
+      'https://help.aliyun.com/zh/model-studio/qwen-audio-asr-streaming-client-events',
+      'https://help.aliyun.com/zh/model-studio/qwen-audio-asr-streaming-server-events', 'https://api-docs.deepseek.com/zh-cn/quick_start/pricing/',
       'https://api-docs.deepseek.com/api/create-chat-completion/', 'https://api-docs.deepseek.com/zh-cn/quick_start/token_usage/'] }
 }
 
@@ -87,7 +107,7 @@ class OneRmbTestLedger {
         !Array.isArray(v.attempts) || v.attempts.length > 3) failure()
       const ids = new Set()
       for (const item of v.attempts) {
-        if (!item || !Object.hasOwn(STEPS, item.step) || ids.has(item.step) || item.reservedMicroCny !== STEPS[item.step].reservationMicroCny) failure()
+      if (!item || !Object.hasOwn(STEPS, item.step) || ids.has(item.step) || !whole(item.reservedMicroCny, LIMIT_MICRO_CNY) || item.reservedMicroCny !== STEPS[item.step].reservationMicroCny) failure()
         ids.add(item.step)
       }
       if (v.attempts.reduce((n, item) => n + item.reservedMicroCny, 0) !== v.reservedMicroCny) failure()
@@ -96,7 +116,7 @@ class OneRmbTestLedger {
   reserve(step) {
     if (this.closed || this.failed || !Object.hasOwn(STEPS, step) || this.value.attempts.some(item => item.step === step)) failure()
     const amount = STEPS[step].reservationMicroCny
-    if (this.value.reservedMicroCny + amount > LIMIT_MICRO_CNY) failure()
+    if (!whole(amount, LIMIT_MICRO_CNY) || this.value.reservedMicroCny + amount > LIMIT_MICRO_CNY) failure()
     const next = { ...this.value, reservedMicroCny: this.value.reservedMicroCny + amount,
       attempts: [...this.value.attempts, { step, reservedMicroCny: amount }] }
     const temporary = path.join(this.dir, 'test-budget.pending')
@@ -115,5 +135,5 @@ class OneRmbTestLedger {
   // Failure, cancellation, midnight, restart and a claimed free grant never refund reservations.
   close() { if (this.closed) return; this.closed = true; fs.closeSync(this.held); fs.unlinkSync(path.join(this.dir, 'test-budget.lock')) }
 }
-module.exports = { plan, quote, initializeLedger, OneRmbTestLedger }
+module.exports = { plan, quote, textRequest, initializeLedger, OneRmbTestLedger }
 if (require.main === module) console.log(JSON.stringify(plan(), null, 2))
