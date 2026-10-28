@@ -40,6 +40,11 @@ explicitly authorized server configuration before real use.
 
 ## Browser behavior
 
+The [phone/computer responsive batch](web-responsive.md) adds touch-visible compact
+navigation, panel focus and visible-viewport/safe-area handling. Its static
+artifact includes exact source provenance and checksums; real phone acceptance
+and online service activation remain separate.
+
 - Explicit start opens the configured route and waits for matching readiness
   before requesting the microphone. The existing AudioWorklet emits mono16kHz
   PCM16; there is no real-audio test in this batch.

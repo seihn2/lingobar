@@ -159,7 +159,56 @@ async function main() {
       writeFileSync(join(output, `synthetic-${width}.png`), Buffer.from(screenshot.data, 'base64'))
       console.log(`Web synthetic regression: ${result.result.value.checks.length} checks at ${width}x${height} scale ${scale}`)
     }
-    writeFileSync(join(output, 'results.json'), JSON.stringify({ touchFailures, productionUnconfigured: unconfigured.result.value, results, note: 'Linux Chromium emulation and synthetic transport/media only. No iPhone/Safari, live Workers, provider or real microphone acceptance.' }, null, 2))
+    // The responsive matrix injects only a viewport port; it never claims a native phone keyboard.
+    await send('Page.addScriptToEvaluateOnNewDocument', { source: `
+      const nativeViewport = window.visualViewport;
+      let values = null;
+      const viewport = new EventTarget();
+      for (const key of ['height', 'offsetTop', 'scale']) Object.defineProperty(viewport, key, { get: () => values ? values[key] : nativeViewport ? nativeViewport[key] : key === 'height' ? innerHeight : key === 'scale' ? 1 : 0 });
+      for (const kind of ['resize', 'scroll']) nativeViewport?.addEventListener(kind, () => viewport.dispatchEvent(new Event(kind)));
+      Object.defineProperty(window, 'visualViewport', { configurable: true, value: viewport });
+      window.__webViewportFixture = { set(next) { values = next; viewport.dispatchEvent(new Event('resize')); viewport.dispatchEvent(new Event('scroll')); } };
+    ` })
+    const responsiveResults = []
+    const evaluate = async expression => {
+      const result = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true })
+      if (result.exceptionDetails) throw new Error('Responsive regression: ' + (result.exceptionDetails.exception?.description || result.exceptionDetails.text))
+      return result.result.value
+    }
+    for (const [width, height] of [[320, 568], [375, 812], [390, 844], [844, 390], [1280, 800], [1920, 1080]]) {
+      await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: width < 1000 })
+      await send('Emulation.setTouchEmulationEnabled', { enabled: width < 1000, maxTouchPoints: 1 })
+      await send('Page.navigate', { url: `${origin}/test/fixtures/web.html` })
+      let ready = false
+      for (let attempt = 0; attempt < 100 && !ready; attempt++) { await pause(); ready = await evaluate('Boolean(window.__lingobarWebTest && document.querySelector(".web-shell"))') }
+      assert.ok(ready, 'Responsive fixture did not mount')
+      const result = await evaluate('window.__lingobarWebTest.responsive()')
+      if (width < 1000) {
+        const tap = async selector => {
+          const point = await evaluate('window.__lingobarWebTest.touchPoint(' + JSON.stringify(selector) + ')')
+          await send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: point.x, y: point.y, id: 1 }] })
+          await new Promise(resolve => setTimeout(resolve, 50))
+          await send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await pause()
+        }
+        await tap('.compact-navigation [aria-label="上一段"]')
+        assert.ok(await evaluate('Boolean(document.querySelector(".compact-review")) && document.querySelector(".compact-rows").dataset.captionId === "fixture-1:responsive-1"'), 'First native touch on compact Previous must navigate without prior hover')
+        await tap('.compact-live')
+        assert.ok(await evaluate('!document.querySelector(".compact-review") && document.querySelector(".compact-rows").dataset.captionId === "fixture-1:responsive-2"'), 'Native touch Return to live must resume the latest segment')
+        result.checks.push('first native touch navigates compact history without prior hover', 'native touch returns to the latest segment')
+      }
+      if (width === 390) {
+        await evaluate('(async()=>{document.querySelector(".web-header button").click(); await new Promise(r=>requestAnimationFrame(r)); const b=document.querySelector(".web-footer button"); b.focus(); window.__responsiveFocusReturn=b; b.click(); await new Promise(r=>requestAnimationFrame(r));})()')
+        assert.ok(await evaluate('document.activeElement === document.querySelector(".web-panel-heading h1")'), 'Settings owns initial keyboard focus')
+        await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 }); await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 })
+        assert.ok(await evaluate('document.activeElement === document.querySelector(".web-panel-heading button")'), 'Trusted Tab enters panel controls from its heading')
+        await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 }); await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 }); await pause()
+        assert.ok(await evaluate('!document.querySelector(".web-panel") && document.activeElement === window.__responsiveFocusReturn'), 'Trusted Escape restores the invoking footer control')
+        result.checks.push('trusted Tab enters settings controls', 'trusted Escape closes settings and restores its trigger')
+      }
+      responsiveResults.push(result)
+      console.log(`Web responsive regression: ${result.checks.length} checks at ${width}x${height}; synthetic viewport/safe-area, no native phone keyboard`)
+    }
+    writeFileSync(join(output, 'results.json'), JSON.stringify({ touchFailures, responsiveResults, productionUnconfigured: unconfigured.result.value, results, note: 'Linux Chromium emulation and synthetic transport/media only. No iPhone/Safari, live Workers, provider or real microphone acceptance.' }, null, 2))
     assert.deepEqual(touchFailures, [], 'Native touch review regressions')
   } finally {
     for (const request of pending.values()) { clearTimeout(request.timer); request.reject(new Error('UI test finished')) }

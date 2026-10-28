@@ -1,9 +1,9 @@
 html,body,#root{height:100%;height:100dvh;min-width:0;background:#141a1e}
-.web-shell{border:0;border-radius:0;box-shadow:none;max-width:1000px;margin:auto;--surface-opacity:1}
+.web-shell{position:fixed;left:0;right:0;border:0;border-radius:0;box-shadow:none;max-width:1000px;margin:auto;--surface-opacity:1;--web-safe-top:env(safe-area-inset-top,0px);--web-safe-bottom:env(safe-area-inset-bottom,0px);--web-safe-left:env(safe-area-inset-left,0px);--web-safe-right:env(safe-area-inset-right,0px);height:var(--web-viewport-height,100%);top:var(--web-viewport-top,0px);padding-left:var(--web-safe-left);padding-right:var(--web-safe-right)}
 .web-shell button,.web-shell input{-webkit-app-region:no-drag;touch-action:manipulation}
-.web-shell button{min-height:40px;font-size:13px}
+.web-shell button{min-height:44px;font-size:13px}
 .web-header,.web-capture,.web-footer,.web-panel-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;padding:10px 16px}
-.web-header{padding-top:max(10px,env(safe-area-inset-top));border-bottom:1px solid var(--line)}
+.web-header{padding-top:max(10px,var(--web-safe-top));border-bottom:1px solid var(--line)}
 .web-header strong{font-size:16px;color:#c9ded9}
 .web-header button,.web-footer button,.web-panel-heading button{padding:7px 12px;border:1px solid #9ebdb333;border-radius:7px;background:#a9c5bc0b}
 .web-capture [role=status]{font-size:13px;color:#a0c6bc}
@@ -19,15 +19,26 @@ html,body,#root{height:100%;height:100dvh;min-width:0;background:#141a1e}
 .web-shell .stream-toolbar{height:auto;min-height:44px}
 .web-empty{margin:auto;color:#839b95;font-size:15px}
 .web-notice{margin:0 16px 8px;padding:10px;border:1px solid #bca78640;border-radius:6px;color:#d7b995;font-size:13px;flex-shrink:0}
-.web-footer{border-top:1px solid var(--line);justify-content:space-around;padding-bottom:max(10px,env(safe-area-inset-bottom))}
+.web-footer{border-top:1px solid var(--line);justify-content:space-around;padding-bottom:max(10px,var(--web-safe-bottom))}
 .web-panel{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
 .web-panel-heading h1{margin:0;color:#c7dcd6;font-size:16px}
+.web-panel-heading h1:focus-visible{outline:2px solid #a0ded7;outline-offset:3px}
 .web-panel .settings-content{padding:8px 16px 20px}
 .web-panel .language-options{grid-template-columns:repeat(2,minmax(0,1fr))}
 .web-panel .toggle-setting span,.web-panel .settings-explanation{font-size:11px}
 .web-font{display:flex!important;align-items:center;gap:12px;font-size:13px!important;margin:12px 0!important}
 .web-font input{min-width:80px;width:100%}
 .web-panel .history-search{margin:0 16px}
+.web-panel .history-search-input{font-size:16px}
 .web-panel .history-toolbar{padding:8px 16px}
 .web-shell.is-collapsed{min-height:0}
+.web-shell .compact-navigation button{width:44px;height:44px;min-width:44px}
+.web-shell .compact-content{padding-bottom:52px}
+@media(hover:none),(any-pointer:coarse){.web-shell .compact-controls{position:static;align-self:flex-end;opacity:1;pointer-events:auto;margin-top:6px;flex-shrink:0}.web-shell .compact-content{padding-bottom:0}}
+.web-shell.has-panel[data-viewport-short="true"] .web-header,.web-shell.has-panel[data-viewport-short="true"] .web-footer{display:none}
+.web-shell.has-panel[data-viewport-short="true"] .web-capture,.web-shell.has-panel[data-viewport-short="true"] .web-panel-heading{padding-top:4px;padding-bottom:4px}
+.web-shell.has-panel[data-viewport-short="true"]{padding-bottom:var(--web-safe-bottom)}
+.web-shell.has-panel[data-viewport-short="true"] .web-capture{padding-top:max(4px,var(--web-safe-top))}
+.web-shell.has-panel[data-viewport-short="true"] .history-search-hint{display:none}
+.web-shell.has-panel[data-viewport-short="true"] .panel-history:has(.history-search-input:focus) .history-toolbar{display:none}
 @media(max-width:420px){.web-header,.web-capture,.web-footer{padding-left:12px;padding-right:12px}.web-shell .caption-row{grid-template-columns:54px minmax(0,1fr)}.web-shell .caption-card-meta{flex-wrap:wrap}.web-shell .caption-card-actions{gap:0}.web-shell .caption-card-heading{align-items:flex-start}.web-shell .caption-card-actions button{min-width:30px}.web-panel .language-options{grid-template-columns:repeat(2,minmax(0,1fr))}}
