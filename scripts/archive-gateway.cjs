@@ -21,6 +21,11 @@ const entries = [...files(join(dist, 'gateway')), ...files(join(dist, 'web'))].s
 })
 writeFileSync(join(dist, 'GATEWAY-MANIFEST.json'), JSON.stringify({ sourceHead: head, sourceTree: tree, sourceBase: process.env.LINGOBAR_SOURCE_BASE || '', checkoutHead: git('rev-parse', 'HEAD'),
   runtime: 'Node.js22 Linux, loopback gateway only', enabled: false, deployed: false, backend: null,
+  textTestExecutor: { enabled: false, batchId: 'lingobar-test-2026-10-28', limitMicroCny: 1_000_000,
+    steps: ['translation', 'ruby'], asr: false, entrypoint: 'scripts/run-one-rmb-text-test.cjs',
+    installation: 'scripts/text-test-installation.json', proof: 'evidence/text-test-proof.json',
+    ledger: 'Operator-selected unique persistent private directory; not included or initialized in this artifact',
+    cumulative: true, resets: false },
   validation: 'Generated Access signatures, temporary budget ledger, actual loopback HTTP/ws and synthetic providers. No live Access/provider/VM/phone acceptance.', files: entries }, null, 2) + '\n')
 writeFileSync(join(dist, 'GATEWAY-SHA256SUMS.txt'), [...entries, { path: 'GATEWAY-MANIFEST.json', sha256: hash(readFileSync(join(dist, 'GATEWAY-MANIFEST.json'))) }].map(v => `${v.sha256}  ${v.path}`).join('\n') + '\n')
 console.log(`Disabled gateway/static artifact inventoried: ${entries.length} files, source ${head}.`)

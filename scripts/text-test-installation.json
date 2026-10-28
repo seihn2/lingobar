@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "batchId": "lingobar-test-2026-10-28",
+  "executionEnabled": false,
+  "ledgerDirectory": null,
+  "credentialsFile": null,
+  "account": {
+    "currency": "CNY",
+    "cnyConfirmed": true,
+    "confirmedOn": "2026-10-28",
+    "catalogTermsConfirmed": false
+  },
+  "price": {
+    "modelVersion": "DeepSeek-V4.1-Flash-1017",
+    "inputMicroCnyPerToken": 2,
+    "outputMicroCnyPerToken": 8,
+    "checkedOn": "2026-10-28",
+    "validUntil": "2026-10-29T00:00:00.000Z",
+    "confirmed": false
+  },
+  "otherBatchSpend": {
+    "known": false,
+    "reservedMicroCny": 0,
+    "evidenceId": null
+  }
+}

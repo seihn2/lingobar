@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 1,
+  "kind": "fixed-text-token-upper-bound-v1",
+  "batchId": "lingobar-test-2026-10-28",
+  "executionAllowed": false,
+  "checkedAt": "2026-10-28T18:12:00Z",
+  "model": {
+    "apiAlias": "deepseek-flash",
+    "version": "DeepSeek-V4.1-Flash-1017",
+    "endpoint": "https://api.deepseek.com/chat/completions",
+    "mappingEvidence": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing/"
+  },
+  "recipe": {
+    "commit": "935817c66f5d6e64838f419692545f06787e485f",
+    "cargoLockSha256": "1af49e412b58b2caa3d4f7c47d41a1b95981345315ed3eff8639df7a521cf6dc",
+    "templateSha256": "33f7b0e0c3dde66020a4746ffc6c35df8dd30933e653aaf9071c1beb21439a90",
+    "jsonSerializerSha256": "5f870d05a986009f57fd2452f0eb7800476ca5be5a3da722263ec696a743211c",
+    "promptTokenizerSha256": "21fefc37c6689cac8357d030f1ccb2c84e37d293950797ec4a6a0bfc208b56de",
+    "tokenizersVersion": "0.23.2",
+    "tokenizersCrateChecksum": "7afbf6e88718afcc138bad01d6ccc3051dbbc3b2ce9793d8b8a3aeb610969cfc"
+  },
+  "tokenizer": {
+    "recipeSha256": "81f64d1248a68ce3663e07ab3ee48b851e5df0e32d27cb98e4c9a268151e8d99",
+    "modelSha256": "c90dfa01249db1be4245780a052ede752e1361c612ac6d08e2bdada7d599476b",
+    "modelRevision": "1bae0e1088993b9b82de08f59de5be5a34e42170",
+    "rawFilesByteIdentical": false,
+    "plainConfigurationEqual": true,
+    "modelVocabularyAndMergesEqual": true,
+    "plainConfigurationSha256": "b43022c5a7a4c7015aef11d30d74f597cd1ccaa7796b3906097df5d0aeb64b0e",
+    "controlTokenIds": {
+      "<｜begin▁of▁sentence｜>": 0,
+      "<｜System｜>": 128799,
+      "<｜User｜>": 128803,
+      "<｜Assistant｜>": 128804,
+      "</think>": 128822
+    },
+    "onlyDifferences": [
+      "/added_tokens/1267/content: <｜image｜> versus <｜deepseek_image｜>",
+      "/added_tokens/1267/special: true versus false"
+    ],
+    "scope": "Only the two fixed plaintext requests. No images or arbitrary prompts. Plain added vocabulary is removed by PromptTokenizer; all five explicit control IDs agree."
+  },
+  "encoding": {
+    "method": "source-derived-utf8-symbol-upper-bound",
+    "exactTokenCount": null,
+    "normalizer": "empty Sequence",
+    "splitBehavior": "three Split Isolated operations; no duplication",
+    "byteLevelPrefixSpace": false,
+    "byteLevelRegex": false,
+    "postprocessorAddedTokens": 0,
+    "padding": null,
+    "byteFallback": false,
+    "subwordPrefix": null,
+    "subwordSuffix": null,
+    "plainAddedVocabulary": false,
+    "controlTokenCount": 5,
+    "responseFormatSuffixUtf8Bytes": 105,
+    "derivation": "BPE starts with at most one symbol per original UTF8 byte and only merges; add the five explicit controls. Include the full JSON response-format system suffix and generation prefix. This is a conservative bound, not an exact BPE count."
+  },
+  "price": {
+    "currency": "CNY",
+    "inputUncachedPeakMicroCnyPerToken": 2,
+    "outputPeakMicroCnyPerToken": 8,
+    "checkedOn": "2026-10-28",
+    "expiresAt": "2026-10-29T00:00:00Z",
+    "source": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing/",
+    "contractBoundary": "Conditional on the actual CNY account using the published catalog and the official API honoring the documented encoding/output contract. Not a bill or balance measurement."
+  },
+  "account": {
+    "currency": "CNY",
+    "verified": true,
+    "fundsCoverPlannedReservation": true,
+    "evidenceKind": "parent-reported-authorized-local-read-only-account-check",
+    "checkedOn": "2026-10-28",
+    "evidenceBoundary": "This cloud executor did not log in, read credentials or inspect the balance."
+  },
+  "steps": {
+    "translation": {
+      "requestSha256": "12de2811907dba2b729994c76bbf34a4ac2a8c5b74d1c541425cf05722151c7f",
+      "requestUtf8Bytes": 347,
+      "renderedSystemUtf8Bytes": 196,
+      "userUtf8Bytes": 24,
+      "renderedPromptSha256": "5a598d484f9263b71d527190d23bad4afa7973c7ce4c95b74decc91879159cc8",
+      "inputTokenUpperBound": 225,
+      "exactInputTokenCount": null,
+      "outputTokenLimit": 128,
+      "conditionalMaximumMicroCny": 1474,
+      "reservationMicroCny": 20000
+    },
+    "ruby": {
+      "requestSha256": "0d9d939849e3524eb96f2aa561a8e831820a0445ba90b1153c5872e9116fc919",
+      "requestUtf8Bytes": 467,
+      "renderedSystemUtf8Bytes": 238,
+      "userUtf8Bytes": 82,
+      "renderedPromptSha256": "5e7e28cdcb0aeb64e85a56399d3bfe39ac8b8fc34961407ce7621121ade291b6",
+      "inputTokenUpperBound": 325,
+      "exactInputTokenCount": null,
+      "outputTokenLimit": 128,
+      "conditionalMaximumMicroCny": 1674,
+      "reservationMicroCny": 20000
+    }
+  },
+  "sources": [
+    {
+      "url": "https://github.com/deepseek-ai/deepseek-recipe/blob/935817c66f5d6e64838f419692545f06787e485f/deepseek-recipe-encoding/src/v4/dsv41.rs",
+      "sha256": "33f7b0e0c3dde66020a4746ffc6c35df8dd30933e653aaf9071c1beb21439a90",
+      "license": "MIT"
+    },
+    {
+      "url": "https://github.com/deepseek-ai/deepseek-recipe/blob/935817c66f5d6e64838f419692545f06787e485f/deepseek-recipe-core/src/json.rs",
+      "sha256": "5f870d05a986009f57fd2452f0eb7800476ca5be5a3da722263ec696a743211c",
+      "license": "MIT"
+    },
+    {
+      "url": "https://github.com/deepseek-ai/deepseek-recipe/blob/935817c66f5d6e64838f419692545f06787e485f/deepseek-recipe-core/src/special_tokens.rs",
+      "sha256": "e38f095ca3841855234a009ad913c250befb179240d32e5cf22fc1ef140569b3",
+      "license": "MIT"
+    },
+    {
+      "url": "https://github.com/deepseek-ai/deepseek-recipe/blob/935817c66f5d6e64838f419692545f06787e485f/deepseek-recipe-encoding/src/tokenizer.rs",
+      "sha256": "21fefc37c6689cac8357d030f1ccb2c84e37d293950797ec4a6a0bfc208b56de",
+      "license": "MIT"
+    },
+    {
+      "url": "https://github.com/deepseek-ai/deepseek-recipe/blob/935817c66f5d6e64838f419692545f06787e485f/Cargo.lock",
+      "sha256": "1af49e412b58b2caa3d4f7c47d41a1b95981345315ed3eff8639df7a521cf6dc",
+      "license": "MIT"
+    },
+    {
+      "url": "https://github.com/deepseek-ai/deepseek-recipe/blob/935817c66f5d6e64838f419692545f06787e485f/static/tokenizers/README.md",
+      "sha256": "e2b2e400b7ad306d72cbfa621c1b1d39ea67e0165adbb32c29ffb164988bd4b7",
+      "license": "MIT (tokenizer has its own DeepSeek2023 notice)"
+    },
+    {
+      "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash-1017/blob/1bae0e1088993b9b82de08f59de5be5a34e42170/README.md",
+      "sha256": "b72b796e4f4c739eca5d0ad360a7679b39118ca7eb64891f7151a527b292c42a",
+      "license": "MIT"
+    },
+    {
+      "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash-1017/blob/1bae0e1088993b9b82de08f59de5be5a34e42170/tokenizer.json",
+      "sha256": "c90dfa01249db1be4245780a052ede752e1361c612ac6d08e2bdada7d599476b",
+      "license": "MIT"
+    },
+    {
+      "url": "https://github.com/huggingface/tokenizers/blob/v0.23.2/tokenizers/src/pre_tokenizers/byte_level.rs",
+      "sha256": "f9b5a747a0ad936f0c49cff8f32bc8f166126704ab02d5af0505ad032fe6d99a",
+      "license": "Apache-2.0"
+    },
+    {
+      "url": "https://github.com/huggingface/tokenizers/blob/v0.23.2/tokenizers/src/models/bpe/model.rs",
+      "sha256": "550f2d0fa8f0ecd27013a0787d8343c961e83a724fc09f7d596c695220f72429",
+      "license": "Apache-2.0"
+    },
+    {
+      "url": "https://github.com/huggingface/tokenizers/blob/v0.23.2/tokenizers/src/models/bpe/word.rs",
+      "sha256": "42a5547426082590675979ed72e03ce59a16f7cf0b57aaac6890d43ce0a79ad0",
+      "license": "Apache-2.0"
+    }
+  ],
+  "remainingConditions": [
+    "The shipped executor is disabled; release requires a deliberate reviewed change, not an environment boolean.",
+    "Parent must connect the single canonical persistent ledger, account/other-spend attestation and controlled credential input without resetting this batch.",
+    "No actual provider token usage, billing, model output quality or VM execution has been validated; no ASR request is admitted."
+  ]
+}

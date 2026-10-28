@@ -15,12 +15,14 @@ describe('one-RMB test cost calculations are offline conditional bounds, never a
     expect(result.executionAllowed).toBe(false); expect(result.limitMicroCny).toBe(1_000_000)
     expect(result.actualCallsThisPreparation).toBe(0); expect(result.actualCostThisPreparationMicroCny).toBe(0)
     expect(result.conditionalMaximumMicroCny).toBeNull(); expect(result.totalReservationMicroCny).toBeNull()
-    expect(result.conditionalTextMaximumMicroCny).toBe(18_432); expect(result.plannedTextReservationMicroCny).toBe(40_000)
+    expect(result.conditionalTextMaximumMicroCny).toBe(3148); expect(result.plannedTextReservationMicroCny).toBe(40_000)
     expect(result.profile.asr).toMatchObject({ host: 'dashscope.aliyuncs.com', model: 'qwen-audio-3.1-asr-flash-streaming', keyReportedPresent: true })
     expect(result.profile.translation).toMatchObject({ host: 'api.deepseek.com', model: 'deepseek-flash', keyReportedPresent: true })
     expect(result.steps[0]).toMatchObject({ maximumOutputTokens: null, conditionalMaximumMicroCny: null, reservationMicroCny: null })
     expect(result.steps.map((v: { attempts: number }) => v.attempts)).toEqual([1, 1, 1])
-    expect(result.blockers.join(' ')).toMatch(/not proved/)
+    expect(result.blockers.join(' ')).toMatch(/not exact BPE/)
+    expect(result.profile.accountCurrencyVerified).toBe(true)
+    expect(result.steps.slice(1).map((step: { fullPromptTokenUpperBound: number }) => step.fullPromptTokenUpperBound)).toEqual([225, 325])
   })
   it.each(['qwen-audio-3.0-asr-flash-streaming', 'qwen-audio-3.1-asr-flash-streaming'])('never substitutes a seconds price for the selected3.1, including a complete %s request descriptor', model => {
     expect(() => quote({ provider: 'dashscope', endpoint: 'wss://dashscope.aliyuncs.com/api-ws/v1/inference',
