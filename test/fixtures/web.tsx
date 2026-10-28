@@ -127,6 +127,78 @@ async function run() {
 }
 
 type TouchState = { mode: 'expanded' | 'compact'; id: string; top: number; x: number; y: number; overflow: number; diagnostics?: unknown }
+async function responsive() {
+  const checks: string[] = []
+  const check = (ok: unknown, message: string) => { assert(ok, message); checks.push(message) }
+  session.saveSettings({ targetLanguages: ['zh', 'ja', 'en', 'fr', 'de', 'es', 'ko', 'ar'], fontSize: 24 })
+  await session.start(); const peer = sockets.at(-1)!
+  const japanese = '明日の天気は晴れです。'
+  const segments = [{ text: '明日', reading: 'あした' }, { text: 'の' }, { text: '天気', reading: 'てんき' }, { text: 'は' }, { text: '晴', reading: 'は' }, { text: 'れです。' }]
+  const translations = { zh: '合成译文'.repeat(30), ja: japanese, en: 'Synthetic '.repeat(20) + 'x'.repeat(200), fr: 'Traduction synthétique '.repeat(20), de: 'Synthetischer Text '.repeat(20), es: 'Texto sintético '.repeat(20), ko: '합성 문장 '.repeat(30), ar: 'نص اصطناعي '.repeat(30) }
+  for (let i = 0; i < 3; i++) peer.packet('caption', { revision: 1, caption: row('responsive-' + i, { original: '合成原文 👩‍💻 e\u0301 <b>文字</b> ' + 'https://example.invalid/' + 'z'.repeat(200), translations, ja: japanese, jaSegments: segments, furiganaStatus: 'ready' }) })
+  session.stop(); await frame()
+  const mediaCount = captures, socketCount = sockets.length
+  const shell = query('.web-shell')
+  const codes = [...query('.caption-card:last-of-type').querySelectorAll('.language-label')].map(node => node.textContent)
+  check(codes.length === 9 && codes[0] === '原文' && query('ruby rt').textContent === 'あした', 'responsive expanded view preserves source, all eight selected languages and matching ruby')
+  check(document.documentElement.scrollWidth <= innerWidth, '24px multilingual content and unbroken synthetic URL do not overflow the page')
+  query<HTMLButtonElement>('.web-header button').click(); await frame()
+  const controls = query('.compact-controls'), buttons = [...controls.querySelectorAll<HTMLButtonElement>('.compact-navigation button')]
+  check(buttons.every(button => button.getBoundingClientRect().width >= 44 && button.getBoundingClientRect().height >= 44), 'Web compact navigation provides 44px targets')
+  const coarse = matchMedia('(hover:none),(any-pointer:coarse)').matches
+  if (coarse) {
+    check(getComputedStyle(controls).opacity === '1' && getComputedStyle(controls).pointerEvents === 'auto', 'coarse-pointer compact controls are visible and enabled before hover or a first tap')
+    check(getComputedStyle(controls).position === 'static' && query('.compact-viewport').getBoundingClientRect().bottom <= controls.getBoundingClientRect().top, 'touch controls occupy their own row rather than cover subtitle text')
+  } else {
+    buttons[0].focus(); await frame()
+    check(getComputedStyle(controls).opacity === '1', 'fine-pointer compact controls remain keyboard reachable')
+  }
+  check(document.querySelectorAll('.compact-row').length === 9, 'compact mode keeps the source and every selected language')
+  query<HTMLButtonElement>('.web-header button').click(); await frame()
+  const settings = query<HTMLButtonElement>('.web-footer button:first-child'); settings.focus(); settings.click(); await frame()
+  check(document.activeElement === query('.web-panel-heading h1'), 'opening settings moves focus into the panel without opening a text keyboard')
+  query('.web-panel').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await frame()
+  check(document.activeElement === settings, 'closing settings restores the visible invoking control')
+  const history = query<HTMLButtonElement>('.web-footer button:last-child'); history.focus(); history.click(); await frame()
+  check(document.activeElement === query('.web-panel-heading h1'), 'history also owns initial focus while preserving explicit search entry')
+  const input = query<HTMLInputElement>('.history-search-input'); input.focus()
+  const viewport = (window as unknown as { __webViewportFixture: { set(value: { height: number; offsetTop: number; scale: number } | null): void } }).__webViewportFixture
+  const height = Math.min(220, Math.floor(innerHeight / 2)), top = Math.min(100, innerHeight - height)
+  viewport.set({ height, offsetTop: top, scale: 1 }); await frame()
+  const bounds = shell.getBoundingClientRect(), search = query('.history-search').getBoundingClientRect()
+  check(Math.abs(bounds.height - height) < 1 && Math.abs(bounds.top - top) < 1, 'synthetic keyboard resize and visual pan keep the shell within the visible area')
+  const htmlStyle = document.documentElement.style.cssText, bodyStyle = document.body.style.cssText
+  document.documentElement.style.height = '2000px'; document.documentElement.style.overflow = 'auto'; document.body.style.height = '2000px'; document.body.style.overflow = 'visible'
+  window.scrollTo(0, 80); await frame()
+  check(window.scrollY > 0 && Math.abs(shell.getBoundingClientRect().top - top) < 1, 'browser document panning does not displace the fixed visible-viewport shell')
+  window.scrollTo(0, 0); document.documentElement.style.cssText = htmlStyle; document.body.style.cssText = bodyStyle; await frame()
+  check(search.top >= bounds.top && search.bottom <= bounds.bottom && getComputedStyle(input).fontSize === '16px', 'short viewport keeps a readable search field above the synthetic keyboard')
+  check(query('.history-list').getBoundingClientRect().height >= 24 && query('.web-capture').getBoundingClientRect().bottom <= bounds.bottom, 'short search mode preserves visible results and start/pause control')
+  viewport.set({ height: height / 2, offsetTop: top + 40, scale: 2 }); await frame()
+  check(Math.abs(shell.getBoundingClientRect().height - height) < 1, 'pinch zoom does not shrink the layout a second time')
+  viewport.set(null); await frame()
+  check(Math.abs(shell.getBoundingClientRect().height - innerHeight) < 2, 'keyboard dismissal restores the original viewport height')
+  query('.web-panel').dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true })); query('.web-panel').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await frame()
+  check(Boolean(document.querySelector('.web-panel')), 'IME Escape keeps the Web panel open')
+  query('.web-panel').dispatchEvent(new CompositionEvent('compositionend', { bubbles: true })); query('.web-panel').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await frame()
+  check(document.activeElement === history, 'history Escape restores focus after viewport recovery')
+  shell.style.setProperty('--web-safe-left', '44px'); shell.style.setProperty('--web-safe-right', '34px'); await frame()
+  const safeBounds = shell.getBoundingClientRect(), header = query('.web-header').getBoundingClientRect(), reading = query('.web-reading').getBoundingClientRect()
+  check(header.left >= safeBounds.left + 44 && header.right <= safeBounds.right - 34 && reading.left >= safeBounds.left + 44 && reading.right <= safeBounds.right - 34, 'synthetic left/right safe-area values inset both controls and reading')
+  check(document.documentElement.scrollWidth <= innerWidth, 'safe-area padding remains inside the page width')
+  shell.style.setProperty('--web-safe-top', '20px'); shell.style.setProperty('--web-safe-bottom', '16px'); await frame()
+  check(parseFloat(getComputedStyle(query('.web-header')).paddingTop) >= 20 && parseFloat(getComputedStyle(query('.web-footer')).paddingBottom) >= 16, 'top/bottom safe areas remain effective in the normal layout')
+  history.focus(); history.click(); await frame(); query<HTMLInputElement>('.history-search-input').focus()
+  viewport.set({ height, offsetTop: top, scale: 1 }); await frame()
+  check(parseFloat(getComputedStyle(query('.web-capture')).paddingTop) >= 20 && parseFloat(getComputedStyle(shell).paddingBottom) >= 16, 'short panel preserves top/bottom safe areas while duplicate navigation is hidden')
+  viewport.set(null); query('.web-panel').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await frame()
+  shell.style.removeProperty('--web-safe-top'); shell.style.removeProperty('--web-safe-bottom')
+  shell.style.removeProperty('--web-safe-left'); shell.style.removeProperty('--web-safe-right'); await frame()
+  query<HTMLButtonElement>('.web-header button').click(); await frame(); query<HTMLButtonElement>('.compact-live').click(); await frame()
+  check(captures === mediaCount && sockets.length === socketCount, 'focus, safe-area and viewport changes do not start recording or reconnect a service')
+  return { checks, coarse, viewport: { width: innerWidth, height: innerHeight }, syntheticVisualViewport: true, syntheticSafeArea: true }
+}
+
 async function prepareTouch(mode: TouchState['mode']): Promise<TouchState> {
   session.stop(); await frame()
   if (document.querySelector('.web-panel-heading button')) query<HTMLButtonElement>('.web-panel-heading button').click()
@@ -220,5 +292,5 @@ async function verifyTouchHistory(id: string) {
   assert(session.snapshot().state === 'listening', 'History review must not stop the synthetic audio session')
   return { checks: ['native history tap locates its stable segment', 'new translation preserves history touch selection and active capture'] }
 }
-;(window as unknown as { __lingobarWebTest: { run: typeof run; prepareTouch: typeof prepareTouch; verifyTouch: typeof verifyTouch; touchPoint: typeof touchPoint; prepareTouchReturn: typeof prepareTouchReturn; verifyTouchReturn: typeof verifyTouchReturn; prepareTouchHistory: typeof prepareTouchHistory; verifyTouchHistory: typeof verifyTouchHistory } }).__lingobarWebTest = { run, prepareTouch, verifyTouch, touchPoint, prepareTouchReturn, verifyTouchReturn, prepareTouchHistory, verifyTouchHistory }
+;(window as unknown as { __lingobarWebTest: { run: typeof run; responsive: typeof responsive; prepareTouch: typeof prepareTouch; verifyTouch: typeof verifyTouch; touchPoint: typeof touchPoint; prepareTouchReturn: typeof prepareTouchReturn; verifyTouchReturn: typeof verifyTouchReturn; prepareTouchHistory: typeof prepareTouchHistory; verifyTouchHistory: typeof verifyTouchHistory } }).__lingobarWebTest = { run, responsive, prepareTouch, verifyTouch, touchPoint, prepareTouchReturn, verifyTouchReturn, prepareTouchHistory, verifyTouchHistory }
 createRoot(document.getElementById('root')!).render(<WebApp session={session} />)

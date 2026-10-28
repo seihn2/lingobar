@@ -15,6 +15,8 @@ jobs:
       CHROMIUM_PATH: /usr/bin/google-chrome
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -25,10 +27,17 @@ jobs:
       - run: npm run build:web
       - run: npm run verify:web
       - run: npm run test:web-ui
+      - run: node scripts/archive-web.cjs
+        env:
+          LINGOBAR_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+          LINGOBAR_SOURCE_BASE: ${{ github.event.pull_request.base.sha || '' }}
       - uses: actions/upload-artifact@v4
         with:
           name: standalone-web-unconfigured-${{ github.event.pull_request.head.sha || github.sha }}
-          path: dist/web/
+          path: |
+            dist/web/
+            dist/WEB-MANIFEST.json
+            dist/WEB-SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 14
       - uses: actions/upload-artifact@v4

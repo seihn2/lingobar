@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import CaptionStream from '../renderer/CaptionStream'
 import CompactCaption from '../renderer/CompactCaption'
 import HistoryPanel from '../renderer/HistoryPanel'
@@ -8,6 +8,7 @@ import { languageInfo } from '../shared/languages'
 import type { Caption, Settings } from '../shared/types'
 import type { ReadingSession } from '../renderer/reading-schedule'
 import type { BrowserSession } from './session'
+import { observeWebViewport } from './viewport'
 
 function captionText(caption: Caption, settings: Settings): string {
   const lines = settings.showOriginal ? [`原文：${alignedOriginal(caption)}`] : []
@@ -34,8 +35,13 @@ export default function WebApp({ session }: { session: BrowserSession }) {
   const action = useRef(0)
   const composing = useRef(false)
   const returnFocus = useRef<HTMLElement | null>(null)
+  const shell = useRef<HTMLElement>(null)
+  const panelHeading = useRef<HTMLHeadingElement>(null)
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const active = snapshot.state === 'starting' || snapshot.state === 'listening'
+
+  useLayoutEffect(() => shell.current ? observeWebViewport(shell.current) : undefined, [])
+  useLayoutEffect(() => { if (panel) panelHeading.current?.focus({ preventScroll: true }) }, [panel])
 
   useEffect(() => {
     const off = session.subscribe(next => {
@@ -97,7 +103,7 @@ export default function WebApp({ session }: { session: BrowserSession }) {
   }
   const controls = <button type="button" onClick={() => setCompact(value => !value)}>{compact ? '展开字幕' : '紧凑显示'}</button>
   const message = notice || (snapshot.state === 'error' ? snapshot.message : '')
-  return <main className={`app-shell web-shell ${compact ? 'is-collapsed' : ''}`}
+  return <main ref={shell} className={`app-shell web-shell ${compact ? 'is-collapsed' : ''} ${panel ? 'has-panel' : ''}`}
     style={{ '--caption-size': `${snapshot.settings.fontSize}px`, '--surface-opacity': 1 } as CSSProperties}
     onCompositionStartCapture={() => { composing.current = true }} onCompositionEndCapture={() => { composing.current = false }}
     onKeyDown={event => { if (event.key === 'Escape' && panel && !event.nativeEvent.isComposing && !composing.current) { event.preventDefault(); close() } }}>
@@ -114,7 +120,7 @@ export default function WebApp({ session }: { session: BrowserSession }) {
         : <p className="web-empty">暂无字幕</p>}
     </div>
     {panel && <section className={`web-panel panel-${panel}`} aria-label={panel === 'settings' ? '字幕设置' : '历史与收藏'}>
-      <div className="web-panel-heading"><h1>{panel === 'settings' ? '字幕设置' : '历史与收藏'}</h1><button type="button" onClick={close}>返回字幕</button></div>
+      <div className="web-panel-heading"><h1 ref={panelHeading} tabIndex={-1}>{panel === 'settings' ? '字幕设置' : '历史与收藏'}</h1><button type="button" onClick={close}>返回字幕</button></div>
       {panel === 'settings' ? <form className="settings-content" onSubmit={event => { event.preventDefault(); void run(() => { session.saveSettings({ targetLanguages: draft.targetLanguages, showOriginal: draft.showOriginal, showFurigana: draft.showFurigana, fontSize: draft.fontSize }); close() }) }}>
         <LanguageSettings draft={draft} onChange={next => setDraft(previous => ({ ...previous, ...next }))} />
         <label className="web-font" htmlFor="web-font">字号 {draft.fontSize}px<input id="web-font" type="range" min="14" max="24" value={draft.fontSize} onChange={event => setDraft(previous => ({ ...previous, fontSize: Number(event.target.value) }))} /></label>
