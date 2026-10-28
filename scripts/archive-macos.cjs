@@ -16,7 +16,7 @@ function bundleInventory(directory) {
   const root = realpathSync(directory), entries = []
   function walk(path) {
     const name = relative(root, path).split(sep).join('/') || '.'
-    assert.ok(!/(^|\/)(settings\.json(?:\.tmp)?|saved\.json(?:\.tmp)?|diagnostics(?:\.jsonl|-until)?|\.env(?:\..*)?|\.npmrc|\.git|artifacts|test)(\/|$)/i.test(name), `Profile/development file in bundle: ${name}`)
+    assert.ok(!/(^|\/)(settings\.json(?:\.tmp)?|(?:saved\.json(?:\.tmp)?|learning-v1\.json(?:\.[^/]+\.tmp)?|dictionary-learning-v1\.json(?:\.[^/]+\.tmp)?)|diagnostics(?:\.jsonl|-until)?|\.env(?:\..*)?|\.npmrc|\.git|artifacts|test)(\/|$)/i.test(name), `Profile/development file in bundle: ${name}`)
     assert.ok(!/\.(wav|mp3|pcm|pem|p12|pfx|key)$/i.test(name), `Sensitive file in bundle: ${name}`)
     const stat = lstatSync(path), entry = { path: name, mode: (stat.mode & 0o777).toString(8) }
     if (stat.isSymbolicLink()) {

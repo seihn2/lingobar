@@ -15,6 +15,10 @@ import { LoginItems } from './login-items'
 import { LearningStore } from './learning-store'
 import { DesktopLearning } from './learning'
 import { learningMarkdown } from './learning-export'
+import { DictionaryStore } from './dictionary-store'
+import { DictionaryLearning } from './dictionary-learning'
+import { explainDictionary } from './dictionary-provider'
+import { commitDictionaryExport } from './dictionary-file-export'
 
 app.setName('LingoBar')
 if (process.platform === 'win32') app.setAppUserModelId('com.lingobar.app')
@@ -26,6 +30,10 @@ let storage: Storage
 let queue: CaptionQueue
 let audio: AudioEngine
 let learning: DesktopLearning
+let dictionary: DictionaryLearning
+let dictionaryExporting = false
+let dictionaryQuitApproved = false
+let dictionaryQuitPrompt = false
 let state: ListeningState = 'idle'
 let message = '准备好后，开始聆听。'
 let partial: Snapshot['partial'] = {}
@@ -122,7 +130,10 @@ function createWindow(): void {
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
   window.webContents.on('will-navigate', event => event.preventDefault())
   window.webContents.on('will-attach-webview', event => event.preventDefault())
-  window.webContents.on('render-process-gone', () => stop())
+  const dictionaryOwner = window.webContents.id
+  window.webContents.on('render-process-gone', () => { dictionary?.releaseOwner(dictionaryOwner); stop() })
+  window.webContents.on('did-start-navigation', (_event, _url, _inPlace, isMainFrame) => { if (isMainFrame) dictionary?.releaseOwner(dictionaryOwner) })
+  window.webContents.on('destroyed', () => dictionary?.releaseOwner(dictionaryOwner))
   window.on('close', event => { if (!quitting) { event.preventDefault(); window?.hide() } })
   window.once('ready-to-show', () => { applyPreferences(); show() })
   if (process.env.ELECTRON_RENDERER_URL && !app.isPackaged) void window.loadURL(process.env.ELECTRON_RENDERER_URL)
@@ -139,7 +150,46 @@ function handle(channel: string, handler: (...args: any[]) => unknown): void {
     return handler(...args)
   })
 }
+function ownedHandle(channel: string, handler: (owner: number, ...args: any[]) => unknown): void {
+  ipcMain.handle(channel, (event, ...args) => {
+    if (!trusted(event) || !Number.isInteger(event.sender.id)) throw new Error('无法访问此操作。')
+    return handler(event.sender.id, ...args)
+  })
+}
+function wireDictionaryIPC(): void {
+  ownedHandle('lingo:dictionary-availability', () => dictionary.availability())
+  ownedHandle('lingo:dictionary-open', (owner, input) => dictionary.open(owner, input))
+  ownedHandle('lingo:dictionary-open-encounter', (owner, id) => dictionary.openEncounter(owner, id))
+  ownedHandle('lingo:dictionary-release', (owner, handle) => dictionary.release(owner, handle))
+  ownedHandle('lingo:dictionary-explain', (owner, input) => dictionary.explain(owner, input))
+  ownedHandle('lingo:dictionary-cancel', (_owner, id, attempt) => dictionary.cancel(id, attempt))
+  ownedHandle('lingo:dictionary-retry-save', (_owner, id, attempt) => dictionary.retrySave(id, attempt))
+  ownedHandle('lingo:dictionary-discard-unsaved', (_owner, id, attempt) => dictionary.discardUnsaved(id, attempt))
+  ownedHandle('lingo:dictionary-list', (_owner, query) => dictionary.store.list(query))
+  ownedHandle('lingo:dictionary-get', (_owner, id) => dictionary.get(id))
+  ownedHandle('lingo:dictionary-edit', (_owner, id, input) => dictionary.edit(id, input))
+  ownedHandle('lingo:dictionary-remove', (_owner, id) => dictionary.remove(id))
+  ownedHandle('lingo:dictionary-review-start', owner => dictionary.startReview(owner))
+  ownedHandle('lingo:dictionary-review-state', (owner, session) => dictionary.reviewState(owner, session))
+  ownedHandle('lingo:dictionary-review-end', (owner, session) => dictionary.endReview(owner, session))
+  ownedHandle('lingo:dictionary-review-reveal', (owner, session, id, explanation) => dictionary.reveal(owner, session, id, explanation))
+  ownedHandle('lingo:dictionary-review-rate', (owner, session, reveal, response) => dictionary.rate(owner, session, reveal, response))
+  ownedHandle('lingo:dictionary-review-skip', (owner, session) => dictionary.skip(owner, session))
+  ownedHandle('lingo:dictionary-review-undo', (owner, session, event) => dictionary.undo(owner, session, event))
+  ownedHandle('lingo:dictionary-export', async (_owner, format: unknown) => {
+    if (format !== 'json' && format !== 'markdown') throw new Error('请选择 JSON 或 Markdown 导出。')
+    if (dictionaryExporting) throw new Error('已有导出正在进行。')
+    dictionaryExporting = true
+    try {
+      const result = await dialog.showSaveDialog(window!, { title: '导出独立学习历史', defaultPath: `LingoBar-learning-${new Date().toISOString().slice(0, 10)}.${format === 'json' ? 'json' : 'md'}`, filters: [{ name: format === 'json' ? 'JSON' : 'Markdown', extensions: [format === 'json' ? 'json' : 'md'] }] })
+      if (result.canceled || !result.filePath) return { saved: false, message: '已取消导出。' }
+      return await commitDictionaryExport(dictionary.store, result.filePath, format)
+    } catch { throw new Error('学习历史导出未完成，请检查保存位置与写入权限。') }
+    finally { dictionaryExporting = false }
+  })
+}
 function wireIPC(): void {
+  wireDictionaryIPC()
   handle('lingo:snapshot', snapshot)
   handle('lingo:settings', (input: SettingsInput) => {
     if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('设置格式不正确。')
@@ -279,6 +329,16 @@ else {
       return { baseUrl: settings.translationBaseUrl, model: settings.translationModel, apiKey: storage.key('translation'), targetLanguages: [...settings.targetLanguages], generateFurigana: settings.showFurigana }
     }, publish, captions => storage.saveCaptions(captions))
     learning = new DesktopLearning(new LearningStore(app.getPath('userData')), queue, () => storage.settings(), () => Boolean(window && !window.isDestroyed() && window.isVisible() && !window.isMinimized()), publish)
+    dictionary = new DictionaryLearning(new DictionaryStore(app.getPath('userData')), () => queue.captions, () => {
+      const settings = storage.settings()
+      let providerLabel = '兼容翻译服务'
+      try { if (new URL(settings.translationBaseUrl).hostname === 'api.deepseek.com') providerLabel = 'DeepSeek' } catch { /* Existing settings provide the endpoint; never disclose it here. */ }
+      return { configured: settings.hasTranslationKey, providerLabel, model: settings.translationModel.trim() || 'deepseek-flash', offlineDictionaryAvailable: false }
+    }, (input, signal) => {
+      const settings = storage.settings()
+      // This closure runs only after an explicit verified query and both durable outbound writes.
+      return explainDictionary(input, { baseUrl: settings.translationBaseUrl, model: settings.translationModel, apiKey: storage.key('translation') }, signal)
+    }, () => { if (window && !window.isDestroyed()) window.webContents.send('lingo:dictionary-changed') })
     audio = new AudioEngine({
       onPartial(source, text, utteranceId) {
         trace('caption.partial', { source, id: utteranceId, chars: text.length })
@@ -340,5 +400,16 @@ else {
     app.on('activate', show)
   })
   app.on('window-all-closed', () => { /* The tray/menu bar keeps the app resident. */ })
-  app.on('before-quit', () => { quitting = true; audio?.stop(); queue?.close(); globalShortcut.unregisterAll(); tray?.destroy() })
+  app.on('before-quit', event => {
+    if (dictionary?.hasUnsaved && !dictionaryQuitApproved) {
+      event.preventDefault()
+      if (dictionaryQuitPrompt) return
+      dictionaryQuitPrompt = true
+      void dialog.showMessageBox(window!, { type: 'warning', buttons: ['返回应用', '放弃并退出'], defaultId: 0, cancelId: 0, message: '有解释结果尚未保存，仅在本次应用内存。退出将丢失。', detail: '可先在学习历史重试保存，不会再次调用服务。退出不会自动重新发出请求。' }).then(result => {
+        if (result.response === 1) { dictionaryQuitApproved = true; app.quit() }
+      }).catch(() => { /* Keep the app and in-memory result if the native quit prompt cannot be shown. */ }).finally(() => { dictionaryQuitPrompt = false })
+      return
+    }
+    quitting = true; dictionary?.close(); audio?.stop(); queue?.close(); globalShortcut.unregisterAll(); tray?.destroy()
+  })
 }

@@ -95,6 +95,7 @@ jobs:
       - run: npm run benchmark:snapshot:ipc -- --critical-under-load --output artifacts/snapshot-benchmark/critical
       - run: npm run benchmark:snapshot:ipc -- --case reference --repeat 3 --output artifacts/snapshot-benchmark/reference-repeat
       - run: npm run test:ui
+      - run: npm run test:dictionary-ui
       - run: npm run test:media-permissions
       - uses: actions/upload-artifact@v4
         if: always()
@@ -102,6 +103,7 @@ jobs:
           name: synthetic-ui-evidence-${{ github.sha }}
           path: |
             artifacts/ui-regression/
+            artifacts/dictionary-ui/
             artifacts/media-permissions/results.json
             artifacts/caption-benchmark/manifest.json
             artifacts/caption-benchmark/results.json

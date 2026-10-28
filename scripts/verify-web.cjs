@@ -12,7 +12,7 @@ assert.deepEqual(JSON.parse(readFileSync(join(root, 'app-config.json'), 'utf8'))
 for (const name of ['LICENSE', 'NOTICE.md', 'licenses/react-LICENSE.txt', 'licenses/react-dom-LICENSE.txt', 'licenses/scheduler-LICENSE.txt', 'licenses/lucide-react-LICENSE.txt', 'licenses/vite-LICENSE.md']) assert.ok(readFileSync(join(root, name)).length)
 const icon = readFileSync(join(root, 'icon.png')); assert.equal(icon.readUInt32BE(16), 512); assert.equal(icon.readUInt32BE(20), 512)
 for (const path of paths) {
-  assert.ok(!/\.(?:map|pem|key|p12|pfx|wav|pcm)$/i.test(path) && !/\/(?:\.env[^/]*|settings\.json|saved\.json|diagnostics\.jsonl)$/.test(path), 'Unexpected private/development data in web build')
+  assert.ok(!/\.(?:map|pem|key|p12|pfx|wav|pcm)$/i.test(path) && !/\/(?:\.env[^/]*|settings\.json|saved\.json|learning-v1\.json(?:\.[^/]+\.tmp)?|dictionary-learning-v1\.json(?:\.[^/]+\.tmp)?|diagnostics\.jsonl)$/.test(path), 'Unexpected private/development data in web build')
   if (!/\.(?:js|html)$/.test(path)) continue
   const text = readFileSync(path, 'utf8')
   for (const marker of ['node:child_process', 'node:fs', 'from"electron"', 'require("electron")', 'dashscope.aliyuncs.com', 'api.deepseek.com', 'test/fixtures', 'Synthetic source', 'Providers are disabled in UI tests']) assert.ok(!text.includes(marker), `Forbidden web bundle import/fixture: ${marker}`)

@@ -117,6 +117,13 @@ In compact mode, **留句** or `Ctrl/⌘+Alt+S` saves the currently visible comp
 
 Learning itself adds no service requests; existing recognition, translation and ruby can still incur provider fees. This desktop feature does not read game text, browser pages or monitor the clipboard. See [learning and data boundaries](desktop-learning.md), including write failures, phrase offsets and hardware limits.
 
+
+### AI context explanations, personal history and active review (desktop draft)
+
+After adding a contiguous original phrase in frozen detail, **解释这处用法** previews the phrase, single frozen sentence, one explanation language and configured service/model. Only an explicit click calls that service and may incur fees. Results persist in separate **学习历史**; removing an old subtitle favorite does not delete them. Everything is labeled AI-generated and potentially inaccurate. Suggested lemmas, POS, readings and examples are not authoritative; whether a reading matches the surface form or suggested lemma is unverified. Unconfigured explanations stay disabled.
+
+History supports local paging/search, favorites, notes, deletion and export. **复习收藏** asks you to recall before revealing a saved answer; only **记起了／没记起** records a self-report, skip does not, and the latest rating can be undone. This is not SRS or a mastery measure. Viewing/favorites/notes/export/review add no requests; explicit re-explanation calls again. Cancellation is not a refund. An unsaved result can retry saving without another call. See [data, failure and validation boundaries](dictionary-learning.md). Offline dictionaries/Yomitan import are not delivered.
+
 <a id="window"></a>
 ## 7. Compact window, dragging, opacity, and shortcuts
 

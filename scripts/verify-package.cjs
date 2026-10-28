@@ -15,7 +15,7 @@ const files = asar.listPackage(archive).map(name => name.replaceAll('\\', '/').r
 for (const required of ['out/main/index.js', 'out/preload/index.js', 'out/renderer/index.html', 'LICENSE', 'NOTICE.md', 'licenses/Penumbra-LICENSE.txt'])
   assert.ok(files.includes(required), `Missing packaged ${required}`)
 for (const file of files) {
-  assert.ok(!/(^|\/)(settings\.json|saved\.json|diagnostics\.jsonl|\.env(?:\..*)?|\.npmrc|\.git|test|artifacts)(\/|$)/i.test(file), `Private or development file in package: ${file}`)
+  assert.ok(!/(^|\/)(settings\.json|saved\.json|learning-v1\.json(?:\.[^/]+\.tmp)?|dictionary-learning-v1\.json(?:\.[^/]+\.tmp)?|diagnostics\.jsonl|\.env(?:\..*)?|\.npmrc|\.git|test|artifacts)(\/|$)/i.test(file), `Private or development file in package: ${file}`)
   assert.ok(!/\.(wav|mp3|pcm|pem|p12|pfx|key)$/i.test(file), `Unexpected sensitive file: ${file}`)
 }
 assert.ok(existsSync(join(resources, 'licenses', 'electron', 'LICENSE')))

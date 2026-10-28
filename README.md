@@ -72,6 +72,8 @@ Windows x64 支持已合并到 `main`；此前已验证测试包与校验记录�
 <a id="documentation"></a>
 ## 文档
 
+桌面学习：[显式 AI 语境解释、独立学习历史与主动复习](docs/dictionary-learning.md)（当前 draft；生成内容可能不准确，真实词典导入未提供）。
+
 | 语言 | 使用指南 |
 | --- | --- |
 | 简体中文 | [安装、配置与日常使用](docs/usage.zh-CN.md) |
@@ -109,6 +111,7 @@ npm run dev
 | `npm run build` | 类型检查与生产构建 |
 | `npm run test:media-permissions` | 实际 Electron 的合成设备权限检查 |
 | `npm run test:ui` | 已安装 Chromium 浏览器中的合成字幕交互检查 |
+| `npm run test:dictionary-ui` | 严格词条、历史和复习的合成 DOM/可访问性树检查 |
 | `npm run package:mac` | 构建 Mac 应用目录 |
 | `npm run package:win` | 构建 Windows x64 NSIS 安装包 |
 
