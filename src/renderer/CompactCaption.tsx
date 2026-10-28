@@ -18,10 +18,13 @@ type Props = {
   onRetryAnnotation?: (caption: Caption) => void
   onReturnLive?: () => void
   controls?: ReactNode
+  suspended?: boolean
+  onVisibleTarget?: (caption: Caption | null) => void
+  learningActions?: (caption: Caption) => ReactNode
 }
 
 /** One readable paragraph, paired across languages, with a separate incoming audio line. */
-export default function CompactCaption({ captions, settings, preview, readingSession, partial, listening, notice, onRetry, onRetryAnnotation, onReturnLive, controls }: Props) {
+export default function CompactCaption({ captions, settings, preview, readingSession, partial, listening, notice, onRetry, onRetryAnnotation, onReturnLive, controls, suspended = false, onVisibleTarget, learningActions }: Props) {
   const dragEdge = useRef<HTMLDivElement>(null)
   const viewport = useRef<HTMLDivElement>(null)
   const content = useRef<HTMLDivElement>(null)
@@ -61,7 +64,7 @@ export default function CompactCaption({ captions, settings, preview, readingSes
 
   useLayoutEffect(() => {
     if (visibleCursorId !== cursorId) setCursorId(visibleCursorId)
-    if (!captions.length || !followRef.current) return
+    if (suspended || !captions.length || !followRef.current) return
     if (!readingSession.clock) clock.current = initialReadingClock(captions, preview)
     const now = performance.now()
     const next = advanceReading(retained.current, clock.current, { targets, showFurigana: settings.showFurigana }, now)
@@ -71,7 +74,10 @@ export default function CompactCaption({ captions, settings, preview, readingSes
     if (next.wakeAt === null) return
     const timer = window.setTimeout(() => setTick(value => value + 1), Math.max(1, next.wakeAt - now))
     return () => window.clearTimeout(timer)
-  }, [captions, following, tick, settings.targetLanguages, settings.showFurigana, preview, readingSession, visibleCursorId, cursorId])
+  }, [suspended, captions, following, tick, settings.targetLanguages, settings.showFurigana, preview, readingSession, visibleCursorId, cursorId])
+
+  useLayoutEffect(() => { onVisibleTarget?.(preview || suspended ? null : caption || null) }, [caption, preview, suspended, onVisibleTarget])
+  useLayoutEffect(() => () => { onVisibleTarget?.(null) }, [onVisibleTarget])
 
   useLayoutEffect(() => { if (viewport.current) viewport.current.scrollTop = 0 }, [caption?.id])
 
@@ -147,6 +153,7 @@ export default function CompactCaption({ captions, settings, preview, readingSes
     </div>
     <div className="compact-controls" role="group" aria-label="小窗控制，悬停或键盘聚焦时显示">
       <div className="compact-navigation">
+        {caption && learningActions?.(caption)}
         {caption && (caption.status === 'error' || missing) && caption.status !== 'translating' && !caption.live && !caption.translationPending && <button type="button" className="compact-retry" aria-label="重新翻译这段" title="按当前语言重新翻译这段" disabled={preview || !updates.has(caption.id)} onClick={() => onRetry(caption)}><RotateCcw size={11} /></button>}
         {caption && onRetryAnnotation && settings.showFurigana && targets.includes('ja') && annotationText(caption) && (caption.furiganaStatus === 'error' || caption.furiganaStatus === 'pending' || !caption.jaSegments?.length) && <button type="button" className="compact-retry" aria-label="重试日语注音" title="重试日语注音" aria-busy={caption.furiganaStatus === 'pending'} aria-disabled={caption.furiganaStatus === 'pending'} disabled={preview || !updates.has(caption.id)} onClick={event => { if (caption.furiganaStatus !== 'pending') { annotationFocus.current = event.currentTarget; onRetryAnnotation(caption) } }}><RotateCcw size={11} />重试注音</button>}
         <button type="button" title="上一段" aria-label="上一段" disabled={index <= 0} onClick={() => navigate(-1)}><ChevronLeft size={13} /></button>

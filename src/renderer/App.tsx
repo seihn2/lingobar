@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
 import { ArrowDownToLine, ArrowRight, AudioLines, Check, ChevronDown, ChevronUp, Contrast, Headphones, History, Keyboard, Languages, LoaderCircle, Mic, Monitor, Pause, Pin, Play, Settings2, X } from 'lucide-react'
 import type { Caption, CaptureMode, Settings, SettingsInput, Snapshot } from '../shared/types'
 import { DEFAULT_LANGUAGES, languageInfo, validTargetLanguages } from '../shared/languages'
@@ -8,6 +8,8 @@ import LanguageSettings from './LanguageSettings'
 import CaptionStream from './CaptionStream'
 import CompactCaption from './CompactCaption'
 import HistoryPanel from './HistoryPanel'
+import StudyPanel from './StudyPanel'
+import { learningTarget } from '../shared/learning'
 import { alignedOriginal, incomingText, translationFor } from './caption-text'
 import type { ReadingSession } from './reading-schedule'
 
@@ -65,7 +67,11 @@ function IconButton({ title, children, onClick, active, disabled, className = ''
 
 export default function App() {
   const [snapshot, setSnapshot] = useState<Snapshot>(blankSnapshot)
-  const [panel, setPanel] = useState<'settings' | 'history' | 'text' | null>(null)
+  const [panel, setPanel] = useState<'settings' | 'history' | 'text' | 'study' | null>(null)
+  const [studyInitial, setStudyInitial] = useState<Caption | null>(null)
+  const compactTarget = useRef<Caption | null>(null)
+  const onCompactTarget = useCallback((caption: Caption | null) => { compactTarget.current = caption }, [])
+  const studyReturn = useRef<{ collapsed: boolean; openedAt: number; session: ReadingSession; captions: Caption[] } | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [focusVersion, setFocusVersion] = useState(0)
   const [preview, setPreview] = useState(false)
@@ -186,11 +192,15 @@ export default function App() {
     return () => window.clearTimeout(timer)
   }, [toast])
 
+  useEffect(() => {
+    if (snapshot.learning?.shortcutAvailable === false) setNotice(value => value || 'QuickPin 快捷键被占用，请使用句子旁的「留句」。')
+  }, [snapshot.learning?.shortcutAvailable])
+
   useEffect(() => () => { if (opacityTimer.current) clearTimeout(opacityTimer.current) }, [])
 
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
-      if (event.isComposing || composing.current || event.keyCode === 229) return
+      if (event.isComposing || composing.current || event.keyCode === 229 || panel === 'study') return
       if (event.key === 'Escape') { setPanel(null); setNotice('') }
       if ((event.metaKey || event.ctrlKey) && !event.altKey && event.key.toLowerCase() === 'f') {
         event.preventDefault()
@@ -208,7 +218,7 @@ export default function App() {
     }
     window.addEventListener('keydown', keydown)
     return () => window.removeEventListener('keydown', keydown)
-  }, [api, snapshot.collapsed])
+  }, [api, snapshot.collapsed, panel])
 
   useEffect(() => {
     if (selectedId && !snapshot.captions.some(caption => caption.id === selectedId)) setSelectedId(null)
@@ -237,17 +247,46 @@ export default function App() {
     const origin = panelReturnFocus.current
     panelReturnFocus.current = null
     const target = origin.element?.isConnected && !origin.element.closest('[inert]')
-      ? origin.element : document.querySelector<HTMLElement>(`button[aria-label="${origin.fallback}"]`)
+      ? origin.element : document.querySelector<HTMLElement>(`button[aria-label="${origin.fallback}"]`) || document.querySelector<HTMLElement>('.compact-viewport')
     target?.focus()
   }, [panel])
 
-  const streamCaptions = preview ? exampleStream : snapshot.captions
+  const streamCaptions = preview ? exampleStream : panel === 'study' && studyReturn.current ? studyReturn.current.captions : snapshot.captions
   const listening = snapshot.state === 'listening'
   const starting = snapshot.state === 'starting' || captureAction === 'start'
   const configured = snapshot.settings.hasAsrKey && snapshot.settings.hasTranslationKey
   const partial = Object.entries(snapshot.partial).filter(([, text]) => text).map(([source, text]) => ({ source: source as 'system' | 'microphone', text }))
   const expandedPartial = partial.map(item => ({ ...item, text: incomingText(item.text, snapshot.captions.slice().reverse().find(caption => caption.live && caption.source === item.source)) })).filter(item => item.text)
   const targets = snapshot.settings.targetLanguages || DEFAULT_LANGUAGES
+
+  useEffect(() => api?.learning?.onQuickPin(() => {
+    const target = snapshot.collapsed && !panel && !preview ? compactTarget.current : null
+    void api.learning!.pin(target ? learningTarget(target, snapshot.settings) : null).then(result => setToast(result.message)).catch(error => setNotice(errorText(error)))
+  }), [api, snapshot.collapsed, snapshot.settings, panel, preview])
+
+  async function openStudy(caption: Caption | null) {
+    if (!api?.learning || preview || panel) return
+    rememberPanelFocus('历史与收藏')
+    studyReturn.current = { collapsed: snapshot.collapsed, openedAt: performance.now(), session: structuredClone(readingSession.current), captions: snapshot.captions }
+    setStudyInitial(caption ? structuredClone(caption) : null)
+    setPanel('study')
+    if (snapshot.collapsed) await api.setCollapsed(false)
+  }
+  async function closeStudy() {
+    const previous = studyReturn.current
+    if (previous) {
+      const restored = structuredClone(previous.session)
+      if (restored.clock?.completedAt !== null && restored.clock?.completedAt !== undefined) restored.clock.completedAt += performance.now() - previous.openedAt
+      Object.assign(readingSession.current, restored)
+      if (previous.collapsed) await api?.setCollapsed(true)
+    }
+    studyReturn.current = null
+    setPanel(null); setStudyInitial(null)
+  }
+  const learningActions = api?.learning ? (caption: Caption) => <>
+    <button type="button" aria-label="QuickPin 收藏当前句" title="QuickPin：收藏此句，不打开面板" disabled={preview || panel !== null} onClick={() => void run(async () => { const result = await api.learning!.pin(learningTarget(caption, snapshot.settings)); setToast(result.message) })}>留句</button>
+    <button type="button" aria-label="查看句子与笔记" disabled={preview || panel !== null} onClick={() => void run(() => openStudy(caption))}>笔记</button>
+  </> : undefined
 
   async function run(action: () => Promise<unknown>, success?: string) {
     setNotice('')
@@ -340,7 +379,7 @@ export default function App() {
   }
   const displayedOpacity = opacityPreview ?? snapshot.settings.opacity
 
-  const windowControls = <div className="titlebar-actions">
+  const windowControls = <div className="titlebar-actions" inert={panel === 'study'}>
         <label className="quick-opacity" title="透明度调节：向左更透明，松开后自动保存"><Contrast size={12} /><input type="range" aria-label="背景不透明度，越低越透明" min="0.45" max="1" step="0.01" value={displayedOpacity} onChange={event => adjustOpacity(Number(event.target.value))} onPointerUp={commitOpacity} onKeyUp={commitOpacity} onBlur={commitOpacity} /><output>{Math.round(displayedOpacity * 100)}%</output></label>
         {snapshot.collapsed && <IconButton title={listening || starting ? '暂停聆听' : '开始聆听'} onClick={() => void toggleListening()} disabled={captureAction === 'stop'}>{listening || starting ? <Pause size={14} /> : <Play size={14} />}</IconButton>}
         <IconButton title={snapshot.settings.alwaysOnTop ? '取消置顶' : '始终置顶'} active={snapshot.settings.alwaysOnTop} onClick={() => void run(() => saveSettings({ alwaysOnTop: !snapshot.settings.alwaysOnTop }))}><Pin size={14} /></IconButton>
@@ -358,7 +397,7 @@ export default function App() {
       {windowControls}
     </header>}
 
-    {snapshot.collapsed && <CompactCaption controls={windowControls} key={`${preview ? 'preview' : 'live'}:${readingEpoch}`} captions={streamCaptions} settings={snapshot.settings} preview={preview} readingSession={readingSession.current} partial={partial} listening={listening} notice={notice || (snapshot.state === 'error' ? snapshot.message : '')} onRetry={caption => api && void run(() => api.retry(caption.id))} onRetryAnnotation={caption => api && void run(() => api.retryAnnotation(caption.id))} onReturnLive={() => setSelectedId(null)} />}
+    {snapshot.collapsed && <CompactCaption suspended={panel === 'study'} onVisibleTarget={onCompactTarget} learningActions={learningActions} controls={windowControls} key={`${preview ? 'preview' : 'live'}:${readingEpoch}`} captions={streamCaptions} settings={snapshot.settings} preview={preview} readingSession={readingSession.current} partial={partial} listening={listening} notice={notice || (snapshot.state === 'error' ? snapshot.message : '')} onRetry={caption => api && void run(() => api.retry(caption.id))} onRetryAnnotation={caption => api && void run(() => api.retryAnnotation(caption.id))} onReturnLive={() => setSelectedId(null)} />}
 
     {!snapshot.collapsed && <>
       <div className="capture-toolbar" inert={panel !== null}>
@@ -368,23 +407,24 @@ export default function App() {
       </div>
 
       <section className="caption-stage stream-stage" aria-label="多语连续字幕" inert={panel !== null}>
-        {streamCaptions.length > 0 ? <CaptionStream readingSession={readingSession.current} key={`${preview ? 'preview' : 'live'}:${readingEpoch}`} captions={streamCaptions} settings={snapshot.settings} preview={preview} focusId={selectedId} focusVersion={focusVersion} copiedId={copiedId} onCopy={caption => void copyCaption(caption)} onSave={caption => api && void run(() => api.toggleSaved(caption.id), caption.saved ? '已取消收藏' : '已加入学习收藏')} onRetry={caption => api && void run(() => api.retry(caption.id))} onRetryAnnotation={caption => api && void run(() => api.retryAnnotation(caption.id))} onReturnLive={() => setSelectedId(null)} /> : <div className="welcome"><div className={`welcome-icon ${listening ? 'is-listening' : ''}`}><Headphones size={24} strokeWidth={1.4} />{listening && <span className="sound-rings" />}</div><div className="welcome-copy"><div className="eyebrow">LISTEN. UNDERSTAND. LEARN.</div><h1>{listening ? '正在听，第一句就快来了。' : '把听见的，变成学会的。'}</h1><p>{listening ? `正在接收${modeNames[snapshot.settings.captureMode]}，说句话或播放一段音频。` : '电脑声音与麦克风，随时变成你选择的多语字幕。'}</p><div className="language-pills">{snapshot.settings.showOriginal && <span>原文</span>}{targets.map(code => <span key={code}>{languageInfo(code).nativeName}</span>)}</div></div><div className="welcome-actions"><button className="text-button" onClick={() => { setPreview(true); setSelectedId(null) }}>看看示例 <ArrowRight size={13} /></button><button className="text-button muted" onClick={() => { rememberPanelFocus('输入文字翻译'); setNotice(''); setPanel('text') }}><Keyboard size={13} />输入文字试试</button></div></div>}
+        {streamCaptions.length > 0 ? <CaptionStream suspended={panel === 'study'} learningActions={learningActions} readingSession={readingSession.current} key={`${preview ? 'preview' : 'live'}:${readingEpoch}`} captions={streamCaptions} settings={snapshot.settings} preview={preview} focusId={selectedId} focusVersion={focusVersion} copiedId={copiedId} onCopy={caption => void copyCaption(caption)} onSave={caption => api && void run(() => api.toggleSaved(caption.id), caption.saved ? '已取消收藏' : '已加入学习收藏')} onRetry={caption => api && void run(() => api.retry(caption.id))} onRetryAnnotation={caption => api && void run(() => api.retryAnnotation(caption.id))} onReturnLive={() => setSelectedId(null)} /> : <div className="welcome"><div className={`welcome-icon ${listening ? 'is-listening' : ''}`}><Headphones size={24} strokeWidth={1.4} />{listening && <span className="sound-rings" />}</div><div className="welcome-copy"><div className="eyebrow">LISTEN. UNDERSTAND. LEARN.</div><h1>{listening ? '正在听，第一句就快来了。' : '把听见的，变成学会的。'}</h1><p>{listening ? `正在接收${modeNames[snapshot.settings.captureMode]}，说句话或播放一段音频。` : '电脑声音与麦克风，随时变成你选择的多语字幕。'}</p><div className="language-pills">{snapshot.settings.showOriginal && <span>原文</span>}{targets.map(code => <span key={code}>{languageInfo(code).nativeName}</span>)}</div></div><div className="welcome-actions"><button className="text-button" onClick={() => { setPreview(true); setSelectedId(null) }}>看看示例 <ArrowRight size={13} /></button><button className="text-button muted" onClick={() => { rememberPanelFocus('输入文字翻译'); setNotice(''); setPanel('text') }}><Keyboard size={13} />输入文字试试</button></div></div>}
       </section>
       {snapshot.settings.showOriginal && !preview && expandedPartial.length > 0 && <div className="partial-caption live-partial" inert={panel !== null} aria-live="off"><span className="partial-indicator" /><span className="partial-stage-label">正在听</span>{expandedPartial.map(item => <span key={item.source}><b>{item.source === 'microphone' ? '麦克风' : '电脑'}</b>{item.text}</span>)}</div>}
 
       {(notice || (snapshot.state === 'error' && snapshot.message)) && !panel && <div className="inline-notice" role="alert"><span>{notice || snapshot.message}</span><button aria-label="关闭提示" onClick={() => setNotice('')}><X size={12} /></button></div>}
       <footer className="bottom-bar" inert={panel !== null}>
         <div className="stream-footer-note">{preview && <button className="text-button" onClick={() => { setPreview(false); setSelectedId(null) }}>退出示例预览</button>}</div>
-        <div className="footer-actions"><IconButton title="输入文字翻译" onClick={() => { rememberPanelFocus('输入文字翻译'); setNotice(''); setPanel('text') }}><Keyboard size={15} /></IconButton><IconButton title="历史与收藏" active={panel === 'history'} onClick={() => { rememberPanelFocus('历史与收藏'); setNotice(''); setPanel('history') }}><History size={15} /></IconButton></div>
+        <div className="footer-actions">{api?.learning && <IconButton title="会话匣" onClick={() => void run(() => openStudy(null))}><History size={15} /></IconButton>}<IconButton title="输入文字翻译" onClick={() => { rememberPanelFocus('输入文字翻译'); setNotice(''); setPanel('text') }}><Keyboard size={15} /></IconButton><IconButton title="历史与收藏" active={panel === 'history'} onClick={() => { rememberPanelFocus('历史与收藏'); setNotice(''); setPanel('history') }}><History size={15} /></IconButton></div>
       </footer>
     </>}
 
     {toast && <div className="toast" role="status"><Check size={12} />{toast}</div>}
-    {panel && !snapshot.collapsed && <div className="panel-backdrop"><section className={`panel panel-${panel}`} role="dialog" aria-modal="true" aria-label={panel === 'settings' ? '设置' : panel === 'history' ? '历史与收藏' : '文字翻译'}>
-      <div className="panel-heading"><div><span className="panel-kicker">{panel === 'settings' ? 'PREFERENCES' : panel === 'history' ? 'YOUR LANGUAGE NOTES' : 'TEXT TRANSLATION'}</span><h2>{panel === 'settings' ? '让语伴适合你' : panel === 'history' ? '听过的，留下来' : '从一句话开始'}</h2></div><IconButton title="关闭面板" onClick={() => { setPanel(null); setNotice('') }}><X size={17} /></IconButton></div>
+    {panel && !snapshot.collapsed && <div className="panel-backdrop"><section className={`panel panel-${panel}`} role="dialog" aria-modal="true" aria-label={panel === 'study' ? '桌面学习' : panel === 'settings' ? '设置' : panel === 'history' ? '历史与收藏' : '文字翻译'}>
+      {panel !== 'study' && <div className="panel-heading"><div><span className="panel-kicker">{panel === 'settings' ? 'PREFERENCES' : panel === 'history' ? 'YOUR LANGUAGE NOTES' : 'TEXT TRANSLATION'}</span><h2>{panel === 'settings' ? '让语伴适合你' : panel === 'history' ? '听过的，留下来' : '从一句话开始'}</h2></div><IconButton title="关闭面板" onClick={() => { setPanel(null); setNotice('') }}><X size={17} /></IconButton></div>}
       {notice && <div className="panel-notice" role="alert">{notice}</div>}
+      {panel === 'study' && api?.learning && snapshot.learning && <StudyPanel api={api} settings={snapshot.settings} captions={snapshot.captions} learning={snapshot.learning} initial={studyInitial} onClose={() => void run(closeStudy)} onExport={() => void exportSaved()} exporting={exporting} exportResult={exportResult} />}
       {panel === 'settings' && <SettingsPanel platform={platform} settings={snapshot.settings} listening={listening || starting} saveSettings={saveSettings} onSaved={() => { setNotice(''); setToast('设置已保存'); setPanel(null) }} onError={setNotice} onImport={async () => { if (!api) throw new Error('请在应用中导入本机密钥。'); const settings = await api.importLocalKey(); setSnapshot(value => ({ ...value, settings })); setToast('本机语音识别密钥已安全导入'); return settings }} />}
-      {panel === 'text' && <form className="text-form" onSubmit={event => void submitText(event)}><label htmlFor="translation-input">输入或粘贴任何语言，翻译为你在设置中选择的字幕语言。</label><textarea id="translation-input" value={input} autoFocus onChange={event => setInput(event.target.value)} placeholder="例如：You don't have to be perfect to make progress." maxLength={5000} /><div className="text-form-footer"><span>{input.length} / 5000 · {labels.submitShortcut} 翻译</span><button className="primary-button" disabled={busy || !input.trim()} type="submit" onKeyDown={event => { if (event.key === 'Enter') event.stopPropagation() }}>{busy ? <LoaderCircle size={13} className="spin" /> : <ArrowRight size={13} />}翻译这句</button></div></form>}
+      {panel === 'text' && <form className="text-form" onSubmit={event => void submitText(event)}><label htmlFor="translation-input">粘贴新闻或游戏中可复制的句段，显式翻译为所选字幕语言；完成后可留句、添加笔记。</label><textarea id="translation-input" value={input} autoFocus onChange={event => setInput(event.target.value)} placeholder="例如：You don't have to be perfect to make progress." maxLength={5000} /><div className="text-form-footer"><span>{input.length} / 5000 · {labels.submitShortcut} 翻译</span><button className="primary-button" disabled={busy || !input.trim()} type="submit" onKeyDown={event => { if (event.key === 'Enter') event.stopPropagation() }}>{busy ? <LoaderCircle size={13} className="spin" /> : <ArrowRight size={13} />}翻译这句</button></div></form>}
       {panel === 'history' && <HistoryPanel captions={snapshot.captions} settings={snapshot.settings} filter={historyFilter} focusVersion={historyFocusVersion} onFilter={setHistoryFilter} onSelect={caption => { setSelectedId(caption.id); setFocusVersion(value => value + 1); setPreview(false); setPanel(null) }} onSave={caption => api && void run(() => api.toggleSaved(caption.id))} onExport={() => void exportSaved()} exporting={exporting} exportResult={exportResult} />}
     </section></div>}
     {panel === 'text' && <TextShortcut isComposing={() => composing.current} onSubmit={() => { if (input.trim() && !busy) void submitText({ preventDefault() {} } as FormEvent) }} />}

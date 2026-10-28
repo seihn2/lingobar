@@ -1,3 +1,4 @@
+import type { DesktopLearningAPI, LearningState } from './learning'
 export type AudioSource = 'system' | 'microphone'
 export type CaptureMode = AudioSource | 'both'
 export type ListeningState = 'idle' | 'starting' | 'listening' | 'error'
@@ -43,6 +44,7 @@ export interface Caption {
   saved: boolean
 }
 export interface Snapshot {
+  learning?: LearningState
   settings: Settings
   state: ListeningState
   message: string
@@ -51,6 +53,7 @@ export interface Snapshot {
   collapsed: boolean
 }
 export interface LingoAPI {
+  learning?: DesktopLearningAPI
   readonly platform: import('./platform').DesktopPlatform
   getSnapshot(): Promise<Snapshot>
   saveSettings(input: SettingsInput): Promise<Settings>

@@ -2,6 +2,7 @@ import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSyn
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { learningTarget } from '../src/shared/learning'
 import type { Caption } from '../src/shared/types'
 
 // Real installed export handler, CaptionQueue and Storage; only desktop APIs,
@@ -10,7 +11,7 @@ const f = vi.hoisted(() => {
   const handlers = new Map<string, (...args: any[]) => any>()
   const frame = { url: 'http://127.0.0.1:5173/' }
   const contents = { mainFrame: frame, send: vi.fn(), setWindowOpenHandler: vi.fn(), on: vi.fn() }
-  const window = { webContents: contents, isDestroyed: () => false, on: vi.fn(), once: vi.fn(), setVisibleOnAllWorkspaces: vi.fn(), loadURL: vi.fn(), show: vi.fn(), focus: vi.fn() }
+  const window = { webContents: contents, isDestroyed: () => false, isVisible: () => true, isMinimized: () => false, on: vi.fn(), once: vi.fn(), setVisibleOnAllWorkspaces: vi.fn(), loadURL: vi.fn(), show: vi.fn(), focus: vi.fn() }
   const dialog = { showSaveDialog: vi.fn() }
   const app = { setName: vi.fn(), setPath: vi.fn(), setAppUserModelId: vi.fn(), getPath: () => f.directory, isPackaged: false,
     requestSingleInstanceLock: () => true, on: vi.fn(), whenReady: () => Promise.resolve(), getAppPath: () => '/synthetic-app' }
@@ -61,6 +62,25 @@ afterEach(() => {
 })
 
 describe('saved-caption export through installed main IPC', () => {
+  it('exports attached notes without providers and excludes an unsaved sentence while the dialog is open', async () => {
+    const event = { sender: f.contents, senderFrame: f.frame }
+    const settings = f.handlers.get('lingo:snapshot')!(event).settings
+    const result = f.handlers.get('lingo:learning-save')!(event, { target: learningTarget(f.queue.captions[0], settings), phrases: [{ start: 0, end: 9, exact: 'Synthetic' }], note: 'Synthetic note' })
+    expect(result.kind).toBe('saved')
+    await invoke()
+    expect(readFileSync(join(f.directory, 'notes.md'), 'utf8')).toContain('> Synthetic note')
+    let finish!: (result: object) => void
+    f.dialog.showSaveDialog.mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))
+    const exporting = invoke()
+    f.handlers.get('lingo:save-caption')!(event, saved.id)
+    finish({ canceled: false, filePath: join(f.directory, 'after-delete.md') })
+    await exporting
+    const text = readFileSync(join(f.directory, 'after-delete.md'), 'utf8')
+    expect(text).not.toContain('Synthetic note'); expect(text).not.toContain(saved.original)
+    expect(f.handlers.get('lingo:snapshot')!(event).learning.records).toEqual([])
+    expect(f.translate).not.toHaveBeenCalled()
+  })
+
   it('cancels without touching a destination, collection or persisted notes', async () => {
     const destination = join(f.directory, 'existing-synthetic.md')
     writeFileSync(destination, 'Synthetic file must remain unchanged')

@@ -1,6 +1,17 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { LingoAPI, Snapshot } from '../shared/types'
 const api: LingoAPI = {
+  learning: {
+    pin: target => ipcRenderer.invoke('lingo:learning-pin', target),
+    save: edit => ipcRenderer.invoke('lingo:learning-save', edit),
+    session: name => ipcRenderer.invoke('lingo:learning-session', name),
+    removeNotes: id => ipcRenderer.invoke('lingo:learning-remove-notes', id),
+    onQuickPin: callback => {
+      const listener = () => callback()
+      ipcRenderer.on('lingo:quick-pin', listener)
+      return () => ipcRenderer.removeListener('lingo:quick-pin', listener)
+    }
+  },
   platform: process.platform === 'win32' || process.platform === 'darwin' ? process.platform : 'other',
   getSnapshot: () => ipcRenderer.invoke('lingo:snapshot'),
   saveSettings: input => ipcRenderer.invoke('lingo:settings', input),

@@ -12,6 +12,9 @@ import { desktopPlatform, platformLabels } from '../shared/platform'
 import { mayUseLocalKeyImport, trustedRendererUrl } from './ipc-security'
 import { installMediaPermissions } from './media-permissions'
 import { LoginItems } from './login-items'
+import { LearningStore } from './learning-store'
+import { DesktopLearning } from './learning'
+import { learningMarkdown } from './learning-export'
 
 app.setName('LingoBar')
 if (process.platform === 'win32') app.setAppUserModelId('com.lingobar.app')
@@ -22,6 +25,7 @@ let quitting = false
 let storage: Storage
 let queue: CaptionQueue
 let audio: AudioEngine
+let learning: DesktopLearning
 let state: ListeningState = 'idle'
 let message = '准备好后，开始聆听。'
 let partial: Snapshot['partial'] = {}
@@ -36,7 +40,7 @@ const labels = platformLabels(platform)
 const rendererLocation = () => ({ packaged: app.isPackaged, htmlPath: join(__dirname, '../renderer/index.html'), developmentUrl: process.env.ELECTRON_RENDERER_URL })
 
 function snapshot(): Snapshot {
-  return { settings: storage.settings(), state, message, captions: queue.captions, partial, collapsed }
+  return { settings: storage.settings(), state, message, captions: queue.captions, partial, collapsed, learning: learning?.snapshot() }
 }
 function publish(): void {
   if (window && !window.isDestroyed()) window.webContents.send('lingo:changed', snapshot())
@@ -174,7 +178,17 @@ function wireIPC(): void {
     if (typeof id !== 'string' || !id.trim() || id.length > 512) throw new Error('请选择有效的字幕段落。')
     queue.retryAnnotation(id)
   })
-  handle('lingo:save-caption', (id: unknown) => { if (typeof id === 'string') queue.toggleSaved(id) })
+  handle('lingo:save-caption', (id: unknown) => { if (typeof id === 'string') learning.toggleSaved(id) })
+  handle('lingo:learning-pin', (target: unknown) => learning.pin(target))
+  handle('lingo:learning-save', (edit: unknown) => learning.save(edit))
+  handle('lingo:learning-session', (name: unknown) => {
+    if (name !== null && (typeof name !== 'string' || name.length > 80)) throw new Error('会话名称无效。')
+    learning.store.session(name as string | null, queue.captions); publish()
+  })
+  handle('lingo:learning-remove-notes', (id: unknown) => {
+    if (typeof id !== 'string' || !id || id.length > 200) throw new Error('字幕编号无效。')
+    learning.store.remove(id, queue.captions); publish()
+  })
   handle('lingo:copy', (text: unknown) => {
     if (typeof text !== 'string' || text.length > 100000) throw new Error('复制内容过长。')
     clipboard.writeText(text)
@@ -211,14 +225,17 @@ function wireIPC(): void {
     // even while pending or failed. Export the same collection shown in history.
     const saved = queue.captions.filter(c => c.saved)
     if (!saved.length) throw new Error('先收藏一句，再导出学习笔记。')
+    const selectedIds = new Set(saved.map(caption => caption.id))
     const result = await dialog.showSaveDialog(window!, { title: '导出学习笔记', defaultPath: `LingoBar-${new Date().toISOString().slice(0, 10)}.md`, filters: [{ name: 'Markdown', extensions: ['md'] }] })
     if (result.canceled || !result.filePath) return false
-    const content = '# LingoBar 学习笔记\n\n' + saved.map(c => {
+    const exported = queue.captions.filter(caption => caption.saved && selectedIds.has(caption.id))
+    const records = learning.snapshot().records
+    const content = '# LingoBar 学习笔记\n\n' + exported.map(c => {
       const translations = c.translations || { zh: c.zh, en: c.en, ja: c.ja }
       const order = [...new Set([...(c.targetLanguages || []), ...Object.keys(translations).filter(isTargetLanguage)])]
       return `## ${new Date(c.createdAt).toLocaleString('zh-CN')}\n\n原文：${c.original}\n\n` +
         order.filter(code => translations[code]).map(code => `${languageInfo(code).nativeName}：${translations[code]}`).join('\n\n') +
-        (translations.ja && c.reading ? `\n\n日语读音：${c.reading}` : '') + '\n'
+        (translations.ja && c.reading ? `\n\n日语读音：${c.reading}` : '') + learningMarkdown(c.id, records) + '\n'
     }).join('\n---\n\n')
     await writeFile(result.filePath, content, { mode: 0o600 })
     return true
@@ -261,6 +278,7 @@ else {
       const settings = storage.settings()
       return { baseUrl: settings.translationBaseUrl, model: settings.translationModel, apiKey: storage.key('translation'), targetLanguages: [...settings.targetLanguages], generateFurigana: settings.showFurigana }
     }, publish, captions => storage.saveCaptions(captions))
+    learning = new DesktopLearning(new LearningStore(app.getPath('userData')), queue, () => storage.settings(), () => Boolean(window && !window.isDestroyed() && window.isVisible() && !window.isMinimized()), publish)
     audio = new AudioEngine({
       onPartial(source, text, utteranceId) {
         trace('caption.partial', { source, id: utteranceId, chars: text.length })
@@ -315,6 +333,10 @@ else {
       message = `${labels.shortcut} 已被其他应用占用，可以从${labels.residentArea}显示翻译条。`
       publish()
     }
+    learning.shortcutAvailable = globalShortcut.register('CommandOrControl+Alt+S', () => {
+      if (window && !window.isDestroyed() && window.isVisible() && !window.isMinimized()) window.webContents.send('lingo:quick-pin')
+    })
+    publish()
     app.on('activate', show)
   })
   app.on('window-all-closed', () => { /* The tray/menu bar keeps the app resident. */ })
