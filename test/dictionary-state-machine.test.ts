@@ -284,6 +284,18 @@ describe('durable intent, single dispatch and failure ownership', () => {
     expect(saved.state).toBe('ready'); expect(f.learning.hasUnsaved).toBe(false)
     expect(f.store.get(waiting.encounterId)!.explanations).toHaveLength(1); expect(f.provider).toHaveBeenCalledTimes(1)
   })
+  it('removes a discarded in-memory result from the visible run even when its status cannot be persisted', async () => {
+    const f = fixture(), waiting = f.request(); fault.failAt = fault.renames + 1; await complete(f)
+    expect(f.learning.get(waiting.encounterId)?.run?.unsaved).toBeDefined()
+    fault.failAt = fault.renames + 1
+    expect(() => f.learning.discardUnsaved(waiting.encounterId, waiting.attemptId)).toThrow('状态未能写盘')
+    expect(f.learning.hasUnsaved).toBe(false)
+    expect(f.learning.get(waiting.encounterId)?.run).toMatchObject({ state: 'cancelled', message: expect.stringContaining('状态未能写盘') })
+    expect(f.learning.get(waiting.encounterId)?.run?.unsaved).toBeUndefined()
+    expect(() => f.learning.retrySave(waiting.encounterId, waiting.attemptId)).toThrow('没有可保存')
+    expect(f.store.get(waiting.encounterId)!.explanations).toEqual([])
+    expect(f.provider).toHaveBeenCalledTimes(1)
+  })
   it.each(['discard', 'delete', 'close'] as const)('a ReadyUnsaved %s cannot be revived by a later save or restart', async operation => {
     const f = fixture(), waiting = f.request(); fault.failAt = fault.renames + 1; await complete(f)
     if (operation === 'discard') f.learning.discardUnsaved(waiting.encounterId, waiting.attemptId)

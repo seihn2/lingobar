@@ -171,7 +171,10 @@ export class DictionaryLearning {
     this.unsaved = null
     this.generations.set(pending.context.encounterId, pending.context.generation + 1)
     try { this.store.updateAttempt(pending.context.encounterId, pending.context.attemptId, { status: 'cancelled', updatedAt: Date.now() }) }
-    catch { this.changed(); throw new Error('内存结果已放弃，但状态未能写盘；不会重新调用。') }
+    catch {
+      this.update(pending.context, 'cancelled', `内存结果已放弃，但状态未能写盘；不会重新调用。${feeWarning}`)
+      throw new Error('内存结果已放弃，但状态未能写盘；不会重新调用。')
+    }
     this.update(pending.context, 'cancelled', `已明确放弃未保存结果。${feeWarning}`)
   }
   edit(value: unknown, input: unknown): void {
