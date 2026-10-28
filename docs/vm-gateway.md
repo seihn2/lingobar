@@ -1,16 +1,22 @@
 # Private Web gateway — deployment preparation
 
-This is an **undeployed, disabled-by-default** Node.js 22 gateway, stacked on
+This is a **disabled-by-default** Node.js 22 gateway, stacked on
 PR13 `2b0af19186c4953f55dc6f4f4aa6b4a43671f249`. It reuses the existing Worker
 ASR/translation/annotation/session code and the unchanged browser contract.
 It does not include an active provider account, keys, free balance, or hardware
 acceptance. PR4's independent desktop pause drain is not included.
 
+The parent deployment task reports that the disabled PR14 build is installed on
+the existing VM, Node22, loopback8788. This cloud task has not inspected that VM;
+the new fixed-text executor still needs separate installation verification.
+
 **Current live-test authorization is one RMB total across all providers, not per
 day.** The ordinary gateway limits below are not a monetary cap. Keep it disabled
-for that test; use the [one-RMB preparation and unresolved proof requirements](one-rmb-test.md).
-The offline plan/accounting module includes no live executor and does not retrofit
-a monetary guard onto this gateway.
+for that test; use the [fixed-text one-shot executor and its admission requirements](one-rmb-test.md).
+That separate CLI can only dispatch one of two fixed synthetic text requests after
+proof/configuration checks and durable cumulative reservation. Its shipped
+installation remains disabled with no ledger or credential path, and ASR is
+always refused. It does not retrofit a monetary guard onto this HTTP gateway.
 
 ## Runtime and data flow
 

@@ -1,5 +1,7 @@
-const { readFileSync } = require('node:fs')
+const { readFileSync, mkdtempSync, writeFileSync, existsSync, rmSync } = require('node:fs')
 const { resolve, join } = require('node:path')
+const { tmpdir } = require('node:os')
+const { spawnSync } = require('node:child_process')
 const assert = require('node:assert/strict')
 const root = resolve(__dirname, '../dist/gateway')
 const bundle = readFileSync(join(root, 'gateway.cjs'), 'utf8')
@@ -10,4 +12,30 @@ assert.match(example, /^WEB_ENABLED=0$/m)
 assert.match(example, /^ASR_API_KEY=$/m); assert.match(example, /^TRANSLATION_API_KEY=$/m)
 assert.match(example, /^GATEWAY_DAILY_SESSIONS=0$/m); assert.match(example, /^GATEWAY_DAILY_COMPLETION_REQUESTS=0$/m)
 assert.ok(readFileSync(join(root, 'licenses/ws-LICENSE.txt')).length)
-console.log('Node gateway inspected: disabled configuration, zero budget, no fixtures/Electron or embedded secrets; no deployment claim.')
+const installation = JSON.parse(readFileSync(join(root, 'scripts/text-test-installation.json'), 'utf8'))
+assert.equal(installation.executionEnabled, false)
+assert.equal(installation.ledgerDirectory, null); assert.equal(installation.credentialsFile, null)
+const proof = JSON.parse(readFileSync(join(root, 'evidence/text-test-proof.json'), 'utf8'))
+assert.equal(proof.executionAllowed, false)
+for (const match of readFileSync(join(root, 'one-rmb-test.md'), 'utf8').matchAll(/\]\(([^)]+)\)/g)) {
+  if (!/^(?:https?:|#)/.test(match[1])) assert.ok(existsSync(resolve(root, match[1].split('#')[0])), `Missing packaged guide target: ${match[1]}`)
+}
+const temporary = mkdtempSync(join(tmpdir(), 'lingobar-packaged-test-denied-'))
+try {
+  const attempted = join(temporary, 'network-attempted'), preload = join(temporary, 'deny-network.cjs')
+  writeFileSync(preload, `const fs=require('node:fs');const deny=()=>{fs.writeFileSync(${JSON.stringify(attempted)},'denied');throw new Error('Synthetic network denied')};globalThis.fetch=deny;globalThis.WebSocket=class{constructor(){deny()}};for(const n of ['http','https']){const m=require('node:'+n);m.request=deny;m.get=deny}const net=require('node:net');net.connect=deny;net.createConnection=deny;net.Socket.prototype.connect=deny;require('node:tls').connect=deny;\n`)
+  for (const step of ['translation', 'ruby']) {
+    const child = spawnSync(process.execPath, ['--require', preload, join(root, 'scripts/run-one-rmb-text-test.cjs'), step], {
+      cwd: root, encoding: 'utf8', timeout: 5000,
+      env: { WEB_ENABLED: '1', TRANSLATION_API_KEY: 'SYNTHETIC-KEY-MUST-NOT-LEAK' }
+    })
+    assert.equal(child.status, 2, `Packaged ${step} must refuse default installation`)
+    assert.equal(child.stderr, '')
+    const result = JSON.parse(child.stdout.trim())
+    assert.equal(result.step, step); assert.equal(result.status, 'blocked')
+    assert.equal(result.executionAllowed, false); assert.equal(result.providerCalls, 0)
+    assert.ok(!child.stdout.includes('SYNTHETIC-KEY-MUST-NOT-LEAK'))
+    assert.equal(existsSync(attempted), false, 'Default-closed CLI attempted network')
+  }
+} finally { rmSync(temporary, { recursive: true, force: true }) }
+console.log('Node gateway and fixed text CLI inspected: disabled configuration, uninitialized ledger, zero network/credential calls, no fixtures/Electron or embedded secrets; no deployment claim.')

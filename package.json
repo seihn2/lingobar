@@ -35,7 +35,8 @@
     "build:gateway": "node scripts/build-gateway.cjs",
     "test:gateway": "vitest run test/gateway-",
     "verify:gateway": "node scripts/verify-gateway.cjs",
-    "plan:test-budget": "node scripts/plan-one-rmb-test.cjs"
+    "plan:test-budget": "node scripts/plan-one-rmb-test.cjs",
+    "run:test-budget": "node scripts/run-one-rmb-text-test.cjs"
   },
   "devDependencies": {
     "@types/node": "22.17.2",
