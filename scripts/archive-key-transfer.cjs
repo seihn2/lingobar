@@ -30,7 +30,10 @@ for (const name of ['key-transfer-sender.json', 'key-transfer-receiver.json']) a
 fs.writeFileSync(path.join(output, 'MANIFEST.json'), JSON.stringify({ schemaVersion: 1, sourceHead: head, sourceBase: process.env.LINGOBAR_SOURCE_BASE || '', sourceTree: tree, checkoutHead: git('rev-parse', 'HEAD'),
   enabled: false, credentialsIncluded: false, networkChanges: false, installationPerformed: false,
   input: 'Manual verified no-echo POSIX TTY only; no Electron decryption or clipboard access',
-  transport: 'Existing SSH authentication, literal pinned host/key and fixed receiver command; API key only on stdin',
+  senderProfileVersion: 2, privilegeChanges: false,
+  transport: 'Fixed validated identity_file; no SSH agent; pinned host/key and exact direct/lingobar-test command map; API key only on stdin',
+  runAsPrerequisite: 'Existing sudo permission and disabled stdin logging require independent operator evidence; not queried or configured by these tools',
+  coreProtection: 'Verified RLIMIT_CORE hard/soft0, Linux own-process dumpable0, guarded external-child policy, SIGQUIT and repeated-cancellation cleanup',
   receiver: 'Linux private create-only JSON target; anonymous O_TMPFILE; no named plaintext staging or overwrite',
   validation: 'Synthetic PTY, mocked SSH and temporary Linux targets only; no user Mac, live VM, key or network acceptance', files }, null, 2) + '\n')
 const entries = [...files, { path: 'MANIFEST.json', sha256: hash(fs.readFileSync(path.join(output, 'MANIFEST.json'))) }]

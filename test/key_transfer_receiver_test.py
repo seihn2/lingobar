@@ -12,6 +12,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import textwrap
 import time
 import types
 import unittest
@@ -59,6 +60,12 @@ class ProtocolTests(unittest.TestCase):
                      "Anonymous credential install requires Linux O_TMPFILE")
 class ReceiverTests(unittest.TestCase):
     def setUp(self):
+        # These storage fault tests must not irreversibly change the unittest
+        # parent's resource/dumpability settings. Fresh child tests below use
+        # the real guard, including an actual non-root anonymous install.
+        self.core_guard = mock.patch.object(receiver, "_disable_core_dumps")
+        self.core_guard.start()
+        self.addCleanup(self.core_guard.stop)
         self.directory = tempfile.TemporaryDirectory(prefix="lingobar-dummy-key-")
         self.root = Path(self.directory.name)
         self.destination = self.root / "private"
@@ -306,6 +313,159 @@ class ReceiverTests(unittest.TestCase):
                 self.assertEqual(json.loads(self.filename.read_text()), {"apiKey": SECRET})
                 self.assertEqual(self.run_receive()["status"], "blocked")
                 self.filename.unlink()
+
+
+@unittest.skipUnless(sys.platform == "linux", "Receiver hardening requires Linux")
+class CoreAndSignalTests(unittest.TestCase):
+    def child(self, body):
+        setup = """
+import ctypes,importlib.util,json,os,resource,signal,stat,sys,tempfile
+from pathlib import Path
+from unittest import mock
+spec=importlib.util.spec_from_file_location('receiver_child',sys.argv[1])
+r=importlib.util.module_from_spec(spec);spec.loader.exec_module(r)
+"""
+        output = subprocess.run([sys.executable, "-I", "-B", "-c",
+                                 textwrap.dedent(setup) + textwrap.dedent(body), str(SCRIPT)],
+                                capture_output=True, check=False, timeout=8)
+        self.assertEqual(output.returncode, 0,
+                         output.stderr.decode("utf-8", errors="replace"))
+        self.assertNotIn(SECRET.encode(), output.stdout + output.stderr)
+        return json.loads(output.stdout)
+
+    def test_core_guard_failure_blocks_probe_and_receive_before_state_or_input(self):
+        for failure in (OSError("synthetic failure"), RuntimeError("synthetic failure")):
+            with self.subTest(failure=type(failure).__name__), \
+                    mock.patch.object(receiver.resource, "setrlimit", side_effect=failure), \
+                    mock.patch.object(receiver, "_open_target") as target, \
+                    mock.patch.object(receiver, "_read_payload") as payload:
+                self.assertEqual(receiver.probe()["status"], "blocked")
+                self.assertEqual(receiver.receive()["status"], "blocked")
+                target.assert_not_called(); payload.assert_not_called()
+
+    def test_core_and_dumpable_readback_must_both_confirm_restriction(self):
+        for limits, prctl_values in (((0, 1), [0, 0]), ((0, 0), [-1]), ((0, 0), [0, 1])):
+            with self.subTest(limits=limits, prctl=prctl_values):
+                prctl = mock.Mock(side_effect=prctl_values)
+                with mock.patch.object(receiver.resource, "setrlimit") as restrict, \
+                        mock.patch.object(receiver.resource, "getrlimit", return_value=limits), \
+                        mock.patch.object(receiver.ctypes, "CDLL", return_value=types.SimpleNamespace(prctl=prctl)), \
+                        mock.patch.object(receiver, "_open_target") as target:
+                    self.assertEqual(receiver.receive()["status"], "blocked")
+                    restrict.assert_called_once_with(receiver.resource.RLIMIT_CORE, (0, 0))
+                    target.assert_not_called()
+
+    def test_fresh_child_restricts_nonzero_core_limit_and_its_child_inherits_zero(self):
+        result = self.child("""
+initial=resource.getrlimit(resource.RLIMIT_CORE)
+raised=initial[1]!=0
+if raised:
+ resource.setrlimit(resource.RLIMIT_CORE,(4096 if initial[1]==resource.RLIM_INFINITY else min(4096,initial[1]),initial[1]))
+before=resource.getrlimit(resource.RLIMIT_CORE)
+r._disable_core_dumps()
+after=resource.getrlimit(resource.RLIMIT_CORE)
+lib=ctypes.CDLL(None);dumpable=lib.prctl(3,0,0,0,0)
+read_fd,write_fd=os.pipe();pid=os.fork()
+if pid==0:
+ os.close(read_fd);os.write(write_fd,json.dumps(list(resource.getrlimit(resource.RLIMIT_CORE))).encode());os._exit(0)
+os.close(write_fd);inherited=json.loads(os.read(read_fd,1024));os.close(read_fd);os.waitpid(pid,0)
+print(json.dumps({'raised':raised,'before':before,'after':after,'dumpable':dumpable,'child':inherited}))
+""")
+        self.assertEqual(result["after"], [0, 0])
+        self.assertEqual(result["child"], [0, 0])
+        self.assertEqual(result["dumpable"], 0)
+        if result["raised"]:
+            self.assertGreater(result["before"][0], 0)
+        else:
+            self.skipTest("Runner inherited hard core limit0; nonzero transition unavailable")
+
+    def test_real_guard_still_allows_dummy_anonymous_install_as_current_nonroot_user(self):
+        result = self.child("""
+with tempfile.TemporaryDirectory(prefix='lingobar-guarded-dummy-') as directory:
+ root=Path(directory);private=root/'private';private.mkdir(mode=0o700);destination=private/'key.json'
+ config=root/'config.json';config.write_text(json.dumps({'version':1,'enabled':True,'targetId':r.TARGET_ID,'credentialsFile':str(destination)}));config.chmod(0o600)
+ read_fd,write_fd=os.pipe();os.write(write_fd,json.dumps({'version':1,'provider':'deepseek','targetId':r.TARGET_ID,'apiKey':'dummy-key-for-guarded-install'}).encode());os.close(write_fd)
+ result=r.receive(config,read_fd,1);os.close(read_fd)
+ valid=destination.exists() and json.loads(destination.read_text())=={'apiKey':'dummy-key-for-guarded-install'}
+ print(json.dumps({'status':result['status'],'valid':valid,'mode':stat.S_IMODE(destination.stat().st_mode) if valid else None,'uid':os.geteuid(),'core':resource.getrlimit(resource.RLIMIT_CORE),'dumpable':ctypes.CDLL(None).prctl(3,0,0,0,0)}))
+""")
+        self.assertEqual(result["status"], "installed")
+        self.assertTrue(result["valid"])
+        self.assertEqual(result["mode"], 0o600)
+        self.assertNotEqual(result["uid"], 0, "This regression must exercise an unprivileged process")
+        self.assertEqual(result["core"], [0, 0])
+        self.assertEqual(result["dumpable"], 0)
+
+    def test_sigquit_during_input_cancels_and_restores_handlers_and_mask(self):
+        result = self.child("""
+r._disable_core_dumps()
+with tempfile.TemporaryDirectory(prefix='lingobar-quit-dummy-') as directory:
+ root=Path(directory);private=root/'private';private.mkdir(mode=0o700);destination=private/'key.json'
+ config=root/'config.json';config.write_text(json.dumps({'version':1,'enabled':True,'targetId':r.TARGET_ID,'credentialsFile':str(destination)}));config.chmod(0o600)
+ handlers={n:signal.getsignal(n) for n in r.CANCEL_SIGNALS};mask=signal.pthread_sigmask(signal.SIG_BLOCK,set())
+ def interrupted(*args):
+  os.kill(os.getpid(),signal.SIGQUIT)
+ with mock.patch.object(r,'_read_payload',side_effect=interrupted): result=r.receive(config,0,1)
+ print(json.dumps({'status':result['status'],'empty':not destination.exists(),'handlersRestored':all(signal.getsignal(n)==h for n,h in handlers.items()),'maskRestored':signal.pthread_sigmask(signal.SIG_BLOCK,set())==mask}))
+""")
+        self.assertEqual(result["status"], "not_installed")
+        self.assertTrue(result["empty"])
+        self.assertTrue(result["handlersRestored"])
+        self.assertTrue(result["maskRestored"])
+
+    def test_repeated_sigquit_during_published_cleanup_cannot_skip_close_or_claim_rollback(self):
+        result = self.child("""
+r._disable_core_dumps()
+with tempfile.TemporaryDirectory(prefix='lingobar-repeat-dummy-') as directory:
+ root=Path(directory);private=root/'private';private.mkdir(mode=0o700);destination=private/'key.json'
+ config=root/'config.json';config.write_text(json.dumps({'version':1,'enabled':True,'targetId':r.TARGET_ID,'credentialsFile':str(destination)}));config.chmod(0o600)
+ read_fd,write_fd=os.pipe();os.write(write_fd,json.dumps({'version':1,'provider':'deepseek','targetId':r.TARGET_ID,'apiKey':'dummy-key-for-repeat-cancel'}).encode());os.close(write_fd)
+ actual_link=r._link_anonymous;actual_close=r.os.close;state={'published':False,'injected':False,'closed':False}
+ def link(*args):
+  actual_link(*args);state['published']=True
+ def close(fd):
+  if state['published'] and not state['injected']:
+   state['injected']=True;os.kill(os.getpid(),signal.SIGQUIT);os.kill(os.getpid(),signal.SIGTERM);os.kill(os.getpid(),signal.SIGQUIT)
+   actual_close(fd);state['closed']=True
+  else: actual_close(fd)
+ handlers={n:signal.getsignal(n) for n in r.CANCEL_SIGNALS}
+ with mock.patch.object(r,'_link_anonymous',side_effect=link),mock.patch.object(r.os,'close',side_effect=close): result=r.receive(config,read_fd,1)
+ os.close(read_fd)
+ print(json.dumps({'status':result['status'],'exists':destination.exists(),'closed':state['closed'],'injected':state['injected'],'handlersRestored':all(signal.getsignal(n)==h for n,h in handlers.items()),'pending':bool(signal.sigpending() & r.CANCEL_SIGNALS)}))
+""")
+        self.assertEqual(result["status"], "outcome_unknown")
+        self.assertTrue(result["exists"])
+        self.assertTrue(result["closed"])
+        self.assertTrue(result["injected"])
+        self.assertTrue(result["handlersRestored"])
+        self.assertFalse(result["pending"])
+
+    def test_repeated_sigquit_during_unpublished_buffer_cleanup_never_saves_the_key(self):
+        result = self.child("""
+from contextlib import contextmanager
+r._disable_core_dumps()
+with tempfile.TemporaryDirectory(prefix='lingobar-before-link-dummy-') as directory:
+ root=Path(directory);private=root/'private';private.mkdir(mode=0o700);destination=private/'key.json'
+ config=root/'config.json';config.write_text(json.dumps({'version':1,'enabled':True,'targetId':r.TARGET_ID,'credentialsFile':str(destination)}));config.chmod(0o600)
+ read_fd,write_fd=os.pipe();os.write(write_fd,json.dumps({'version':1,'provider':'deepseek','targetId':r.TARGET_ID,'apiKey':'dummy-key-before-link-cancel'}).encode());os.close(write_fd)
+ cleanup=r._cleanup_signals;sync=r.os.fsync;state={'synced':False,'injected':False}
+ def fsync(fd):
+  sync(fd)
+  if stat.S_ISREG(os.fstat(fd).st_mode): state['synced']=True
+ @contextmanager
+ def interrupt_cleanup():
+  with cleanup():
+   if state['synced'] and not state['injected']:
+    state['injected']=True;os.kill(os.getpid(),signal.SIGQUIT);os.kill(os.getpid(),signal.SIGTERM);os.kill(os.getpid(),signal.SIGQUIT)
+   yield
+ with mock.patch.object(r,'_cleanup_signals',interrupt_cleanup),mock.patch.object(r.os,'fsync',side_effect=fsync): result=r.receive(config,read_fd,1)
+ os.close(read_fd)
+ print(json.dumps({'status':result['status'],'empty':not destination.exists(),'injected':state['injected'],'pending':bool(signal.sigpending() & r.CANCEL_SIGNALS)}))
+""")
+        self.assertEqual(result["status"], "not_installed")
+        self.assertTrue(result["empty"])
+        self.assertTrue(result["injected"])
+        self.assertFalse(result["pending"])
 
 
 if __name__ == "__main__":

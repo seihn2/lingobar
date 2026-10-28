@@ -24,6 +24,8 @@ jobs:
         run: node -e "if(process.versions.node.split('.')[0]!=='22')process.exit(1);console.log('Budget tests use Node '+process.versions.node)"
       - run: npm run typecheck
       - run: python3 --version
+      - name: Record initial process core limits
+        run: python3 -c "import resource; print('Initial RLIMIT_CORE soft/hard', resource.getrlimit(resource.RLIMIT_CORE))"
       - run: npm run test:key-transfer
       - run: npm run test:worker
       - run: npm run test:gateway

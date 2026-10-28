@@ -7,11 +7,13 @@ JSON credential file may be installed; existing files are never overwritten.
 Linux O_TMPFILE is mandatory: no named plaintext staging file is created.
 """
 import ctypes
+from contextlib import contextmanager
 import errno
 import hashlib
 import json
 import os
 from pathlib import Path
+import resource
 import select
 import signal
 import stat
@@ -25,6 +27,10 @@ INPUT_DEADLINE_SECONDS = 10.0
 AT_EMPTY_PATH = 0x1000
 AT_SYMLINK_FOLLOW = 0x400
 AT_FDCWD = -100
+PR_GET_DUMPABLE = 3
+PR_SET_DUMPABLE = 4
+CANCEL_SIGNALS = frozenset(getattr(signal, name) for name in
+                           ("SIGINT", "SIGTERM", "SIGHUP", "SIGQUIT"))
 
 
 class ReceiverError(Exception):
@@ -33,6 +39,76 @@ class ReceiverError(Exception):
 
 def _deny():
     raise ReceiverError("Credential receiver unavailable")
+
+
+def _disable_core_dumps():
+    """Restrict this receiver process before accepting even synthetic input.
+
+    RLIMIT_CORE alone does not cover a Linux piped core collector. Dumpability
+    must also be disabled after exec/sudo, and both restrictions are verified.
+    No caller's shell/system setting is changed; inherited child limits are0.
+    """
+    if sys.platform != "linux":
+        _deny()
+    resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
+    if resource.getrlimit(resource.RLIMIT_CORE) != (0, 0):
+        _deny()
+    library = ctypes.CDLL(None, use_errno=True)
+    prctl = library.prctl
+    prctl.argtypes = (ctypes.c_int, ctypes.c_ulong, ctypes.c_ulong,
+                     ctypes.c_ulong, ctypes.c_ulong)
+    prctl.restype = ctypes.c_int
+    if (prctl(PR_SET_DUMPABLE, 0, 0, 0, 0) != 0
+            or prctl(PR_GET_DUMPABLE, 0, 0, 0, 0) != 0):
+        _deny()
+
+
+@contextmanager
+def _cleanup_signals():
+    """Repeated cancellation cannot interrupt descriptor/buffer cleanup.
+
+    Coalesce newly queued cancellation and raise only after cleanup; never
+    resume processing a key after cancellation during buffer cleanup. Signals
+    already blocked by the caller remain pending for that caller.
+    """
+    previous_mask = signal.pthread_sigmask(signal.SIG_BLOCK, CANCEL_SIGNALS)
+    try:
+        yield
+    finally:
+        try:
+            interrupted = False
+            for number in CANCEL_SIGNALS - previous_mask:
+                if number in signal.sigpending():
+                    signal.sigwait({number})
+                    interrupted = True
+        finally:
+            signal.pthread_sigmask(signal.SIG_SETMASK, previous_mask)
+        if interrupted:
+            _deny()
+
+
+@contextmanager
+def _cancellation_scope():
+    if not hasattr(signal, "pthread_sigmask"):
+        _deny()
+    previous_mask = signal.pthread_sigmask(signal.SIG_BLOCK, CANCEL_SIGNALS)
+    handlers = {number: signal.getsignal(number) for number in CANCEL_SIGNALS}
+    def cancelled(_number, _frame):
+        _deny()
+    try:
+        for number in CANCEL_SIGNALS:
+            signal.signal(number, cancelled)
+        signal.pthread_sigmask(signal.SIG_SETMASK, previous_mask)
+        yield
+    finally:
+        signal.pthread_sigmask(signal.SIG_BLOCK, CANCEL_SIGNALS)
+        try:
+            for number in CANCEL_SIGNALS:
+                signal.signal(number, signal.SIG_IGN)
+            for number, handler in handlers.items():
+                signal.signal(number, handler)
+        finally:
+            signal.pthread_sigmask(signal.SIG_SETMASK, previous_mask)
 
 
 def _exact(value, names):
@@ -83,7 +159,8 @@ def _read_config(filename):
             _deny()
         value = _json(data.decode("utf-8", errors="strict"))
     finally:
-        os.close(descriptor)
+        with _cleanup_signals():
+            os.close(descriptor)
     if (not _exact(value, ("version", "enabled", "targetId", "credentialsFile"))
             or type(value["version"]) is not int or value["version"] != 1
             or value["enabled"] is not True or value["targetId"] != TARGET_ID
@@ -99,9 +176,10 @@ class _Target:
         self.name = name
 
     def close(self):
-        if self.descriptor is not None:
-            descriptor, self.descriptor = self.descriptor, None
-            os.close(descriptor)
+        with _cleanup_signals():
+            if self.descriptor is not None:
+                descriptor, self.descriptor = self.descriptor, None
+                os.close(descriptor)
 
 
 def _target_missing(target):
@@ -152,7 +230,8 @@ def _anonymous(target):
             _deny()
         return descriptor
     except BaseException:
-        os.close(descriptor)
+        with _cleanup_signals():
+            os.close(descriptor)
         raise
 
 
@@ -212,19 +291,21 @@ def _read_payload(input_fd, timeout):
         return key
     finally:
         # Best effort only: Python/OS copies are not claimed to be zeroized.
-        data[:] = b"\x00" * len(data)
+        with _cleanup_signals():
+            data[:] = b"\x00" * len(data)
 
 
 def _result(status):
     return {"version": 1, "status": status, "targetId": TARGET_ID}
 
 
-def probe(config_path=CONFIG_PATH):
+def _probe(config_path):
     target = None
     try:
         target = _open_target(config_path)
         descriptor = _anonymous(target)
-        os.close(descriptor)
+        with _cleanup_signals():
+            os.close(descriptor)
         result = _result("ready")
         result["receiverSha256"] = hashlib.sha256(
             Path(__file__).read_bytes()).hexdigest()
@@ -239,8 +320,7 @@ def probe(config_path=CONFIG_PATH):
                 pass
 
 
-def receive(config_path=CONFIG_PATH, input_fd=0,
-            timeout=INPUT_DEADLINE_SECONDS):
+def _receive(config_path, input_fd, timeout):
     target, descriptor, linked, publish_started = None, None, False, False
     try:
         target = _open_target(config_path)
@@ -260,7 +340,8 @@ def receive(config_path=CONFIG_PATH, input_fd=0,
                 offset += written
             os.fsync(descriptor)
         finally:
-            content[:] = b"\x00" * len(content)
+            with _cleanup_signals():
+                content[:] = b"\x00" * len(content)
         _directory_unchanged(target)
         _target_missing(target)
         # Mark the uncertainty window before entering the publication syscall:
@@ -278,8 +359,9 @@ def receive(config_path=CONFIG_PATH, input_fd=0,
             raise
         linked = True
         os.fsync(target.descriptor)
-        os.close(descriptor)
-        descriptor = None
+        with _cleanup_signals():
+            os.close(descriptor)
+            descriptor = None
         target.close()
         return _result("installed")
     except BaseException:
@@ -288,27 +370,50 @@ def receive(config_path=CONFIG_PATH, input_fd=0,
         return _result("outcome_unknown" if linked or publish_started
                        else "not_installed")
     finally:
-        if descriptor is not None:
-            try:
-                os.close(descriptor)
-            except OSError:
-                pass
-        if target is not None:
-            try:
-                target.close()
-            except OSError:
-                pass
+        with _cleanup_signals():
+            if descriptor is not None:
+                try:
+                    os.close(descriptor)
+                except OSError:
+                    pass
+            if target is not None:
+                try:
+                    target.close()
+                except OSError:
+                    pass
+
+
+def probe(config_path=CONFIG_PATH):
+    try:
+        _disable_core_dumps()
+        with _cancellation_scope():
+            return _probe(config_path)
+    except BaseException:
+        return _result("blocked")
+
+
+def receive(config_path=CONFIG_PATH, input_fd=0,
+            timeout=INPUT_DEADLINE_SECONDS):
+    started = False
+    try:
+        _disable_core_dumps()
+        with _cancellation_scope():
+            started = True
+            return _receive(config_path, input_fd, timeout)
+    except BaseException:
+        return _result("outcome_unknown" if started else "blocked")
 
 
 def main():
-    if len(sys.argv) != 2 or sys.argv[1] not in ("--probe", "--receive"):
+    try:
+        _disable_core_dumps()
+        with _cancellation_scope():
+            if len(sys.argv) != 2 or sys.argv[1] not in ("--probe", "--receive"):
+                result = _result("blocked")
+            else:
+                result = probe() if sys.argv[1] == "--probe" else receive()
+    except BaseException:
         result = _result("blocked")
-    else:
-        def cancelled(_number, _frame):
-            _deny()
-        for name in ("SIGINT", "SIGTERM", "SIGHUP"):
-            signal.signal(getattr(signal, name), cancelled)
-        result = probe() if sys.argv[1] == "--probe" else receive()
     try:
         sys.stdout.write(json.dumps(result, separators=(",", ":")) + "\n")
         sys.stdout.flush()

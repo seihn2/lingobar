@@ -13,6 +13,8 @@ for (const item of manifest.files) {
 const sender = JSON.parse(fs.readFileSync(path.join(directory, 'key-transfer-sender.json')))
 const receiver = JSON.parse(fs.readFileSync(path.join(directory, 'key-transfer-receiver.json')))
 assert.equal(sender.enabled, false); assert.equal(sender.host, null); assert.equal(sender.hostKey, null)
+assert.equal(sender.version, 2); assert.equal(sender.identity_file, null); assert.equal(sender.run_as, null)
+assert.deepEqual(sender.sudo_policy, { permission_verified: false, stdin_logging_disabled_verified: false, evidence_id: null })
 assert.equal(receiver.enabled, false); assert.equal(receiver.credentialsFile, null)
 // Run only shipped disabled entrypoints. Block socket/process creation before loading either script.
 const bootstrap = `import sys,runpy,subprocess,socket\nattempts=[]\ndef deny(*a,**k):\n attempts.append(True)\n raise RuntimeError('NETWORK_OR_PROCESS_FORBIDDEN')\nsubprocess.Popen=deny\nsocket.socket=deny\nsys.argv=sys.argv[1:]\ncode=0\ntry:\n runpy.run_path(sys.argv[0],run_name='__main__')\nexcept SystemExit as e:\n code=e.code\nfinally:\n if attempts: code=77\nsys.exit(code)\n`

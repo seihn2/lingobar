@@ -1,9 +1,16 @@
 {
-  "version": 1,
+  "version": 2,
   "enabled": false,
   "targetId": "lingobar-deepseek-primary",
   "host": null,
   "port": 22,
   "user": null,
-  "hostKey": null
+  "hostKey": null,
+  "identity_file": null,
+  "run_as": null,
+  "sudo_policy": {
+    "permission_verified": false,
+    "stdin_logging_disabled_verified": false,
+    "evidence_id": null
+  }
 }
