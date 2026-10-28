@@ -9,7 +9,9 @@ import CaptionStream from './CaptionStream'
 import CompactCaption from './CompactCaption'
 import HistoryPanel from './HistoryPanel'
 import StudyPanel from './StudyPanel'
-import { learningTarget } from '../shared/learning'
+import DictionaryPanel from './DictionaryPanel'
+import { dictionarySourceVersion, type DictionaryHandleResult } from '../shared/dictionary'
+import { learningOriginal, learningTarget } from '../shared/learning'
 import { alignedOriginal, incomingText, translationFor } from './caption-text'
 import type { ReadingSession } from './reading-schedule'
 
@@ -67,7 +69,8 @@ function IconButton({ title, children, onClick, active, disabled, className = ''
 
 export default function App() {
   const [snapshot, setSnapshot] = useState<Snapshot>(blankSnapshot)
-  const [panel, setPanel] = useState<'settings' | 'history' | 'text' | 'study' | null>(null)
+  const [panel, setPanel] = useState<'settings' | 'history' | 'text' | 'study' | 'dictionary' | null>(null)
+  const [studyHandlePromise, setStudyHandlePromise] = useState<Promise<DictionaryHandleResult> | null>(null)
   const [studyInitial, setStudyInitial] = useState<Caption | null>(null)
   const compactTarget = useRef<Caption | null>(null)
   const onCompactTarget = useCallback((caption: Caption | null) => { compactTarget.current = caption }, [])
@@ -200,7 +203,7 @@ export default function App() {
 
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
-      if (event.isComposing || composing.current || event.keyCode === 229 || panel === 'study') return
+      if (event.isComposing || composing.current || event.keyCode === 229 || panel === 'study' || panel === 'dictionary') return
       if (event.key === 'Escape') { setPanel(null); setNotice('') }
       if ((event.metaKey || event.ctrlKey) && !event.altKey && event.key.toLowerCase() === 'f') {
         event.preventDefault()
@@ -228,7 +231,7 @@ export default function App() {
     if (!panel) return
     const surface = document.querySelector<HTMLElement>('.panel')
     const focusable = () => [...surface?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled)') || []].filter(element => element.getClientRects().length > 0)
-    const first = panel === 'text' ? surface?.querySelector<HTMLElement>('textarea') : panel === 'history' ? surface?.querySelector<HTMLElement>('.history-search-input') : focusable()[0]
+    const first = panel === 'text' ? surface?.querySelector<HTMLElement>('textarea') : panel === 'history' ? surface?.querySelector<HTMLElement>('.history-search-input') : panel === 'dictionary' ? surface?.querySelector<HTMLElement>('.dictionary-query') : focusable()[0]
     first?.focus()
     const keepFocus = (event: KeyboardEvent) => {
       if (event.key !== 'Tab') return
@@ -251,7 +254,7 @@ export default function App() {
     target?.focus()
   }, [panel])
 
-  const streamCaptions = preview ? exampleStream : panel === 'study' && studyReturn.current ? studyReturn.current.captions : snapshot.captions
+  const streamCaptions = preview ? exampleStream : (panel === 'study' || panel === 'dictionary') && studyReturn.current ? studyReturn.current.captions : snapshot.captions
   const listening = snapshot.state === 'listening'
   const starting = snapshot.state === 'starting' || captureAction === 'start'
   const configured = snapshot.settings.hasAsrKey && snapshot.settings.hasTranslationKey
@@ -266,13 +269,25 @@ export default function App() {
 
   async function openStudy(caption: Caption | null) {
     if (!api?.learning || preview || panel) return
+    const opening = caption && api.dictionary ? api.dictionary.open({ captionId: caption.id, displayedText: learningOriginal(caption), sourceVersion: dictionarySourceVersion(caption), displayedVersion: learningTarget(caption, snapshot.settings).version }).catch(error => ({ handle: null, source: null, reason: errorText(error) })) : null
+    setStudyHandlePromise(opening)
     rememberPanelFocus('历史与收藏')
     studyReturn.current = { collapsed: snapshot.collapsed, openedAt: performance.now(), session: structuredClone(readingSession.current), captions: snapshot.captions }
     setStudyInitial(caption ? structuredClone(caption) : null)
     setPanel('study')
     if (snapshot.collapsed) await api.setCollapsed(false)
   }
+  async function openDictionary() {
+    if (!api?.dictionary || panel || preview) return
+    rememberPanelFocus('历史与收藏')
+    studyReturn.current = { collapsed: snapshot.collapsed, openedAt: performance.now(), session: structuredClone(readingSession.current), captions: snapshot.captions }
+    setPanel('dictionary')
+    if (snapshot.collapsed) await api.setCollapsed(false)
+  }
+  const dictionarySettings = () => { studyReturn.current = null; setStudyInitial(null); setStudyHandlePromise(null); setPanel('settings') }
   async function closeStudy() {
+    if (studyHandlePromise && api?.dictionary) void studyHandlePromise.then(value => { if (value.handle) return api.dictionary!.release(value.handle) }).catch(() => {})
+    setStudyHandlePromise(null)
     const previous = studyReturn.current
     if (previous) {
       const restored = structuredClone(previous.session)
@@ -379,7 +394,7 @@ export default function App() {
   }
   const displayedOpacity = opacityPreview ?? snapshot.settings.opacity
 
-  const windowControls = <div className="titlebar-actions" inert={panel === 'study'}>
+  const windowControls = <div className="titlebar-actions" inert={panel === 'study' || panel === 'dictionary'}>
         <label className="quick-opacity" title="透明度调节：向左更透明，松开后自动保存"><Contrast size={12} /><input type="range" aria-label="背景不透明度，越低越透明" min="0.45" max="1" step="0.01" value={displayedOpacity} onChange={event => adjustOpacity(Number(event.target.value))} onPointerUp={commitOpacity} onKeyUp={commitOpacity} onBlur={commitOpacity} /><output>{Math.round(displayedOpacity * 100)}%</output></label>
         {snapshot.collapsed && <IconButton title={listening || starting ? '暂停聆听' : '开始聆听'} onClick={() => void toggleListening()} disabled={captureAction === 'stop'}>{listening || starting ? <Pause size={14} /> : <Play size={14} />}</IconButton>}
         <IconButton title={snapshot.settings.alwaysOnTop ? '取消置顶' : '始终置顶'} active={snapshot.settings.alwaysOnTop} onClick={() => void run(() => saveSettings({ alwaysOnTop: !snapshot.settings.alwaysOnTop }))}><Pin size={14} /></IconButton>
@@ -397,7 +412,7 @@ export default function App() {
       {windowControls}
     </header>}
 
-    {snapshot.collapsed && <CompactCaption suspended={panel === 'study'} onVisibleTarget={onCompactTarget} learningActions={learningActions} controls={windowControls} key={`${preview ? 'preview' : 'live'}:${readingEpoch}`} captions={streamCaptions} settings={snapshot.settings} preview={preview} readingSession={readingSession.current} partial={partial} listening={listening} notice={notice || (snapshot.state === 'error' ? snapshot.message : '')} onRetry={caption => api && void run(() => api.retry(caption.id))} onRetryAnnotation={caption => api && void run(() => api.retryAnnotation(caption.id))} onReturnLive={() => setSelectedId(null)} />}
+    {snapshot.collapsed && <CompactCaption suspended={panel === 'study' || panel === 'dictionary'} onVisibleTarget={onCompactTarget} learningActions={learningActions} controls={windowControls} key={`${preview ? 'preview' : 'live'}:${readingEpoch}`} captions={streamCaptions} settings={snapshot.settings} preview={preview} readingSession={readingSession.current} partial={partial} listening={listening} notice={notice || (snapshot.state === 'error' ? snapshot.message : '')} onRetry={caption => api && void run(() => api.retry(caption.id))} onRetryAnnotation={caption => api && void run(() => api.retryAnnotation(caption.id))} onReturnLive={() => setSelectedId(null)} />}
 
     {!snapshot.collapsed && <>
       <div className="capture-toolbar" inert={panel !== null}>
@@ -407,22 +422,23 @@ export default function App() {
       </div>
 
       <section className="caption-stage stream-stage" aria-label="多语连续字幕" inert={panel !== null}>
-        {streamCaptions.length > 0 ? <CaptionStream suspended={panel === 'study'} learningActions={learningActions} readingSession={readingSession.current} key={`${preview ? 'preview' : 'live'}:${readingEpoch}`} captions={streamCaptions} settings={snapshot.settings} preview={preview} focusId={selectedId} focusVersion={focusVersion} copiedId={copiedId} onCopy={caption => void copyCaption(caption)} onSave={caption => api && void run(() => api.toggleSaved(caption.id), caption.saved ? '已取消收藏' : '已加入学习收藏')} onRetry={caption => api && void run(() => api.retry(caption.id))} onRetryAnnotation={caption => api && void run(() => api.retryAnnotation(caption.id))} onReturnLive={() => setSelectedId(null)} /> : <div className="welcome"><div className={`welcome-icon ${listening ? 'is-listening' : ''}`}><Headphones size={24} strokeWidth={1.4} />{listening && <span className="sound-rings" />}</div><div className="welcome-copy"><div className="eyebrow">LISTEN. UNDERSTAND. LEARN.</div><h1>{listening ? '正在听，第一句就快来了。' : '把听见的，变成学会的。'}</h1><p>{listening ? `正在接收${modeNames[snapshot.settings.captureMode]}，说句话或播放一段音频。` : '电脑声音与麦克风，随时变成你选择的多语字幕。'}</p><div className="language-pills">{snapshot.settings.showOriginal && <span>原文</span>}{targets.map(code => <span key={code}>{languageInfo(code).nativeName}</span>)}</div></div><div className="welcome-actions"><button className="text-button" onClick={() => { setPreview(true); setSelectedId(null) }}>看看示例 <ArrowRight size={13} /></button><button className="text-button muted" onClick={() => { rememberPanelFocus('输入文字翻译'); setNotice(''); setPanel('text') }}><Keyboard size={13} />输入文字试试</button></div></div>}
+        {streamCaptions.length > 0 ? <CaptionStream suspended={panel === 'study' || panel === 'dictionary'} learningActions={learningActions} readingSession={readingSession.current} key={`${preview ? 'preview' : 'live'}:${readingEpoch}`} captions={streamCaptions} settings={snapshot.settings} preview={preview} focusId={selectedId} focusVersion={focusVersion} copiedId={copiedId} onCopy={caption => void copyCaption(caption)} onSave={caption => api && void run(() => api.toggleSaved(caption.id), caption.saved ? '已取消收藏' : '已加入学习收藏')} onRetry={caption => api && void run(() => api.retry(caption.id))} onRetryAnnotation={caption => api && void run(() => api.retryAnnotation(caption.id))} onReturnLive={() => setSelectedId(null)} /> : <div className="welcome"><div className={`welcome-icon ${listening ? 'is-listening' : ''}`}><Headphones size={24} strokeWidth={1.4} />{listening && <span className="sound-rings" />}</div><div className="welcome-copy"><div className="eyebrow">LISTEN. UNDERSTAND. LEARN.</div><h1>{listening ? '正在听，第一句就快来了。' : '把听见的，变成学会的。'}</h1><p>{listening ? `正在接收${modeNames[snapshot.settings.captureMode]}，说句话或播放一段音频。` : '电脑声音与麦克风，随时变成你选择的多语字幕。'}</p><div className="language-pills">{snapshot.settings.showOriginal && <span>原文</span>}{targets.map(code => <span key={code}>{languageInfo(code).nativeName}</span>)}</div></div><div className="welcome-actions"><button className="text-button" onClick={() => { setPreview(true); setSelectedId(null) }}>看看示例 <ArrowRight size={13} /></button><button className="text-button muted" onClick={() => { rememberPanelFocus('输入文字翻译'); setNotice(''); setPanel('text') }}><Keyboard size={13} />输入文字试试</button></div></div>}
       </section>
       {snapshot.settings.showOriginal && !preview && expandedPartial.length > 0 && <div className="partial-caption live-partial" inert={panel !== null} aria-live="off"><span className="partial-indicator" /><span className="partial-stage-label">正在听</span>{expandedPartial.map(item => <span key={item.source}><b>{item.source === 'microphone' ? '麦克风' : '电脑'}</b>{item.text}</span>)}</div>}
 
       {(notice || (snapshot.state === 'error' && snapshot.message)) && !panel && <div className="inline-notice" role="alert"><span>{notice || snapshot.message}</span><button aria-label="关闭提示" onClick={() => setNotice('')}><X size={12} /></button></div>}
       <footer className="bottom-bar" inert={panel !== null}>
         <div className="stream-footer-note">{preview && <button className="text-button" onClick={() => { setPreview(false); setSelectedId(null) }}>退出示例预览</button>}</div>
-        <div className="footer-actions">{api?.learning && <IconButton title="会话匣" onClick={() => void run(() => openStudy(null))}><History size={15} /></IconButton>}<IconButton title="输入文字翻译" onClick={() => { rememberPanelFocus('输入文字翻译'); setNotice(''); setPanel('text') }}><Keyboard size={15} /></IconButton><IconButton title="历史与收藏" active={panel === 'history'} onClick={() => { rememberPanelFocus('历史与收藏'); setNotice(''); setPanel('history') }}><History size={15} /></IconButton></div>
+        <div className="footer-actions">{api?.dictionary && <IconButton title="学习历史" onClick={() => void run(openDictionary)}><Languages size={15} /></IconButton>}{api?.learning && <IconButton title="会话匣" onClick={() => void run(() => openStudy(null))}><History size={15} /></IconButton>}<IconButton title="输入文字翻译" onClick={() => { rememberPanelFocus('输入文字翻译'); setNotice(''); setPanel('text') }}><Keyboard size={15} /></IconButton><IconButton title="历史与收藏" active={panel === 'history'} onClick={() => { rememberPanelFocus('历史与收藏'); setNotice(''); setPanel('history') }}><History size={15} /></IconButton></div>
       </footer>
     </>}
 
     {toast && <div className="toast" role="status"><Check size={12} />{toast}</div>}
-    {panel && !snapshot.collapsed && <div className="panel-backdrop"><section className={`panel panel-${panel}`} role="dialog" aria-modal="true" aria-label={panel === 'study' ? '桌面学习' : panel === 'settings' ? '设置' : panel === 'history' ? '历史与收藏' : '文字翻译'}>
-      {panel !== 'study' && <div className="panel-heading"><div><span className="panel-kicker">{panel === 'settings' ? 'PREFERENCES' : panel === 'history' ? 'YOUR LANGUAGE NOTES' : 'TEXT TRANSLATION'}</span><h2>{panel === 'settings' ? '让语伴适合你' : panel === 'history' ? '听过的，留下来' : '从一句话开始'}</h2></div><IconButton title="关闭面板" onClick={() => { setPanel(null); setNotice('') }}><X size={17} /></IconButton></div>}
+    {panel && !snapshot.collapsed && <div className="panel-backdrop"><section className={`panel panel-${panel}`} role="dialog" aria-modal="true" aria-label={panel === 'dictionary' ? '个人学习历史' : panel === 'study' ? '桌面学习' : panel === 'settings' ? '设置' : panel === 'history' ? '历史与收藏' : '文字翻译'}>
+      {panel !== 'study' && panel !== 'dictionary' && <div className="panel-heading"><div><span className="panel-kicker">{panel === 'settings' ? 'PREFERENCES' : panel === 'history' ? 'YOUR LANGUAGE NOTES' : 'TEXT TRANSLATION'}</span><h2>{panel === 'settings' ? '让语伴适合你' : panel === 'history' ? '听过的，留下来' : '从一句话开始'}</h2></div><IconButton title="关闭面板" onClick={() => { setPanel(null); setNotice('') }}><X size={17} /></IconButton></div>}
       {notice && <div className="panel-notice" role="alert">{notice}</div>}
-      {panel === 'study' && api?.learning && snapshot.learning && <StudyPanel api={api} settings={snapshot.settings} captions={snapshot.captions} learning={snapshot.learning} initial={studyInitial} onClose={() => void run(closeStudy)} onExport={() => void exportSaved()} exporting={exporting} exportResult={exportResult} />}
+      {panel === 'study' && api?.learning && snapshot.learning && <StudyPanel initialHandlePromise={studyHandlePromise} onOpenHistory={() => setPanel('dictionary')} onOpenSettings={dictionarySettings} api={api} settings={snapshot.settings} captions={snapshot.captions} learning={snapshot.learning} initial={studyInitial} onClose={() => void run(closeStudy)} onExport={() => void exportSaved()} exporting={exporting} exportResult={exportResult} />}
+      {panel === 'dictionary' && api?.dictionary && <DictionaryPanel api={api.dictionary} defaultLanguage={snapshot.settings.targetLanguages[0] || 'zh'} onClose={() => void run(closeStudy)} onOpenSettings={dictionarySettings} />}
       {panel === 'settings' && <SettingsPanel platform={platform} settings={snapshot.settings} listening={listening || starting} saveSettings={saveSettings} onSaved={() => { setNotice(''); setToast('设置已保存'); setPanel(null) }} onError={setNotice} onImport={async () => { if (!api) throw new Error('请在应用中导入本机密钥。'); const settings = await api.importLocalKey(); setSnapshot(value => ({ ...value, settings })); setToast('本机语音识别密钥已安全导入'); return settings }} />}
       {panel === 'text' && <form className="text-form" onSubmit={event => void submitText(event)}><label htmlFor="translation-input">粘贴新闻或游戏中可复制的句段，显式翻译为所选字幕语言；完成后可留句、添加笔记。</label><textarea id="translation-input" value={input} autoFocus onChange={event => setInput(event.target.value)} placeholder="例如：You don't have to be perfect to make progress." maxLength={5000} /><div className="text-form-footer"><span>{input.length} / 5000 · {labels.submitShortcut} 翻译</span><button className="primary-button" disabled={busy || !input.trim()} type="submit" onKeyDown={event => { if (event.key === 'Enter') event.stopPropagation() }}>{busy ? <LoaderCircle size={13} className="spin" /> : <ArrowRight size={13} />}翻译这句</button></div></form>}
       {panel === 'history' && <HistoryPanel captions={snapshot.captions} settings={snapshot.settings} filter={historyFilter} focusVersion={historyFocusVersion} onFilter={setHistoryFilter} onSelect={caption => { setSelectedId(caption.id); setFocusVersion(value => value + 1); setPreview(false); setPanel(null) }} onSave={caption => api && void run(() => api.toggleSaved(caption.id))} onExport={() => void exportSaved()} exporting={exporting} exportResult={exportResult} />}

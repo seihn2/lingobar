@@ -25,3 +25,6 @@ resources/native/windows/build*/
 
 learning-v1.json
 learning-v1.json.*.tmp
+
+dictionary-learning-v1.json
+dictionary-learning-v1.json.*.tmp

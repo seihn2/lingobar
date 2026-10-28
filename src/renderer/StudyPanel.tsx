@@ -5,10 +5,13 @@ import { languageInfo } from '../shared/languages'
 import { translationFor } from './caption-text'
 import { selectedPhrase } from './learning-selection'
 import HistoryPanel from './HistoryPanel'
+import { PhraseExplanation } from './DictionaryPanel'
+import { dictionarySourceVersion, type DictionaryHandleResult } from '../shared/dictionary'
 
-type Props = { api: LingoAPI; settings: Settings; captions: Caption[]; learning: LearningState; initial: Caption | null; onClose: () => void; onExport: () => void; exporting: boolean; exportResult: {text: string; error: boolean} | null }
-export default function StudyPanel({ api, settings, captions, learning, initial, onClose, onExport, exporting, exportResult }: Props) {
+type Props = { initialHandlePromise?: Promise<DictionaryHandleResult> | null; onOpenHistory?: () => void; onOpenSettings?: () => void; api: LingoAPI; settings: Settings; captions: Caption[]; learning: LearningState; initial: Caption | null; onClose: () => void; onExport: () => void; exporting: boolean; exportResult: {text: string; error: boolean} | null }
+export default function StudyPanel({ initialHandlePromise = null, onOpenHistory, onOpenSettings, api, settings, captions, learning, initial, onClose, onExport, exporting, exportResult }: Props) {
   // Only explicit user navigation replaces this frozen encounter. Incoming snapshots never do.
+  const [handlePromise, setHandlePromise] = useState<Promise<DictionaryHandleResult> | null>(initialHandlePromise)
   const [frozen, setFrozen] = useState(() => initial ? structuredClone({ caption: initial, settings }) : null)
   const initialRecord = (caption: Caption | null) => learning.records.find(record => record.captionId === caption?.id)
   const [phrases, setPhrases] = useState<Phrase[]>(() => structuredClone(initialRecord(initial)?.phrases || []))
@@ -45,6 +48,8 @@ export default function StudyPanel({ api, settings, captions, learning, initial,
   }
   const open = (caption: Caption) => attempt(() => {
     generation.current++
+    const opening = api.dictionary ? api.dictionary.open({ captionId: caption.id, displayedText: learningOriginal(caption), sourceVersion: dictionarySourceVersion(caption), displayedVersion: learningTarget(caption, settings).version }).catch(error => ({ handle: null, source: null, reason: error instanceof Error ? error.message : '源文无法核验，请重新选择。' })) : null
+    setHandlePromise(opening)
     inboxReturnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
     frozenInbox.current = inbox
     const record = initialRecord(caption)
@@ -105,7 +110,7 @@ export default function StudyPanel({ api, settings, captions, learning, initial,
     {!learning.shortcutAvailable && <p className="history-search-hint">QuickPin 快捷键被占用，请使用句子旁的按钮。</p>}
     {frozen ? <fieldset disabled={pending} className="study-detail" data-study-id={frozen.caption.id}>
       {learning.unanchoredIds?.includes(frozen.caption.id) && <p className="panel-notice">原文已变化，旧短语未锚定；不会套用旧范围。</p>}
-      <div className="study-actions"><button type="button" onClick={() => attempt(() => { generation.current++; setFrozen(null); setMessage('') })}>会话匣</button><button type="button" onClick={() => { const revision = generation.current; void api.copyText(source).catch(error => { if (alive.current && revision === generation.current) setMessage(String(error)) }) }}>复制原文</button><span>{newCount > 0 ? `${newCount} 条新字幕` : ''}</span></div>
+      <div className="study-actions"><button type="button" onClick={() => attempt(() => { generation.current++; setFrozen(null); setHandlePromise(null); setMessage('') })}>会话匣</button><button type="button" onClick={() => { const revision = generation.current; void api.copyText(source).catch(error => { if (alive.current && revision === generation.current) setMessage(String(error)) }) }}>复制原文</button><span>{newCount > 0 ? `${newCount} 条新字幕` : ''}</span></div>
       <p className="study-source" ref={original} lang={frozen.caption.language} dir="auto" tabIndex={0} aria-label="冻结原文，可选择连续短语">{source}</p>
       <button type="button" onPointerDown={event => event.preventDefault()} onClick={() => add(original.current ? selectedPhrase(original.current, source, window.getSelection()) : null)}>加入所选原文短语</button>
       <div className="study-translations">{frozen.settings.targetLanguages.map(code => {
@@ -118,6 +123,7 @@ export default function StudyPanel({ api, settings, captions, learning, initial,
       <label className="study-note">笔记<textarea aria-label="句子笔记" value={note} maxLength={2000} onChange={event => { setNote(event.target.value); setDirty(true) }} /></label>
       <div className="study-actions"><button type="button" className="primary-button" aria-busy={pending} disabled={pending} onClick={() => void save()}>保存句子与笔记</button><span>{dirty ? '未保存草稿 · 仅在本次打开期间保留' : '此视图已冻结'}</span></div>
       {captions.some(caption => caption.id === frozen.caption.id && caption.saved) && <button type="button" disabled={pending} onClick={() => attempt(() => { void localAction(() => api.learning!.removeNotes(frozen.caption.id), '短语与笔记已删除，普通收藏保留。').then(success => { if (success && alive.current) { setPhrases([]); setNote(''); setDirty(false) } }) })}>删除已保存笔记</button>}
+      {api.dictionary && <PhraseExplanation key={frozen.caption.id} api={api.dictionary} handlePromise={handlePromise} source={source} phrases={phrases} defaultLanguage={frozen.settings.targetLanguages[0] || 'zh'} onOpenHistory={onOpenHistory ? () => attempt(onOpenHistory) : undefined} onOpenSettings={onOpenSettings ? () => attempt(onOpenSettings) : undefined} />}
     </fieldset> : null}
     <div className="study-inbox" hidden={Boolean(frozen)} inert={Boolean(frozen)}>
       <div className="study-session"><label>会话名称<input value={sessionName} maxLength={80} onChange={event => setSessionName(event.target.value)} placeholder="例如：今天的新闻" /></label><button type="button" disabled={pending || !sessionName.trim()} onClick={() => void localAction(() => api.learning!.session(sessionName.trim()), '新会话已开始。')}>开始新会话</button><button type="button" disabled={pending || !currentSession} onClick={() => void localAction(() => api.learning!.session(null), '会话已结束。')}>结束会话</button><span>{currentSession ? `当前：${currentSession.name}` : '当前没有学习会话；普通收藏照常可用。'}</span></div>

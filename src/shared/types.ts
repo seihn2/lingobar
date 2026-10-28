@@ -1,3 +1,4 @@
+import type { DictionaryAPI } from './dictionary'
 import type { DesktopLearningAPI, LearningState } from './learning'
 export type AudioSource = 'system' | 'microphone'
 export type CaptureMode = AudioSource | 'both'
@@ -53,6 +54,7 @@ export interface Snapshot {
   collapsed: boolean
 }
 export interface LingoAPI {
+  dictionary?: DictionaryAPI
   learning?: DesktopLearningAPI
   readonly platform: import('./platform').DesktopPlatform
   getSnapshot(): Promise<Snapshot>

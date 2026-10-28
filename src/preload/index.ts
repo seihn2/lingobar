@@ -1,6 +1,33 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { LingoAPI, Snapshot } from '../shared/types'
 const api: LingoAPI = {
+  dictionary: {
+    availability: () => ipcRenderer.invoke('lingo:dictionary-availability'),
+    open: input => ipcRenderer.invoke('lingo:dictionary-open', input),
+    openEncounter: id => ipcRenderer.invoke('lingo:dictionary-open-encounter', id),
+    release: handle => ipcRenderer.invoke('lingo:dictionary-release', handle),
+    explain: input => ipcRenderer.invoke('lingo:dictionary-explain', input),
+    cancel: (id, attempt) => ipcRenderer.invoke('lingo:dictionary-cancel', id, attempt),
+    retrySave: (id, attempt) => ipcRenderer.invoke('lingo:dictionary-retry-save', id, attempt),
+    discardUnsaved: (id, attempt) => ipcRenderer.invoke('lingo:dictionary-discard-unsaved', id, attempt),
+    list: query => ipcRenderer.invoke('lingo:dictionary-list', query),
+    get: id => ipcRenderer.invoke('lingo:dictionary-get', id),
+    edit: (id, input) => ipcRenderer.invoke('lingo:dictionary-edit', id, input),
+    remove: id => ipcRenderer.invoke('lingo:dictionary-remove', id),
+    export: format => ipcRenderer.invoke('lingo:dictionary-export', format),
+    reviewState: session => ipcRenderer.invoke('lingo:dictionary-review-state', session),
+    endReview: session => ipcRenderer.invoke('lingo:dictionary-review-end', session),
+    startReview: () => ipcRenderer.invoke('lingo:dictionary-review-start'),
+    reveal: (session, id, explanation) => ipcRenderer.invoke('lingo:dictionary-review-reveal', session, id, explanation),
+    rate: (session, reveal, response) => ipcRenderer.invoke('lingo:dictionary-review-rate', session, reveal, response),
+    skip: session => ipcRenderer.invoke('lingo:dictionary-review-skip', session),
+    undo: (session, event) => ipcRenderer.invoke('lingo:dictionary-review-undo', session, event),
+    onChanged: callback => {
+      const listener = () => callback()
+      ipcRenderer.on('lingo:dictionary-changed', listener)
+      return () => ipcRenderer.removeListener('lingo:dictionary-changed', listener)
+    }
+  },
   learning: {
     pin: target => ipcRenderer.invoke('lingo:learning-pin', target),
     save: edit => ipcRenderer.invoke('lingo:learning-save', edit),

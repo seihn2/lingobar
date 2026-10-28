@@ -72,6 +72,8 @@ See the [service configuration guide](docs/usage.en.md#services) for all fields,
 <a id="documentation"></a>
 ## Documentation
 
+Desktop learning: [explicit AI context explanations, independent history and active review](docs/dictionary-learning.md) (current draft; generated content may be inaccurate; no offline dictionary import).
+
 | Language | User guide |
 | --- | --- |
 | 简体中文 | [安装、配置与日常使用](docs/usage.zh-CN.md) |
@@ -109,6 +111,7 @@ npm run dev
 | `npm run build` | Type checking and production build |
 | `npm run test:media-permissions` | Synthetic-device permission checks in real Electron |
 | `npm run test:ui` | Synthetic caption interaction checks in an installed Chromium browser |
+| `npm run test:dictionary-ui` | Synthetic dictionary/history/review DOM and accessibility-tree checks |
 | `npm run package:mac` | Build the Mac application directory |
 | `npm run package:win` | Build the Windows x64 NSIS installer |
 

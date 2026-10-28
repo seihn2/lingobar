@@ -1,5 +1,7 @@
 # Desktop sentence learning (draft)
 
+The subsequent [AI context explanation/history/review batch](dictionary-learning.md) adds an explicit potentially billed explanation action. The zero-request statements below describe the original QuickPin/manual-note actions only; local viewing, favorites, notes and review remain offline.
+
 This batch is stacked on PR12 `26444af95c557facca50ee50efd2934e32c0aeb8`.
 It adds desktop learning, without adopting Web-responsive/gateway changes or
 independent PR4 pause-finalization / PR5 timing. Nothing is merged or deployed.

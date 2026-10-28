@@ -14,6 +14,7 @@
     "benchmark:snapshot:serialization": "node scripts/benchmark-snapshot-serialization.cjs",
     "benchmark:snapshot:ipc": "node scripts/benchmark-snapshot-ipc.cjs",
     "test:ui": "node scripts/test-ui.cjs",
+    "test:dictionary-ui": "node scripts/test-dictionary-ui.cjs",
     "test:media-permissions": "node scripts/test-media-permissions.cjs",
     "test:windows-native": "node scripts/verify-windows-system-audio.cjs",
     "build:icons": "node scripts/make-windows-icons.cjs",

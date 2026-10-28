@@ -72,6 +72,8 @@ Windows x64 対応は `main` にマージ済みです。それ以前に検証し
 <a id="documentation"></a>
 ## ドキュメント
 
+デスクトップ学習：[明示的なAI文脈解説・独立した履歴・能動的な復習](docs/dictionary-learning.md)（現在のdraft。生成内容は誤り得ます。実辞書のインポートは未提供）。
+
 | 言語 | 使い方ガイド |
 | --- | --- |
 | 简体中文 | [安装、配置与日常使用](docs/usage.zh-CN.md) |
@@ -109,6 +111,7 @@ npm run dev
 | `npm run build` | 型チェックと本番用ビルド |
 | `npm run test:media-permissions` | 実際の Electron を使った合成デバイスの権限チェック |
 | `npm run test:ui` | インストール済み Chromium ブラウザーでの合成字幕の操作チェック |
+| `npm run test:dictionary-ui` | 生成詞条・履歴・復習の合成DOM/アクセシビリティツリー検証 |
 | `npm run package:mac` | Mac アプリのディレクトリを生成 |
 | `npm run package:win` | Windows x64 の NSIS インストーラーを生成 |
 

@@ -80,30 +80,42 @@ function endpointFor(baseUrl: string): URL {
   return url
 }
 
-async function readBoundedResponse(response: Response): Promise<string> {
+async function readBoundedResponse(response: Response, maximum = MAX_RESPONSE_BYTES, strict = false, signal?: AbortSignal): Promise<string> {
+  const oversized = () => strict ? new CompletionFormatError('解释服务返回内容过长，未自动重试') : failure('翻译服务返回内容过长，请重试')
   const declaredLength = Number(response.headers.get('content-length'))
-  if (declaredLength > MAX_RESPONSE_BYTES) {
+  if (declaredLength > maximum) {
     void response.body?.cancel().catch(() => {})
-    throw failure('翻译服务返回内容过长，请重试')
+    throw oversized()
   }
-  if (!response.body) throw failure('翻译服务未返回内容，请重试')
+  if (!response.body) throw strict ? new CompletionFormatError('解释服务未返回内容，未自动重试') : failure('翻译服务未返回内容，请重试')
   const reader = response.body.getReader()
-  const decoder = new TextDecoder()
+  const decoder = new TextDecoder(undefined, { fatal: strict })
+  const decode = (value?: Uint8Array, streaming = false) => {
+    try { return decoder.decode(value, { stream: streaming }) }
+    catch { throw new CompletionFormatError('解释服务返回格式不完整，未自动重试') }
+  }
+  let cancelRead: (() => void) | undefined
+  const aborted = new Promise<never>((_resolve, reject) => {
+    cancelRead = () => { reject(cancellation()); void reader.cancel().catch(() => {}) }
+  })
+  signal?.addEventListener('abort', cancelRead!, { once: true })
+  if (signal?.aborted) cancelRead!()
   let size = 0
   let result = ''
   try {
     while (true) {
-      const { done, value } = await reader.read()
+      const { done, value } = await Promise.race([reader.read(), aborted])
       if (done) break
       size += value.byteLength
-      if (size > MAX_RESPONSE_BYTES) {
+      if (size > maximum) {
         void reader.cancel().catch(() => {})
-        throw failure('翻译服务返回内容过长，请重试')
+        throw oversized()
       }
-      result += decoder.decode(value, { stream: true })
+      result += decode(value, true)
     }
-    return result + decoder.decode()
+    return result + decode()
   } finally {
+    signal?.removeEventListener('abort', cancelRead!)
     reader.releaseLock()
   }
 }
@@ -151,6 +163,42 @@ function parseCompletionJson(body: string): unknown {
   try { return JSON.parse(json) } catch { throw invalid() }
 }
 
+export interface CompletionRequestOptions { maxTokens?: number; maxResponseBytes?: number; strict?: boolean }
+export interface JsonCompletionDetails {
+  value: unknown
+  finishReason: string | null
+  usage: { promptTokens: number | null; completionTokens: number | null; totalTokens: number | null } | null
+  hasToolCalls: boolean
+}
+function parseCompletionDetails(body: string, strict: boolean): JsonCompletionDetails {
+  const invalid = () => new CompletionFormatError('解释服务返回格式不完整，未自动重试')
+  let envelope: unknown
+  try { envelope = JSON.parse(body) } catch { throw invalid() }
+  if (!envelope || typeof envelope !== 'object' || Array.isArray(envelope)) throw invalid()
+  const outer = envelope as Record<string, unknown>
+  const choices = outer.choices
+  if (!Array.isArray(choices) || !choices.length || (strict && choices.length !== 1)) throw invalid()
+  const choice = choices[0]
+  if (!choice || typeof choice !== 'object' || Array.isArray(choice)) throw invalid()
+  const message = choice.message
+  if (!message || typeof message !== 'object' || Array.isArray(message)) throw invalid()
+  const hasToolCalls = (message.tool_calls !== undefined && message.tool_calls !== null) || (message.function_call !== undefined && message.function_call !== null)
+  const finishReason = typeof choice.finish_reason === 'string' ? choice.finish_reason : null
+  if (finishReason === 'length' || (strict && (finishReason !== 'stop' || hasToolCalls || (message.role !== undefined && message.role !== 'assistant')))) throw invalid()
+  if (typeof message.content !== 'string' || !message.content.trim()) throw invalid()
+  let value: unknown
+  try { value = strict ? JSON.parse(message.content) : parseCompletionJson(body) } catch { throw invalid() }
+  const numeric = (value: unknown) => typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 1_000_000_000 ? value : null
+  const rawUsage = outer.usage
+  let usage: JsonCompletionDetails['usage'] = null
+  if (rawUsage && typeof rawUsage === 'object' && !Array.isArray(rawUsage)) {
+    const raw = rawUsage as Record<string, unknown>
+    const fields = { promptTokens: numeric(raw.prompt_tokens), completionTokens: numeric(raw.completion_tokens), totalTokens: numeric(raw.total_tokens) }
+    if (Object.values(fields).some(value => value !== null)) usage = fields
+  }
+  return { value, finishReason, usage, hasToolCalls }
+}
+
 function parseTranslation(value: unknown, targets: TargetLanguage[]): CaptionTranslation {
   const invalid = () => new CompletionFormatError('翻译服务返回格式不完整，请重试或检查模型设置')
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw invalid()
@@ -187,13 +235,18 @@ function statusError(status: number): TranslationError {
 }
 
 /** Shared bounded, cancellable transport; raw provider errors never escape. */
-export async function requestJsonCompletion(
+async function requestCompletion(
   systemPrompt: string,
   data: Record<string, unknown>,
   config: TranslationConfig,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  options?: CompletionRequestOptions,
+  detailed = false
 ): Promise<unknown> {
   if (signal?.aborted) throw cancellation()
+  const maximumTokens = options?.maxTokens ?? 8192
+  const maximumBytes = options?.maxResponseBytes ?? MAX_RESPONSE_BYTES
+  if (!Number.isInteger(maximumTokens) || maximumTokens < 1 || maximumTokens > 8192 || !Number.isInteger(maximumBytes) || maximumBytes < 1 || maximumBytes > MAX_RESPONSE_BYTES) throw failure('解释请求限制无效')
   const endpoint = endpointFor(config.baseUrl)
   const apiKey = config.apiKey.trim()
   if (!apiKey || /[\u0000-\u001f\u007f]/u.test(apiKey)) {
@@ -228,7 +281,7 @@ export async function requestJsonCompletion(
         ],
         stream: false,
         temperature: 0.1,
-        max_tokens: 8192,
+        max_tokens: maximumTokens,
         response_format: { type: 'json_object' },
         ...(isDeepSeek ? { thinking: { type: 'disabled' } } : {}),
         ...(isDashScope && /^qwen(?:-|3)/i.test(model) ? { enable_thinking: false } : {})
@@ -239,9 +292,9 @@ export async function requestJsonCompletion(
       void response.body?.cancel().catch(() => {})
       throw statusError(response.status)
     }
-    const body = await readBoundedResponse(response)
+    const body = await readBoundedResponse(response, maximumBytes, detailed && options?.strict !== false, controller.signal)
     if (controller.signal.aborted) throw cancellation()
-    return parseCompletionJson(body)
+    return detailed ? parseCompletionDetails(body, options?.strict !== false) : parseCompletionJson(body)
   } catch (error) {
     if (signal?.aborted) throw cancellation()
     if (timedOut) {
@@ -256,6 +309,15 @@ export async function requestJsonCompletion(
     clearTimeout(timeout)
     signal?.removeEventListener('abort', onAbort)
   }
+}
+
+/** Existing translation/ruby entry point: legacy parser, limits and request bytes remain unchanged. */
+export function requestJsonCompletion(systemPrompt: string, data: Record<string, unknown>, config: TranslationConfig, signal?: AbortSignal): Promise<unknown> {
+  return requestCompletion(systemPrompt, data, config, signal)
+}
+/** Opt-in strict metadata path for explicit structured explanations; never retries. */
+export function requestJsonCompletionDetailed(systemPrompt: string, data: Record<string, unknown>, config: TranslationConfig, signal?: AbortSignal, options?: CompletionRequestOptions): Promise<JsonCompletionDetails> {
+  return requestCompletion(systemPrompt, data, config, signal, options, true) as Promise<JsonCompletionDetails>
 }
 
 /** Publish valid translations first; optional Japanese annotation is a separate operation. */
