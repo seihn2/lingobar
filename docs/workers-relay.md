@@ -6,6 +6,11 @@ their browser contract. It is **not deployed**. No working online URL, login
 service, account binding, provider key or iPhone acceptance is included.
 PR4's desktop pause drain and PR5's annotation timing changes remain separate.
 
+For the existing private Linux VM deployment, see the separate
+[Node gateway preparation](vm-gateway.md), which supplies local Access verification
+and persistent single-process reservations without deploying a Worker. The Worker
+binding described below remains a distinct integration contract.
+
 ## Implemented protocols
 
 | Purpose | Fixed server destination | Protocol |
