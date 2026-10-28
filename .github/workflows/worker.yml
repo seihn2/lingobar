@@ -22,9 +22,11 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run test:worker
+      - run: npm run test:gateway
       - run: npm run test:web
       - run: npm run build:web && npm run verify:web
       - run: npm run build:worker && npm run verify:worker
+      - run: npm run build:gateway && npm run verify:gateway
       - run: node scripts/archive-worker.cjs
         env:
           LINGOBAR_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -37,5 +39,19 @@ jobs:
             dist/web/
             dist/RELAY-MANIFEST.json
             dist/RELAY-SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
+      - run: node scripts/archive-gateway.cjs
+        env:
+          LINGOBAR_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+          LINGOBAR_SOURCE_BASE: ${{ github.event.pull_request.base.sha || '' }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vm-gateway-disabled-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            dist/gateway/
+            dist/web/
+            dist/GATEWAY-MANIFEST.json
+            dist/GATEWAY-SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 14
