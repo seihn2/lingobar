@@ -147,6 +147,9 @@ async function main() {
         if (checked.exceptionDetails) throw new Error(`UI scale ${scale}: ${checked.exceptionDetails.exception?.description}`)
         result.result.value.checks.push(...checked.result.value)
       }
+      const study = await send('Runtime.evaluate', { expression: 'window.__lingobarUiTest.learningRegression()', awaitPromise: true, returnByValue: true })
+      if (study.exceptionDetails) throw new Error(`Desktop learning: ${study.exceptionDetails.exception?.description}`)
+      result.result.value.checks.push(...study.result.value.checks)
       results.push(result.result.value)
       console.log(`UI synthetic regression: ${result.result.value.checks.length} checks at Chromium scale ${scale}`)
     }

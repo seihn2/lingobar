@@ -1,3 +1,6 @@
+import { globalShortcut } from 'electron'
+import { learningTarget } from '../src/shared/learning'
+import type { Caption, Settings } from '../src/shared/types'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Exercise the handlers installed by the actual main entrypoint. All media,
@@ -8,7 +11,7 @@ const f = vi.hoisted(() => {
   const frame = { url: 'http://127.0.0.1:5173/' }
   const webContents = { mainFrame: frame, send: vi.fn(), setWindowOpenHandler: vi.fn(), on: vi.fn() }
   const image = { setTemplateImage: vi.fn() }
-  const window = { webContents, isDestroyed: () => false, on: vi.fn(), once: vi.fn(), setVisibleOnAllWorkspaces: vi.fn(),
+  const window = { webContents, isDestroyed: () => false, isVisible: vi.fn(() => true), isMinimized: vi.fn(() => false), on: vi.fn(), once: vi.fn(), setVisibleOnAllWorkspaces: vi.fn(),
     setAlwaysOnTop: vi.fn(), loadURL: vi.fn().mockResolvedValue(undefined), loadFile: vi.fn().mockResolvedValue(undefined), show: vi.fn(), focus: vi.fn() }
   const preferences = { captureMode: 'microphone', microphoneDeviceId: 'fixture-microphone', targetLanguages: ['en'],
     showOriginal: true, showFurigana: true, alwaysOnTop: true, opacity: .94, fontSize: 16, launchAtLogin: false,
@@ -16,7 +19,7 @@ const f = vi.hoisted(() => {
     hasAsrKey: true, hasTranslationKey: true }
   const storage = { settings: vi.fn(() => ({ ...preferences })), saved: () => [], key: vi.fn(() => 'synthetic-only-key'), save: vi.fn(), saveCaptions: vi.fn() }
   const audio = { start: vi.fn().mockResolvedValue(undefined), stop: vi.fn(), pushMicrophone: vi.fn() }
-  const queue = { captions: [], finishPartials: vi.fn(), close: vi.fn(), retryAnnotation: vi.fn(), cancelAnnotationRetries: vi.fn() }
+  const queue = { captions: [] as Caption[], toggleSaved: vi.fn((id: string) => { const item = queue.captions.find(caption => caption.id === id); if (item) item.saved = !item.saved }), finishPartials: vi.fn(), close: vi.fn(), retryAnnotation: vi.fn(), cancelAnnotationRetries: vi.fn() }
   const session = { setPermissionRequestHandler: vi.fn(), setPermissionCheckHandler: vi.fn() }
   const app = { setName: vi.fn(), setPath: vi.fn(), setAppUserModelId: vi.fn(), getPath: () => '/synthetic/lingobar', isPackaged: false,
     requestSingleInstanceLock: () => true, on: vi.fn(), quit: vi.fn(), whenReady: () => Promise.resolve(), getAppPath: () => '/synthetic-app' }
@@ -46,7 +49,9 @@ const invoke = (channel: string, ...args: unknown[]) => f.handlers.get(channel)!
 beforeEach(async () => {
   vi.resetModules()
   vi.clearAllMocks()
-  f.handlers.clear(); f.listeners.clear()
+  vi.mocked(globalShortcut.register).mockReturnValue(true)
+  f.handlers.clear(); f.listeners.clear(); f.queue.captions = []
+  f.window.isVisible.mockReturnValue(true); f.window.isMinimized.mockReturnValue(false)
   f.frame.url = 'http://127.0.0.1:5173/'
   f.storage.save.mockImplementation(input => ({ ...f.preferences, ...input }))
   f.preferences.captureMode = 'microphone'
@@ -57,6 +62,40 @@ beforeEach(async () => {
 afterEach(() => vi.unstubAllEnvs())
 
 describe('installed main-process IPC and permission handlers', () => {
+  it('keeps learning IPC trusted, validates the exact visible version, and never focuses or starts audio', () => {
+    const caption: Caption = { id: 'synthetic-study', source: 'text', original: 'synthetic', language: 'English', zh: '', en: 'synthetic', ja: '', reading: '', translations: { en: 'synthetic' }, createdAt: 1, status: 'ready', saved: false }
+    f.queue.captions.push(caption)
+    const target = learningTarget(caption, f.preferences as Settings)
+    for (const channel of ['lingo:learning-pin', 'lingo:learning-save', 'lingo:learning-session', 'lingo:learning-remove-notes']) {
+      expect(() => f.handlers.get(channel)!({ sender: {}, senderFrame: f.frame }, target)).toThrow('无法访问')
+      expect(() => f.handlers.get(channel)!({ sender: f.webContents, senderFrame: { ...f.frame } }, target)).toThrow('无法访问')
+    }
+    f.window.isVisible.mockReturnValue(false)
+    expect(invoke('lingo:learning-pin', target).kind).toBe('unavailable')
+    f.window.isVisible.mockReturnValue(true); f.window.isMinimized.mockReturnValue(true)
+    expect(invoke('lingo:learning-pin', target).kind).toBe('unavailable')
+    f.window.isMinimized.mockReturnValue(false)
+    expect(invoke('lingo:learning-pin', target).kind).toBe('saved')
+    expect(invoke('lingo:learning-pin', target).kind).toBe('already')
+    expect(f.queue.toggleSaved).toHaveBeenCalledTimes(1)
+    expect(f.window.show).not.toHaveBeenCalled(); expect(f.window.focus).not.toHaveBeenCalled()
+    expect(f.storage.key).not.toHaveBeenCalled(); expect(f.audio.start).not.toHaveBeenCalled()
+    const shortcut = vi.mocked(globalShortcut.register).mock.calls.find(call => call[0] === 'CommandOrControl+Alt+S')![1]
+    shortcut(); expect(f.webContents.send).toHaveBeenCalledWith('lingo:quick-pin')
+    f.webContents.send.mockClear(); f.window.isVisible.mockReturnValue(false); shortcut()
+    expect(f.webContents.send).not.toHaveBeenCalled()
+    expect(f.window.show).not.toHaveBeenCalled(); expect(f.window.focus).not.toHaveBeenCalled()
+  })
+
+  it('reports a conflicting QuickPin registration and retains the normal show/hide shortcut', async () => {
+    vi.mocked(globalShortcut.register).mockImplementation(key => key !== 'CommandOrControl+Alt+S')
+    vi.resetModules(); await import('../src/main/index'); await Promise.resolve(); await Promise.resolve()
+    expect(invoke('lingo:snapshot').learning.shortcutAvailable).toBe(false)
+    expect(globalShortcut.register).toHaveBeenCalledWith('CommandOrControl+Alt+L', expect.any(Function))
+    expect(f.window.show).not.toHaveBeenCalled(); expect(f.window.focus).not.toHaveBeenCalled()
+    expect(f.storage.key).not.toHaveBeenCalled(); expect(f.audio.start).not.toHaveBeenCalled()
+  })
+
   it('rejects operations from external contents, subframes and navigated documents', () => {
     const snapshot = f.handlers.get('lingo:snapshot')!
     expect(() => snapshot({ sender: {}, senderFrame: f.frame })).toThrow('无法访问')

@@ -16,12 +16,14 @@ type Props = {
   onExport: () => void
   exporting: boolean
   allowRemoveSaved?: boolean
+  suspended?: boolean
+  noteFor?: (caption: Caption) => string | undefined
   exportResult: { text: string; error: boolean } | null
 }
 const sourceNames = { system: '电脑声音', microphone: '麦克风', text: '文字输入' }
 const timeText = (value: number) => new Date(value).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
 
-export default function HistoryPanel({ captions, settings, filter, focusVersion, onFilter, onSelect, onSave, onExport, exporting, exportResult, allowRemoveSaved = false }: Props) {
+export default function HistoryPanel({ captions, settings, filter, focusVersion, onFilter, onSelect, onSave, onExport, exporting, exportResult, allowRemoveSaved = false, noteFor, suspended = false }: Props) {
   const [query, setQuery] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [navigationVersion, setNavigationVersion] = useState(0)
@@ -44,6 +46,7 @@ export default function HistoryPanel({ captions, settings, filter, focusVersion,
   }, [focusVersion])
   useEffect(() => { setSelectedId(activeId) }, [activeId])
   const rememberAnchor = () => {
+    if (suspended) return
     const surface = list.current
     if (!surface) return
     const bounds = surface.getBoundingClientRect()
@@ -55,6 +58,7 @@ export default function HistoryPanel({ captions, settings, filter, focusVersion,
     anchor.current = row ? { id: row.dataset.historyId!, offset: row.getBoundingClientRect().top - bounds.top } : null
   }
   useLayoutEffect(() => {
+    if (suspended) return
     const surface = list.current
     const previous = anchor.current
     if (surface && previous) {
@@ -62,9 +66,10 @@ export default function HistoryPanel({ captions, settings, filter, focusVersion,
       if (row) surface.scrollTop += row.getBoundingClientRect().top - surface.getBoundingClientRect().top - previous.offset
     }
     rememberAnchor()
-  }, [results])
+  }, [results, suspended])
   // Scroll only for a reader action. An arriving segment/translation must not move the selection.
   useLayoutEffect(() => {
+    if (suspended) return
     const surface = list.current
     if (!surface) return
     const row = [...surface.querySelectorAll<HTMLElement>('[data-history-id]')].find(element => element.dataset.historyId === activeId)
@@ -106,6 +111,7 @@ export default function HistoryPanel({ captions, settings, filter, focusVersion,
     <div className="history-list" ref={list} onScroll={rememberAnchor}>
       {results.map(({ caption, match }) => <div className={`history-item ${caption.id === activeId ? 'history-match-current' : ''}`} data-history-id={caption.id} key={caption.id}>
         <button className="history-select" aria-current={caption.id === activeId ? 'true' : undefined} onClick={() => onSelect(caption)}>
+          {noteFor?.(caption) && <span className="history-study-note">笔记：{noteFor(caption)}</span>}
           <span className="history-item-meta">{timeText(caption.createdAt)} · {sourceNames[caption.source]}{caption.live || caption.translationPending ? ' · 实时更新' : caption.status === 'translating' ? ' · 翻译中' : caption.status === 'error' ? ' · 待重试' : ''}</span>
           {match && <span className="history-match-language">{match.language === 'original' ? '原文' : languageInfo(match.language).nativeName}匹配</span>}
           <span className="history-original" dir="auto">{match?.text || preferredTranslation(caption, targets) || (settings.showOriginal ? alignedOriginal(caption) : '所选语言尚未生成')}</span>

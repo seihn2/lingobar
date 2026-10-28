@@ -38,3 +38,29 @@
 .history-search>button{display:flex;align-items:center;justify-content:center;width:23px;height:23px;padding:0;flex-shrink:0;border-radius:4px;color:#a7c2ba}.history-search>button:hover:not(:disabled){background:#9ed7c310}.history-search>button:disabled{opacity:.3}.history-search-count{font-size:9px;white-space:nowrap;min-width:35px;text-align:center;color:#91b8ae;font-variant-numeric:tabular-nums}
 .history-search-hint{font-size:9px;color:#789196;margin:7px 21px 10px;line-height:1.5;flex-shrink:0}.history-match-current{box-shadow:inset 2px 0 #9ed7c3;background:#8ac6b30a}.history-match-current .history-select{padding-left:8px}.history-match-language{color:#92b8aa;font-size:9px}.history-list .empty-history{height:auto;min-height:150px;text-align:center;padding:10px}.history-list{overflow-anchor:none}
 @media(max-width:540px){.history-search{margin:0 14px;gap:4px}.history-search-hint{margin-left:14px;margin-right:14px}.history-search-input{font-size:10px}.history-search>button{width:21px}}
+
+/* Desktop study stays inside the existing window; no passive popovers. */
+.panel-study { display: flex; flex-direction: column; min-height: 0; }
+.panel-study .study-detail { overflow: auto; min-height: 0; padding: 0 4px 16px; }
+.study-source { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 18px; line-height: 1.8; user-select: text; padding: 12px; border: 1px solid #ffffff20; border-radius: 8px; }
+.study-translations p { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; }
+.study-translations b { font-size: 11px; opacity: .65; }
+.study-actions, .study-range, .study-session { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+.study-actions span, .study-session span { font-size: 11px; opacity: .75; }
+.study-range label { display: flex; align-items: center; gap: 6px; }
+.study-range input { width: 90px; }
+.study-phrases { list-style: none; padding: 0; }
+.study-phrases li { display: flex; gap: 12px; padding: 7px 0; align-items: baseline; overflow-wrap: anywhere; }
+.study-phrases small { opacity: .6; }
+.study-note { display: grid; gap: 6px; }
+.study-note textarea { width: 100%; min-height: 85px; resize: vertical; }
+.study-session label, .study-filter { display: flex; align-items: center; gap: 8px; }
+.study-filter select { flex: 1; min-width: 0; }
+.study-confirm { padding: 10px; border: 1px solid #d3a86a; border-radius: 8px; margin-bottom: 10px; }
+.study-confirm button { margin-right: 10px; }
+.history-study-note { font-size: 11px; opacity: .75; white-space: pre-wrap; overflow-wrap: anywhere; }
+.panel-study button, .panel-study input, .panel-study select, .panel-study textarea { color: inherit; background: #ffffff09; border: 1px solid #ffffff20; border-radius: 6px; padding: 6px 10px; }
+.compact-navigation button[aria-label="QuickPin 收藏当前句"], .compact-navigation button[aria-label="查看句子与笔记"] { width: 28px; font-size: 10px; white-space: nowrap; }
+.panel-study fieldset.study-detail { border: 0; margin: 0; min-width: 0; }
+.study-inbox { display: flex; flex-direction: column; min-height: 0; flex: 1; overflow: hidden; }
+.study-inbox[hidden] { display: none; }

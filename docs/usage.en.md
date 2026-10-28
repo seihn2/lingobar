@@ -110,6 +110,13 @@ Current source includes local lookup. Earlier `main` preview packages lack it; u
 
 Regular sessions keep approximately the latest 150 sentences in memory and are not restored after you quit the app. Explicitly saved captions are stored locally, up to 1,000 sentences; these are not audio recordings.
 
+
+### Desktop learning (new in this draft)
+
+In compact mode, **留句** or `Ctrl/⌘+Alt+S` saves the currently visible completed sentence in one action; repeating it never unfavorites it or opens a card. In expanded mode use the sentence's **留句** button. **笔记** explicitly opens frozen detail for contiguous original-text phrases and your own notes. **会话匣** organizes local sessions and can show older favorites. Drafts stay in memory: save or explicitly discard before leaving. For news, paste through the existing text-translation panel.
+
+Learning itself adds no service requests; existing recognition, translation and ruby can still incur provider fees. This desktop feature does not read game text, browser pages or monitor the clipboard. See [learning and data boundaries](desktop-learning.md), including write failures, phrase offsets and hardware limits.
+
 <a id="window"></a>
 ## 7. Compact window, dragging, opacity, and shortcuts
 

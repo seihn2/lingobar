@@ -1,6 +1,8 @@
 // Offline synthetic fixtures only. No provider, audio, personal settings or Electron access.
 import { createRoot } from 'react-dom/client'
 import App from '../../src/renderer/App'
+import { learningTarget, validPhrase, type LearningState } from '../../src/shared/learning'
+import { selectedPhrase } from '../../src/renderer/learning-selection'
 import type { Caption, LingoAPI, Settings, Snapshot } from '../../src/shared/types'
 import type { TargetLanguage } from '../../src/shared/languages'
 import '../../src/renderer/style.css'
@@ -509,5 +511,148 @@ async function loginItemRegression() {
   return { checks }
 }
 
-;(window as unknown as { __lingobarUiTest: { run: typeof run; preview: typeof preview; prepareHide: typeof prepareHide; verifyHide: typeof verifyHide; panelFocus: typeof panelFocus; preparePanelA11y: typeof preparePanelA11y; exportRegression: typeof exportRegression; loginItemRegression: typeof loginItemRegression; prepareSpaceScroll: typeof prepareSpaceScroll; verifySpaceScroll: typeof verifySpaceScroll } }).__lingobarUiTest = { run, preview, prepareHide, verifyHide, panelFocus, preparePanelA11y, exportRegression, loginItemRegression, prepareSpaceScroll, verifySpaceScroll }
+async function learningRegression() {
+  const checks: string[] = []
+  const check = (value: unknown, message: string) => { assert(value, message); checks.push(message) }
+  const before = { audioStarts, providerCalls, hideCalls }
+  const pinned: string[] = [], copied: string[] = []
+  let shortcut: (() => void) | undefined
+  let learning: LearningState = { records: [], sessions: [], currentSessionId: null, warning: '', shortcutAvailable: false }
+  let saveCalls = 0
+  const originalCopy = api.copyText
+  api.copyText = async text => { copied.push(text) }
+  api.learning = {
+    pin: async target => {
+      const item = snapshot.captions.find(item => item.id === target?.id)
+      if (!item || learningTarget(item, snapshot.settings).version !== target?.version) return { kind: 'changed', message: '目标已变化，暂未收藏。' }
+      if (item.live || item.translationPending || item.status !== 'ready') return { kind: 'incomplete', message: '这句尚未完成，暂未收藏。' }
+      if (item.saved) return { kind: 'already', message: '已经收藏' }
+      pinned.push(item.id); item.saved = true; emit({}); return { kind: 'saved', message: '已收藏' }
+    },
+    save: async edit => {
+      saveCalls++
+      const item = snapshot.captions.find(item => item.id === edit.target.id)
+      if (!item || learningTarget(item, snapshot.settings).version !== edit.target.version) return { kind: 'changed', message: '目标已变化，草稿仍保留' }
+      item.saved = true
+      learning.records = learning.records.filter(record => record.captionId !== item.id).concat({ captionId: item.id, fingerprint: 'fixture', sessionId: null, savedAt: 1, phrases: edit.phrases, note: edit.note })
+      emit({ learning }); return { kind: 'saved', message: '句子与笔记已保存' }
+    },
+    session: async () => {}, removeNotes: async id => { learning.records = learning.records.filter(record => record.captionId !== id); emit({ learning }) },
+    onQuickPin: callback => { shortcut = callback; return () => { shortcut = undefined } },
+  }
+  const button = (label: string) => query<HTMLButtonElement>(`button[aria-label="${label}"]`)
+  const byText = (text: string) => { const item = [...document.querySelectorAll<HTMLButtonElement>('.panel-study button')].find(item => item.textContent === text); if (!item) throw new Error(`Missing study button ${text}`); return item }
+  const value = (element: HTMLInputElement | HTMLTextAreaElement, next: string) => { Object.getOwnPropertyDescriptor(element instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype, 'value')!.set!.call(element, next); element.dispatchEvent(new Event('input', { bubbles: true })) }
+  const a = caption('learning-a', { original: 'pick it up 日本語 👩🏽‍💻 é word word', saved: false })
+  const b = caption('learning-b', { saved: false })
+  emit({ state: 'idle', captions: [a, b], collapsed: true, settings: { ...settings }, learning }); await frame()
+  button('上一段').click(); await frame()
+  check(compactId() === a.id, 'QuickPin fixture is reading a non-tail compact caption')
+  shortcut!(); await frame(); shortcut!(); await frame()
+  check(pinned.join() === a.id && snapshot.captions[0].saved, 'QuickPin saves the actual cursor once and repeat does not unsave')
+  check(!document.querySelector('.panel'), 'QuickPin does not open a panel')
+  const active = document.activeElement
+  shortcut!(); await frame(); check(document.activeElement === active, 'QuickPin completion does not move internal focus')
+  const origin = button('查看句子与笔记'); origin.focus(); origin.click(); await frame()
+  check(Boolean(document.querySelector('.panel-study .study-source')), 'explicit detail opens inside the existing main window')
+  const source = query('.study-source').textContent!
+  const translations = query('.study-translations').textContent
+  check([...document.querySelectorAll('[data-study-language]')].map(item => item.getAttribute('data-study-language')).join() === 'fr,ja', 'frozen detail preserves selected language order')
+  check(Boolean(document.querySelector('.study-translations ruby rt')), 'frozen detail preserves same-version Japanese ruby')
+  value(query<HTMLTextAreaElement>('[aria-label="句子笔记"]'), 'synthetic draft'); await frame()
+  const sourceNode = query('.study-source').firstChild!
+  const range = document.createRange(); range.setStart(sourceNode, 0); range.setEnd(sourceNode, 10)
+  window.getSelection()!.removeAllRanges(); window.getSelection()!.addRange(range)
+  byText('加入所选原文短语').click(); await frame()
+  check(query('.study-phrases').textContent!.includes('pick it up'), 'source selection maps a contiguous multiword phrase')
+  const revised = { ...snapshot.captions[0], original: 'Revised source', translations: { fr: 'Révision', ja: '改訂' } }
+  emit({ captions: [revised, ...Array.from({ length: 20 }, (_, i) => caption(`new-${i}`))] }); await frame()
+  check(query('.study-source').textContent === source && query('.study-translations').textContent === translations, '20 new captions and same-id revision cannot replace frozen source/translation/ruby')
+  check(query<HTMLTextAreaElement>('[aria-label="句子笔记"]').value === 'synthetic draft' && query('.study-phrases').textContent!.includes('pick it up'), 'incoming revisions preserve edited draft and span')
+  query<HTMLTextAreaElement>('[aria-label="句子笔记"]').blur(); await frame()
+  check(saveCalls === 0, 'blur never commits an in-memory draft')
+  query('[aria-label="句子笔记"]').dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }))
+  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await frame()
+  check(!document.querySelector('.study-confirm'), 'composition lifecycle protects Escape even without an isComposing key flag')
+  query('[aria-label="句子笔记"]').dispatchEvent(new CompositionEvent('compositionend', { bubbles: true }))
+  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', isComposing: true, bubbles: true })); await frame()
+  check(!document.querySelector('.study-confirm') && Boolean(document.querySelector('.study-detail')), 'IME Escape does not discard or close detail')
+  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await frame()
+  check(Boolean(document.querySelector('.study-confirm')), 'Escape requests explicit discard for edited drafts')
+  byText('继续编辑').click(); await frame()
+  byText('保存句子与笔记').click(); await frame()
+  check(query('[role="status"].panel-notice').textContent!.includes('目标已变化') && query<HTMLTextAreaElement>('[aria-label="句子笔记"]').value === 'synthetic draft', 'stale source save refuses binding and preserves draft')
+  byText('复制原文').click(); await frame()
+  check(copied.at(-1) === source, 'copy uses frozen original without ruby or translation text')
+  emit({ captions: [a, b], learning }); await frame()
+  byText('保存句子与笔记').click(); await frame()
+  check(learning.records[0]?.note === 'synthetic draft', 'explicit save persists notes and phrases only on the matching encounter')
+  byText('删除已保存笔记').click(); await frame()
+  check(learning.records.length === 0 && query<HTMLTextAreaElement>('[aria-label="句子笔记"]').value === '' && !document.querySelector('.study-phrases li'), 'delete removes active note/spans while retaining ordinary favorite')
+  button('关闭学习面板').click(); await frame()
+  check(snapshot.collapsed && compactId() === a.id, 'closing detail restores compact reading cursor instead of jumping to tail')
+  check(document.activeElement === query('.compact-viewport'), 'return restores only an internal focus fallback')
+  // Reopen/discard is explicit; a delayed copy error belongs only to its original detail.
+  button('查看句子与笔记').click(); await frame()
+  let rejectCopy!: (reason: Error) => void
+  api.copyText = () => new Promise<void>((_resolve, reject) => { rejectCopy = reject })
+  byText('复制原文').click(); await frame()
+  value(query<HTMLTextAreaElement>('[aria-label="句子笔记"]'), 'discard me'); await frame()
+  byText('会话匣').click(); await frame()
+  check(Boolean(document.querySelector('.study-confirm')), 'changing views also protects edited drafts')
+  byText('放弃草稿并离开').click(); await frame()
+  query<HTMLSelectElement>('[aria-label="学习会话"]').value = 'all'
+  query('[aria-label="学习会话"]').dispatchEvent(new Event('change', { bubbles: true })); await frame()
+  value(query<HTMLInputElement>('.history-search-input'), 'learning-a'); await frame()
+  const inboxRow = query<HTMLButtonElement>('.history-select'); inboxRow.focus(); inboxRow.click(); await frame()
+  rejectCopy(new Error('obsolete synthetic copy error')); await frame()
+  check(!document.querySelector('.panel-notice')?.textContent?.includes('obsolete') && query<HTMLTextAreaElement>('[aria-label="句子笔记"]').value === '', 'discarded draft and old copy error do not leak into reopened detail')
+  api.copyText = async text => { copied.push(text) }
+  byText('会话匣').click(); await frame()
+  check(query<HTMLInputElement>('.history-search-input').value === 'learning-a' && document.activeElement === inboxRow, 'return to inbox preserves search and the exact internal row focus')
+  inboxRow.click(); await frame()
+  const originalSave = api.learning.save
+  let finishSave!: (result: { kind: 'saved'; message: string }) => void
+  let pendingWrites = 0
+  api.learning.save = () => { pendingWrites++; return new Promise(resolve => { finishSave = resolve }) }
+  byText('保存句子与笔记').click(); byText('保存句子与笔记').click(); await frame()
+  check(pendingWrites === 1 && query<HTMLTextAreaElement>('[aria-label="句子笔记"]').matches(':disabled'), 'pending writes coalesce repeated clicks and protect new edits')
+  button('关闭学习面板').click(); await frame()
+  check(Boolean(document.querySelector('.study-detail')), 'navigation waits for a pending explicit write')
+  finishSave({ kind: 'saved', message: 'synthetic saved' }); await frame()
+  api.learning.save = originalSave
+  button('关闭学习面板').click(); await frame()
+  emit({ captions: [{ ...a, live: true, saved: false }, b] }); await frame(); shortcut!(); await frame()
+  check(pinned.length === 1 && query('.toast').textContent!.includes('尚未完成'), 'live cursor cannot pin a different ready sentence')
+  const expanded = Array.from({ length: 15 }, (_, i) => caption(`expanded-study-${i}`))
+  emit({ captions: expanded, collapsed: false }); await frame()
+  const viewport = query('.stream-viewport'); viewport.scrollTop = 600
+  viewport.dispatchEvent(new WheelEvent('wheel', { deltaY: -1, bubbles: true })); viewport.dispatchEvent(new Event('scroll')); await frame()
+  const anchor = [...document.querySelectorAll<HTMLElement>('.caption-card')].find(row => row.getBoundingClientRect().bottom > viewport.getBoundingClientRect().top + 1)!
+  const anchorId = anchor.dataset.captionId
+  let offset = anchor.getBoundingClientRect().top - viewport.getBoundingClientRect().top
+  const noteButton = anchor.querySelector<HTMLButtonElement>('[aria-label="查看句子与笔记"]')!; noteButton.focus(); await frame(); offset = anchor.getBoundingClientRect().top - viewport.getBoundingClientRect().top; noteButton.click(); await frame()
+  emit({ captions: [...expanded, ...Array.from({ length: 20 }, (_, i) => caption(`expanded-new-${i}`))] }); await frame()
+  button('关闭学习面板').click(); await frame()
+  const restored = document.querySelector<HTMLElement>(`[data-caption-id="${anchorId}"]`)!
+  check(!snapshot.collapsed && Math.abs(restored.getBoundingClientRect().top - viewport.getBoundingClientRect().top - offset) < 3 && document.activeElement === noteButton, `expanded study restores a paused history anchor and its internal invoking button (${offset} -> ${restored.getBoundingClientRect().top - viewport.getBoundingClientRect().top}; focus=${document.activeElement === noteButton})`)
+  // Exercise the real mapper with cross-node/ruby/repeated text and invalid grapheme boundaries.
+  const host = document.createElement('div'); host.innerHTML = '<span>word </span><ruby>日本<rt>にほん</rt></ruby><span>語 word 👩🏽‍💻 é</span><button>exclude</button>'; document.body.append(host)
+  const plain = 'word 日本語 word 👩🏽‍💻 é'
+  const selection = window.getSelection()!
+  const select = (a: Node, start: number, b: Node, end: number) => { const r = document.createRange(); r.setStart(a, start); r.setEnd(b, end); selection.removeAllRanges(); selection.addRange(r); return selectedPhrase(host, plain, selection) }
+  const phrase = select(host.querySelector('span')!.firstChild!, 0, host.querySelectorAll('span')[1].firstChild!, 1)
+  check(phrase?.exact === 'word 日本語' && phrase.end === 8, 'cross-node ruby selection excludes rt text and button text')
+  check(select(host.querySelector('rt')!.firstChild!, 0, host.querySelector('rt')!.firstChild!, 2) === null, 'selection inside ruby annotation is refused')
+  const tail = host.querySelectorAll('span')[1].firstChild!
+  const repeated = select(tail, 2, tail, 6)
+  check(repeated?.start === 9 && repeated.exact === 'word', 'repeated words use DOM offsets rather than substring guessing')
+  check(!validPhrase('👩🏽‍💻', { start: 0, end: 2, exact: '👩' }) && !validPhrase('é', { start: 0, end: 1, exact: 'e' }), 'ZWJ and combining-character partial spans are refused')
+  host.remove(); selection.removeAllRanges()
+  check(audioStarts === before.audioStarts && providerCalls === before.providerCalls && hideCalls === before.hideCalls, 'learning has zero provider/audio/hide request increments versus the existing fixture baseline')
+  api.copyText = originalCopy; delete api.learning; emit({ learning: undefined, collapsed: false, captions: [] }); await frame()
+  return { checks, failures: [] }
+}
+
+;(window as unknown as { __lingobarUiTest: { learningRegression: typeof learningRegression; run: typeof run; preview: typeof preview; prepareHide: typeof prepareHide; verifyHide: typeof verifyHide; panelFocus: typeof panelFocus; preparePanelA11y: typeof preparePanelA11y; exportRegression: typeof exportRegression; loginItemRegression: typeof loginItemRegression; prepareSpaceScroll: typeof prepareSpaceScroll; verifySpaceScroll: typeof verifySpaceScroll } }).__lingobarUiTest = { learningRegression, run, preview, prepareHide, verifyHide, panelFocus, preparePanelA11y, exportRegression, loginItemRegression, prepareSpaceScroll, verifySpaceScroll }
 createRoot(document.getElementById('root')!).render(<App />)
