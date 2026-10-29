@@ -81,7 +81,7 @@ class HiddenInputTests(unittest.TestCase):
         self.assertEqual(errors, []); self.assertEqual(result, [bytearray(DUMMY)])
 
     def test_invalid_or_excess_input_restores_echo_and_flushes_tail(self):
-        for payload in [b"short\n", b"x" * 2050 + b"\n"]:
+        for payload in [b"short\n", b"x" * (sender.MAX_KEY + 2) + b"\n"]:
             result, errors = self.tty_exchange(payload)
             self.assertEqual(result, []); self.assertEqual(errors, [sender.TransferError])
 

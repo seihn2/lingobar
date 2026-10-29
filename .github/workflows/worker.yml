@@ -27,7 +27,8 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install reviewed hash-locked encryption dependency
-        run: python3 -m pip install --require-hashes --only-binary=:all: -r scripts/secure-key/requirements.txt
+        run: |
+          python3 -m pip install --require-hashes --only-binary=:all: -r scripts/secure-key/requirements.txt
       - run: python3 --version
       - name: Record initial process core limits
         run: python3 -c "import resource; print('Initial RLIMIT_CORE soft/hard', resource.getrlimit(resource.RLIMIT_CORE))"
