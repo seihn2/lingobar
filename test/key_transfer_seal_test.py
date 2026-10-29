@@ -44,7 +44,9 @@ class SealTests(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
         self.challenge = {"expiresAt": 1300, "synthetic": True}
-        self.path = Path(self.directory.name) / "challenge.json"
+        # Darwin's /var temp alias resolves to /private/var. Production correctly
+        # refuses aliases; fixtures must supply the canonical path too.
+        self.path = Path(self.directory.name).resolve() / "challenge.json"
         self.path.write_text(json.dumps(self.challenge)); self.path.chmod(0o600)
         self.profile = {"version": 1, "enabled": True, "challengeFile": str(self.path),
                         "challengeSha256": FakeCrypto.challenge_hash(self.challenge)}
