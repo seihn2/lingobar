@@ -10,15 +10,16 @@ for (const item of manifest.files) {
   const bytes = fs.readFileSync(path.join(directory, item.path))
   assert.equal(bytes.length, item.bytes); assert.equal(createHash('sha256').update(bytes).digest('hex'), item.sha256)
 }
-const sender = JSON.parse(fs.readFileSync(path.join(directory, 'key-transfer-sender.json')))
+const sender = JSON.parse(fs.readFileSync(path.join(directory, 'key-transfer-envelope.json')))
 const receiver = JSON.parse(fs.readFileSync(path.join(directory, 'key-transfer-receiver.json')))
-assert.equal(sender.enabled, false); assert.equal(sender.host, null); assert.equal(sender.hostKey, null)
-assert.equal(sender.version, 2); assert.equal(sender.identity_file, null); assert.equal(sender.run_as, null)
-assert.deepEqual(sender.sudo_policy, { permission_verified: false, stdin_logging_disabled_verified: false, evidence_id: null })
-assert.equal(receiver.enabled, false); assert.equal(receiver.credentialsFile, null)
+assert.deepEqual(sender, { version: 1, enabled: false, challengeFile: null, challengeSha256: null })
+assert.deepEqual(receiver, { version: 2, enabled: false, targetId: 'lingobar-deepseek-primary', credentialsFile: null, sessionDirectory: null })
+assert.equal(manifest.envelopeProfileVersion, 1); assert.equal(manifest.receiverProfileVersion, 2)
+assert.equal(manifest.dependencyInstallationPerformed, false); assert.equal(manifest.dependenciesBundled, false)
+assert.ok(!manifest.files.some(item => /sender\.json/.test(item.path)))
 // Run only shipped disabled entrypoints. Block socket/process creation before loading either script.
 const bootstrap = `import sys,runpy,subprocess,socket\nattempts=[]\ndef deny(*a,**k):\n attempts.append(True)\n raise RuntimeError('NETWORK_OR_PROCESS_FORBIDDEN')\nsubprocess.Popen=deny\nsocket.socket=deny\nsys.argv=sys.argv[1:]\ncode=0\ntry:\n runpy.run_path(sys.argv[0],run_name='__main__')\nexcept SystemExit as e:\n code=e.code\nfinally:\n if attempts: code=77\nsys.exit(code)\n`
-for (const [name, args] of [['send.py', []], ['receive.py', ['--probe']], ['receive.py', ['--receive']]]) {
+for (const [name, args] of [['send.py', []], ['receive.py', ['--probe']], ['receive.py', ['--receive']], ['seal.py', []], ['session.py', ['--serve']], ['session.py', ['--deliver']], ['session.py', ['--cancel']]]) {
   const result = spawnSync('python3', ['-I', '-B', '-c', bootstrap, path.join(directory, name), ...args], {
     cwd: directory, input: '', encoding: 'utf8', timeout: 5000, maxBuffer: 8192,
     env: { PATH: '/usr/bin:/bin', LC_ALL: 'C' }
@@ -27,4 +28,4 @@ for (const [name, args] of [['send.py', []], ['receive.py', ['--probe']], ['rece
   assert.ok(!result.error); assert.ok(!result.stdout.includes('NETWORK_OR_PROCESS_FORBIDDEN')); assert.ok(!result.stderr.includes('NETWORK_OR_PROCESS_FORBIDDEN'))
   const output = JSON.parse(result.stdout.trim()); assert.equal(output.status, 'blocked')
 }
-console.log('Key-transfer bundle verified: default denied with subprocess/network blocked; source hashes match; no real key or SSH execution.')
+console.log('Key-transfer bundle verified: default denied with subprocess/network blocked; source hashes match; no real key, Azure or provider execution; no TCP socket or child-process attempts.')

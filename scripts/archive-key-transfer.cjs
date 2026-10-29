@@ -16,26 +16,34 @@ fs.rmSync(output, { recursive: true, force: true }); fs.mkdirSync(output, { recu
 const inputs = {
   'send.py': 'scripts/secure-key/send.py',
   'receive.py': 'scripts/secure-key/receive.py',
-  'key-transfer-sender.json': 'scripts/secure-key/sender.example.json',
+  'seal.py': 'scripts/secure-key/seal.py',
+  'session.py': 'scripts/secure-key/session.py',
+  'envelope_crypto.py': 'scripts/secure-key/envelope_crypto.py',
+  'requirements.txt': 'scripts/secure-key/requirements.txt',
+  'key-transfer-envelope.json': 'scripts/secure-key/envelope.example.json',
   'key-transfer-receiver.json': 'scripts/secure-key/receiver.example.json',
   'GUIDE.md': 'docs/secure-key-transfer.md',
-  'LICENSE': 'LICENSE', 'NOTICE.md': 'NOTICE.md'
+  'LICENSE': 'LICENSE', 'NOTICE.md': 'NOTICE.md',
+  ...Object.fromEntries(['cryptography-LICENSE.txt', 'cryptography-LICENSE.APACHE.txt', 'cryptography-LICENSE.BSD.txt', 'cffi-LICENSE.txt', 'pycparser-LICENSE.txt'].map(name => [name, 'licenses/' + name]))
 }
 const files = Object.entries(inputs).map(([name, input]) => {
   const data = fs.readFileSync(path.join(root, input))
   fs.writeFileSync(path.join(output, name), data, { mode: 0o644 })
   return { path: name, bytes: data.length, sha256: hash(data) }
 })
-for (const name of ['key-transfer-sender.json', 'key-transfer-receiver.json']) assert.equal(JSON.parse(fs.readFileSync(path.join(output, name), 'utf8')).enabled, false)
+for (const name of ['key-transfer-envelope.json', 'key-transfer-receiver.json']) assert.equal(JSON.parse(fs.readFileSync(path.join(output, name), 'utf8')).enabled, false)
 fs.writeFileSync(path.join(output, 'MANIFEST.json'), JSON.stringify({ schemaVersion: 1, sourceHead: head, sourceBase: process.env.LINGOBAR_SOURCE_BASE || '', sourceTree: tree, checkoutHead: git('rev-parse', 'HEAD'),
   enabled: false, credentialsIncluded: false, networkChanges: false, installationPerformed: false,
   input: 'Manual verified no-echo POSIX TTY only; no Electron decryption or clipboard access',
-  senderProfileVersion: 2, privilegeChanges: false,
-  transport: 'Fixed validated identity_file; no SSH agent; pinned host/key and exact direct/lingobar-test command map; API key only on stdin',
-  runAsPrerequisite: 'Existing sudo permission and disabled stdin logging require independent operator evidence; not queried or configured by these tools',
-  coreProtection: 'Verified RLIMIT_CORE hard/soft0, Linux own-process dumpable0, guarded external-child policy, SIGQUIT and repeated-cancellation cleanup',
+  envelopeProfileVersion: 1, receiverProfileVersion: 2, privilegeChanges: false,
+  transport: 'Ciphertext only through existing authorized Azure channel; no SSH/NSG/sudo changes or plaintext transit',
+  encryption: 'PyCA cryptography50.0.0 RSA4096 OAEP-SHA256; trusted Azure canonical challenge pin; target/purpose/session/300-second expiry',
+  dependencyInstallationPerformed: false, dependenciesBundled: false,
+  dependencyPrerequisite: 'Hash-locked Python3.12 binary wheels; operator-reviewed environment required; no automatic install',
+  privateKey: 'One-shot protected Linux process memory only; no serialization/restart/replay; local same-UID Unix socket',
+  coreProtection: 'Verified RLIMIT_CORE hard/soft0 and Linux own-process dumpable0; no plaintext child exec; SIGQUIT and repeated-cancellation cleanup',
   receiver: 'Linux private create-only JSON target; anonymous O_TMPFILE; no named plaintext staging or overwrite',
-  validation: 'Synthetic PTY, mocked SSH and temporary Linux targets only; no user Mac, live VM, key or network acceptance', files }, null, 2) + '\n')
+  validation: 'Synthetic PTY, dummy RSA envelopes, same-UID Unix sockets and temporary Linux targets only; no user Mac/live VM/Azure/provider acceptance', files }, null, 2) + '\n')
 const entries = [...files, { path: 'MANIFEST.json', sha256: hash(fs.readFileSync(path.join(output, 'MANIFEST.json'))) }]
 fs.writeFileSync(path.join(output, 'SHA256SUMS.txt'), entries.map(item => `${item.sha256}  ${item.path}`).join('\n') + '\n')
 console.log(`Default-disabled key-transfer tools archived: ${files.length} files; no secret or installation.`)

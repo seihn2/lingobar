@@ -88,3 +88,15 @@ directory. Project notices and component licenses are included in
 When updating dependencies or producing another platform's package, retain the
 notices supplied with the actual runtime and update this inventory and its
 packaged paths accordingly.
+
+## Optional manual provisioning tools
+
+The encrypted provisioning helpers use PyCA `cryptography`50.0.0, `cffi`2.1.1
+and `pycparser`3.0 as separately installed, hash-locked Python dependencies.
+They are not bundled into Electron, the gateway, or the tool ZIP. PyCA's
+[Apache2 or BSD license](https://github.com/pyca/cryptography/blob/50.0.0/LICENSE)
+is preserved in `licenses/cryptography-LICENSE*.txt`; cffi's MIT and pycparser's
+BSD notices are in `licenses/cffi-LICENSE.txt` and `licenses/pycparser-LICENSE.txt`.
+No third-party cipher implementation is copied into LingoBar. RSAES-OAEP is
+invoked via PyCA's OpenSSL-backed API, not reimplemented here. Operator-installed
+wheels retain their own bundled dependency notices, including OpenSSL's terms.

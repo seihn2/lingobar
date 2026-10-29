@@ -23,6 +23,11 @@ jobs:
       - name: Confirm Node 22 budget-test runtime
         run: node -e "if(process.versions.node.split('.')[0]!=='22')process.exit(1);console.log('Budget tests use Node '+process.versions.node)"
       - run: npm run typecheck
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install reviewed hash-locked encryption dependency
+        run: python3 -m pip install --require-hashes --only-binary=:all: -r scripts/secure-key/requirements.txt
       - run: python3 --version
       - name: Record initial process core limits
         run: python3 -c "import resource; print('Initial RLIMIT_CORE soft/hard', resource.getrlimit(resource.RLIMIT_CORE))"

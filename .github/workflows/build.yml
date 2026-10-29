@@ -54,6 +54,15 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Synthetic macOS hidden-input and encrypted sender checks
+        run: |
+          python3 -m pip install --require-hashes --only-binary=:all: -r scripts/secure-key/requirements.txt
+          python3 -B -m unittest discover -s test -p 'key_transfer_sender_test.py' -v
+          python3 -B -m unittest discover -s test -p 'key_transfer_seal_test.py' -v
+          python3 -B -m unittest discover -s test -p 'key_transfer_envelope_crypto_test.py' -v
       - run: npm test
       - run: npm run test:media-permissions
       - run: npm run package:mac

@@ -14,16 +14,13 @@ import json
 import os
 from pathlib import Path
 import resource
-import select
 import signal
 import stat
 import sys
-import time
 
 TARGET_ID = "lingobar-deepseek-primary"
 CONFIG_PATH = Path(__file__).with_name("key-transfer-receiver.json")
 MAX_INPUT_BYTES = 4096
-INPUT_DEADLINE_SECONDS = 10.0
 AT_EMPTY_PATH = 0x1000
 AT_SYMLINK_FOLLOW = 0x400
 AT_FDCWD = -100
@@ -161,10 +158,11 @@ def _read_config(filename):
     finally:
         with _cleanup_signals():
             os.close(descriptor)
-    if (not _exact(value, ("version", "enabled", "targetId", "credentialsFile"))
-            or type(value["version"]) is not int or value["version"] != 1
+    if (not _exact(value, ("version", "enabled", "targetId", "credentialsFile", "sessionDirectory"))
+            or type(value["version"]) is not int or value["version"] != 2
             or value["enabled"] is not True or value["targetId"] != TARGET_ID
-            or not isinstance(value["credentialsFile"], str)):
+            or not isinstance(value["credentialsFile"], str)
+            or not isinstance(value["sessionDirectory"], str)):
         _deny()
     return value
 
@@ -198,10 +196,12 @@ def _directory_unchanged(target):
         _deny()
 
 
-def _open_target(config_path):
+def _open_target(config_path, expected_config=None):
     if sys.platform != "linux" or not hasattr(os, "O_TMPFILE"):
         _deny()
     value = _read_config(config_path)
+    if expected_config is not None and value != expected_config:
+        _deny()
     filename = _canonical(value["credentialsFile"])
     directory, name = os.path.dirname(filename), os.path.basename(filename)
     if not name or name in (".", ".."):
@@ -256,45 +256,6 @@ def _link_anonymous(descriptor, directory_fd, name):
         raise OSError(ctypes.get_errno(), "Credential install unavailable")
 
 
-def _read_payload(input_fd, timeout):
-    current = os.fstat(input_fd)
-    if (os.isatty(input_fd) or not (stat.S_ISFIFO(current.st_mode)
-                                  or stat.S_ISSOCK(current.st_mode))
-            or not isinstance(timeout, (int, float)) or isinstance(timeout, bool)
-            or not 0 < timeout <= INPUT_DEADLINE_SECONDS):
-        _deny()
-    deadline, data = time.monotonic() + timeout, bytearray()
-    try:
-        while True:
-            remaining = deadline - time.monotonic()
-            if remaining <= 0:
-                _deny()
-            readable, _, _ = select.select([input_fd], [], [], remaining)
-            if not readable:
-                _deny()
-            chunk = os.read(input_fd, min(1024, MAX_INPUT_BYTES + 1 - len(data)))
-            if not chunk:
-                break
-            data.extend(chunk)
-            if len(data) > MAX_INPUT_BYTES:
-                _deny()
-        value = _json(data.decode("utf-8", errors="strict"))
-        if (not _exact(value, ("version", "provider", "targetId", "apiKey"))
-                or type(value["version"]) is not int or value["version"] != 1
-                or value["provider"] != "deepseek"
-                or value["targetId"] != TARGET_ID):
-            _deny()
-        key = value["apiKey"]
-        if (not isinstance(key, str) or not 16 <= len(key) <= 2048
-                or any(ord(char) < 33 or ord(char) > 126 for char in key)):
-            _deny()
-        return key
-    finally:
-        # Best effort only: Python/OS copies are not claimed to be zeroized.
-        with _cleanup_signals():
-            data[:] = b"\x00" * len(data)
-
-
 def _result(status):
     return {"version": 1, "status": status, "targetId": TARGET_ID}
 
@@ -320,14 +281,17 @@ def _probe(config_path):
                 pass
 
 
-def _receive(config_path, input_fd, timeout):
+def _install_key(config_path, key, expected_config=None):
     target, descriptor, linked, publish_started = None, None, False, False
     try:
-        target = _open_target(config_path)
+        target = _open_target(config_path, expected_config)
     except BaseException:
         return _result("blocked")
     try:
-        key = _read_payload(input_fd, timeout)
+        if (not isinstance(key, (bytes, bytearray)) or not 16 <= len(key) <= 128
+                or any(char < 33 or char > 126 for char in key)):
+            _deny()
+        key = bytes(key).decode("ascii")
         descriptor = _anonymous(target)
         content = bytearray((json.dumps({"apiKey": key}, separators=(",", ":"),
                                        ensure_ascii=True) + "\n").encode("ascii"))
@@ -392,35 +356,30 @@ def probe(config_path=CONFIG_PATH):
         return _result("blocked")
 
 
-def receive(config_path=CONFIG_PATH, input_fd=0,
-            timeout=INPUT_DEADLINE_SECONDS):
+def receive(*_args, **_kwargs):
+    """Retired plaintext API; no input is read even for an enabled profile."""
+    return _result("blocked")
+
+
+def install_key(config_path, key, expected_config=None):
+    """Internal receiver boundary; callers must authenticate/decrypt first.
+
+    No plaintext CLI/stdin entrypoint is exposed. Never invokes a child process.
+    """
     started = False
     try:
         _disable_core_dumps()
         with _cancellation_scope():
             started = True
-            return _receive(config_path, input_fd, timeout)
+            return _install_key(config_path, key, expected_config)
     except BaseException:
         return _result("outcome_unknown" if started else "blocked")
 
 
 def main():
-    try:
-        _disable_core_dumps()
-        with _cancellation_scope():
-            if len(sys.argv) != 2 or sys.argv[1] not in ("--probe", "--receive"):
-                result = _result("blocked")
-            else:
-                result = probe() if sys.argv[1] == "--probe" else receive()
-    except BaseException:
-        result = _result("blocked")
-    try:
-        sys.stdout.write(json.dumps(result, separators=(",", ":")) + "\n")
-        sys.stdout.flush()
-    except OSError:
-        return 1
-    return 0 if result["status"] in ("installed", "ready") else (
-        2 if result["status"] == "blocked" else 1)
+    # Retired plaintext SSH/stdin protocol. Use session.py with sealed payloads.
+    sys.stdout.write(json.dumps(_result("blocked"), separators=(",", ":")) + "\n")
+    return 2
 
 
 if __name__ == "__main__":

@@ -1,159 +1,151 @@
-# DeepSeek 密钥的受控手动配置工具
+# 一次性加密配置 DeepSeek 密钥
 
-本批提供一个可审阅的备用入口：用户在本机终端亲自无回显输入已有 DeepSeek
-密钥，经固定 SSH 目标的 stdin 送到专用接收器。它不读取 LingoBar 本地资料、
-不解密 safeStorage、不调用模型、不更改网络或 SSH 授权，也不启用普通网关。
-已有持续配置授权不等于本云端已执行迁移；本次开发与测试实际密钥访问为0。
+本工具用于已有桌面应用没有正式密钥导出接口时的**手动备用入口**。用户在自己
+终端隐藏输入已有密钥；本机加密后，仅密文经过现有 Azure 管理通道。一次性接收
+进程在自防护后生成私钥、解密并原子创建固定凭据文件。普通网关及收费测试不会
+因此开启。本批只有代码和 dummy 测试，未执行真实迁移。
 
-## 为什么采用这个入口
+旧版明文 SSH stdin 路径已经退役：`send.py` 无参数运行及 `receive.py` 的所有
+CLI 调用始终拒绝，代码中也没有 SSH 启动器。不要使用旧6813e9/b392636工具包
+传输真实密钥。`send.py` 现在只保留隐藏输入/信号/core 的进程内辅助函数。
 
-现有 `src/main/storage.ts` 的 `Storage.key()` 在 Electron 主进程、原系统账户
-中调用 safeStorage；preload 没有通用解密/导出接口。0.1.5 也没有可用的 stdin
-导出协议。为临时传输开放任意解密 IPC，或复制用户配置到另一上下文，都会扩大
-密钥暴露面。本批采用交接明确允许的手动入口，不要求用户把密钥重新发到聊天。
-它不能自动取出只保存在旧应用里的密钥；应用内自动传输尚未实现。
+## 为什么更换传输方式
 
-## 包含的内容与默认状态
+Linux 管道式 core 收集器（例如 Apport）可能忽略 RLIMIT_CORE。接收器自身设置
+`dumpable=0`，不能保护中转 sshd/sudo 中曾出现的明文。因此新方案让这些中转与
+Azure 命令日志只能接触密文；不关闭全机 Apport、不修改 SSH、NSG、sudoers 或
+系统权限，也不需要新 SSH 私钥或持续远程入口。
 
-- `send.py`：仅允许无参数启动，读取同目录固定发送配置；配置默认关闭。
-- `receive.py`：仅允许 `--probe`、`--receive`；接收器仅针对 Linux。
-- 两个 `key-transfer-*.json`：默认关闭，SSH 目标、公钥、身份文件和接收路径为空。
-  发送配置现为version2；旧version1拒绝，不默默沿用默认身份或run-as方式。
-- `MANIFEST.json`、`SHA256SUMS.txt`：源提交、文件摘要、默认状态和验证边界。
+现有0.1.5的 safeStorage 只在原账户 Electron 主进程使用；本工具不解密它、
+不读个人配置、不后台读剪贴板，不要求聊天重发密钥。自动从旧应用提取仍未实现。
+如果用户无法亲自输入现有密钥，部署任务应停在该点，不能自行复制保险库或改用
+任意解密 IPC。应用及之后消费凭据的进程仍须保持各自的内存/core 防护。
 
-发送端需已有 Python3/POSIX终端及 OpenSSH；接收端需已有 Python3/Linux、支持
-O_TMPFILE 的私有文件系统。工具不安装依赖，不创建 SSH 密钥、authorized_keys、
-sudo规则、服务、登录项、NSG规则或隧道。不支持时明确拒绝，不降级到明文临时文件。
+## 包、依赖及默认状态
 
-## 由部署任务完成的非秘密接线
+- `seal.py`：只接受无参数运行；读取固定 `key-transfer-envelope.json`。
+- `session.py --serve`：Linux 前台一次性接收进程；不自动后台化、不自动重启。
+- `session.py --deliver`：从 stdin 读取有界密文，投递到固定本地 Unix socket。
+- `session.py --cancel`：明确取消本次会话，不读取或输出密钥。
+- `receive.py`：只有进程内原子安装函数；旧明文 CLI 永久拒绝。
+- `envelope_crypto.py`：调用 PyCA 的标准 RSAES-OAEP；无文件/网络/私钥序列化。
+- 两个配置、MANIFEST、SHA256SUMS：全部默认关闭、目标/目录/摘要为空。
 
-先核对本包源 SHA 与全部摘要。部署任务使用**已经核验**的韩国 VM 信息填写发送
-配置：固定 IP、SSH端口、现有账号、完整 Ed25519 主机公钥及 SHA256 指纹，
-以及显式 `identity_file` 和 `run_as`。
-公钥须由可信渠道已有记录确认；不得以首次联网扫描所得公钥自行信任。
-本云端不知道这些具体值，不猜目标，也不借此请求或修改网络权限。
+加密依赖为现有云环境已安装的 PyCA `cryptography==50.0.0`。独立部署仍需先核实
+接收器和发送器的 Python3.12环境；工具不会自动安装软件。`requirements.txt`
+固定 cryptography、cffi、pycparser 版本及官方 PyPI wheel 的 SHA256，只接受
+Linux x86_64/macOS arm64 的对应二进制包，不允许源码构建或自动升级。已有安全
+审核/安装流程可使用 `python3 -m pip install --require-hashes --only-binary=:all: -r requirements.txt`；
+这不是本任务在用户设备上安装的授权或已执行事实。缺少/版本不符时，在输入前
+拒绝，不降级到明文或自己实现加密。未改变 Electron/npm 的运行依赖。
 
-发送配置的正式文件名是 `key-transfer-sender.json`。源目录仅提交
-`sender.example.json`；构建包已复制为正式文件名但保持关闭。配置只含非秘密
-目标元数据，不能加入 API key、私钥正文或任意远程命令。
+项目 CC BY-NC4.0 许可保持；依赖的 Apache2/BSD/MIT 许可另见包内 notices。
+PyCA 经 OpenSSL 实现 RSA，采用 RFC8017 的 RSA4096、e65537、OAEP-SHA256/
+MGF1-SHA256、空 label；没有自造混合密码或本地密码算法。
 
-`identity_file` 只接受现有身份文件的绝对规范路径：不能含波浪号、SSH百分号
-展开或控制字符，不能为符号链接/硬链接；须由当前用户持有且仅用户可读写
-（0600或0400）。Python只检查文件元数据，不打开或读取私钥正文；实际授权运行
-时由OpenSSH读取显式`-i`文件。固定设置`IdentitiesOnly=yes`、`IdentityAgent=none`，
-不传递`SSH_AUTH_SOCK`、不加载agent、不回退其他认证方式。无法非交互使用该身份
-时预检失败，不能因此把私钥或口令发进聊天、环境变量或临时文件。
+## 最小非秘密接线
 
-`run_as` 只有两个值，不能提供用户名模板、任意shell或sudo命令。
-`direct` 固定命令为：
+先由已有受信 Azure 控制通道核验本包提交与每个文件摘要，再按现有权限将代码
+放到固定受信安装目录。目录/代码不能被不受信中转账户替换。接收器与本地投递
+命令都以已授权的同一个 `lingobar-test` 服务身份执行；工具不调用 sudo、不查询
+sudo权限，也不修改用户/目录权限。此前部署侧 `sudo -l` 查询被拒，**没有重试或
+绕道，不能声称已经核实**。应利用已有 Azure 身份和已核实执行权限；如无法在
+指定身份运行，停止真实迁移，不能因此扩权。
 
-```text
-/usr/bin/python3 -I -B /opt/lingobar-key-transfer/receive.py --probe
-/usr/bin/python3 -I -B /opt/lingobar-key-transfer/receive.py --receive
+接收配置版本2（不兼容旧版本，不能偷偷迁移）：
+
+```json
+{"version":2,"enabled":false,"targetId":"lingobar-deepseek-primary","credentialsFile":null,"sessionDirectory":null}
 ```
 
-`lingobar-test` 固定命令为：
+部署任务填写固定凭据绝对路径及**已经存在**、归接收用户所有的0700会话目录。
+两者须规范路径、无符号链接；配置须为 root/当前用户所有、不可被其他用户写入
+的普通单链接文件。凭据父目录归当前用户、仅该用户可访问；已有凭据一律拒绝，
+不读取、不覆盖、不备份。`sessionDirectory` 必须与凭据父目录分开，
+不能让私有凭据与公开会话控制文件混用同一目录。真实文件系统须支持 O_TMPFILE 与原子 link。
 
-```text
-/usr/bin/sudo -n -u lingobar-test -- /usr/bin/python3 -I -B /opt/lingobar-key-transfer/receive.py --probe
-/usr/bin/sudo -n -u lingobar-test -- /usr/bin/python3 -I -B /opt/lingobar-key-transfer/receive.py --receive
+发送配置版本1：
+
+```json
+{"version":1,"enabled":false,"challengeFile":null,"challengeSha256":null}
 ```
 
-这让现有SSH登录账号和目录所有者可以不同；不会新增sudoers、修改权限或建立
-持续SSH入口。`-n`只禁止交互密码提示，**不保证stdin不会被sudo记录**。
-sudo支持记录非TTY的标准输入，不能因输入经pipe就认为安全。
+只填非秘密挑战文件路径及其**可信 Azure 读取确认**的 SHA256。摘要为完整规范
+JSON挑战（排序字段、紧凑分隔、ASCII、尾随单个换行）的摘要，与接收器发布的
+`challenge.json` 字节一致。公钥、目标、用途、会话、创建与到期时间全部被摘要
+固定。仅对同一个不可信下载自行算摘要不证明公钥真实性；不得跳过这一步。
 
-**当前阻断前提：部署侧的只读sudo查询曾被审批拒绝；实际sudo权限及stdin日志
-策略尚未核实。本工具不执行该查询，也不换命令/路径规避拒绝。** 只有经授权的
-独立审核确认了以下条件，才能填写`sudo_policy`：
+## 一次操作的数据流
 
-- `permission_verified:true`：现有权限允许上述固定目标用户、脚本及两个确切模式
-  非交互执行；此声明只准许工具使用这两个调用，不提供通用sudo/shell/Python
-  接口。接收器及父目录不能由azureuser写入。
-- `stdin_logging_disabled_verified:true`：该确切执行路径的sudo输入/I/O记录及相关
-  插件不会保存密钥stdin；不是仅检查终端回显或普通命令日志。
-- `evidence_id`：审核记录的非秘密编号，不含密钥、账户资料或sudo输出。
+1. 部署任务按已有受信权限启动 `session.py --serve`，让它在现有 Azure 受控
+   执行机制下前台运行至完成/最多300秒；本工具不新增服务、端口或后台启动器。
+   接收器先验证 core/dumpable、配置、锁、目标和匿名写能力，然后生成一次性
+   RSA私钥。私钥仅存在这个进程内存，从不序列化或经过 Azure/sshd。
+   部署任务须先用dummy确认现有Azure执行机制能维持这个临时进程，同时读取
+   挑战和投递；部分RunCommand会串行化调用，不能把源码支持当成该通道已验收。
+   如采用现有权限下的短期异步进程，应仍遵守300秒期限，不添加常驻服务或SSH。
+2. 现有 Azure 通道读取公开 `challenge.json` 并核实摘要，转交用户本机的非秘密
+   配置。目录内 `.lock`、`transfer.sock`、挑战与结果均仅包含非秘密控制数据。
+3. 用户显式运行 `python3 -I -B seal.py > sealed.json`。默认关闭时不提示输入。
+   启用后先验证可信摘要、参数和期限，才在 `/dev/tty` 关闭并验证回显。仅可
+   亲自输入16–128个可打印ASCII字符；超长拒绝、不截断。不会从argv、env、
+   文件、stdin、剪贴板、renderer或旧配置读取密钥。标准输出只有密文JSON，
+   所以 `sealed.json` 不包含明文，可通过已授权 Azure 管理通道投递。
+4. 现有 Azure 执行器将这个固定形状的密文交给同一服务用户的
+   `session.py --deliver` stdin。无需新SSH/NSG；不要把真实密钥放进Azure命令、
+   工具参数、日志或聊天。CLI不接受目标、任意shell、URL或动态文件路径参数。
+5. 投递器只把密文转发到0700目录内的0600 Unix socket。接收器检查对端UID，
+   在读取/解析/解密前关闭监听，首次同UID投递即耗用会话，连错误/不完整输入
+   也不重试。解密后核对绑定上下文，再由同一受保护进程原子创建最终凭据。
+6. 接收器清除私钥引用、关闭socket/锁/挑战，留下无密钥的 `result.json`。
+   会话不自动恢复。结果及残留需由部署任务检查后显式整理，不能自动删锁重来。
 
-两项未确认、记录缺失或字段不合法时，在连接和取密钥前拒绝。它们是操作员审核
-声明，不是工具自动验证的系统事实；不能为了开通传输自行把false改成true。
-安装权限或日志策略确需变更时，由父任务另行处理最小范围；本工具不做这些变更。
-审核还须覆盖对端SSH/sudo转发或监控进程的core/崩溃收集策略。接收器在exec后
-设置自己的限制，不能倒过来修改那些既有进程；未知时不得运行真实密钥传输，
-也不能将Python自身的保护称为已经核实对端整条进程链。
+这里的控制平面/本地UID仍负责授权。**OAEP不是发送者签名**：它拒绝非法/被改动
+密文并校验解密上下文，但知道公钥的人也能加密另一份内容。不能把它称作已认证
+发件人协议；可信Azure、公钥核验、代码/目录权限和本地UID边界不能省略。
+已受攻陷的端点/root/同身份进程不属于此工具能抵抗的威胁。
 
-接收器代码与同目录 `key-transfer-receiver.json` 须由部署任务安全安装，不能
-来自未经核对的下载。发送端在取密钥前先校验 probe 返回的接收器 SHA256，须与
-本包 `receive.py` 完全一致。探测不会读取已存密钥或调用任何供应商。
+## 期限、一次性与取消
 
-接收配置指定唯一、尚不存在的 `credentialsFile`。父目录须已存在、0700且由
-实际接收进程的服务用户持有；工具不提权、chown或替操作者创建任意目录。
-如果现有 SSH 账号没有该用户/目录权限，停在此处，由部署任务安排最小单次
-安装权限；不要增加持续 SSH 登录权限或通用免密 sudo 来绕过。
+挑战有效期固定300秒，绑定用途 `lingobar-deepseek-provision`、固定DeepSeek
+目标、随机128位会话ID及过期时间；这些字段全部在OAEP明文内再次绑定。
+密文只有512字节RSA块及严格外层字段。整个JSON明文最多446字节，超限拒绝，
+没有自己拼装的对称加密步骤。实例同时用单调时钟限制私钥会话寿命；改系统时钟
+不能延长接收期。发送端在输入前后重新检查期限，输入太慢则需要新显式会话。
 
-目标文件内容仅为严格 JSON `{ "apiKey": "…" }`，0600、服务用户所有，可供
-PR17 固定文本测试执行器的 `credentialsFile` 使用。它不是 shell 环境文件，
-不能直接当作 EnvironmentFile。普通网关目前仍使用自己的配置契约，保持关闭；
-保存此文件不自动接入网关、重启服务或开始计费。ASR 密钥不在本批传输范围内。
+首次同UID连接即耗用，篡改/错误目标/过期/断流均不会安装。重放不能获得第二次
+解密；新会话使用全新私钥和ID。未投递时可用固定 `--cancel`，或者明确结束受控
+接收进程。所有失败不自动重发、不生成替代密钥，也不启动另一项收费测试。
 
-## 用户亲自输入与传输
+SIGQUIT/INT/TERM/HUP（本机还含TSTP）按取消处理。读入敏感数据前设置并验证
+RLIMIT_CORE软/硬均0；Linux还独立设置并验证dumpable0，即使Apport管道开启，
+接收进程也不应成为可转储进程。重复信号不能打断TTY回显恢复/敏感描述符清理。
+如果core防护无法建立，在生成私钥或提示输入前拒绝。本机不启动SSH或openssl
+子进程处理明文，避免exec重置dumpability。不会改变全机core或调用者shell设置。
 
-配置和接收器已由部署任务核验后，用户在自己的原生终端执行：
+SIGKILL/断电无法运行finally；可能留下无秘密锁/socket/挑战。私钥没有磁盘恢复
+副本，旧密文不能在重启后重放。操作员必须先确认旧进程已经结束、核对目标
+存在性/所有者/模式及结果，再整理明确的控制文件并手动准备新会话；工具不
+提供强制删除未知锁/自动重放开关。Python/OS副本、swap、原有备份不作取证清零
+保证。用户终端强制退出后也应安全恢复回显，不要自动重发密钥。
 
-```sh
-python3 -I -B send.py
-```
+## 原子保存与结果解释
 
-命令本身没有密钥；**不要**把密钥写到命令后、环境变量、heredoc、重定向文件、
-聊天、浏览器工具或剪贴板。本工具不读取剪贴板。只在隐藏输入提示出现后亲自
-输入。输入不是 shell 命令，不进入 shell history；不要录屏、转录终端或启用调试。
-如果无法取得真实 TTY、不能确认回显关闭，或 SSH 预检失败，工具拒绝继续。
+解密后只在进程内构造 `{"apiKey":...}`，用0600匿名 O_TMPFILE 写入并fsync，
+之后原子link到固定目标，再fsync目录。没有额外命名的明文临时文件。最终凭据
+是持续服务确实需要的私有文件；这不等于允许向聊天或日志导出它。
 
-发送端忽略用户/系统 SSH 配置，使用严格主机密钥检查；固定远程命令，不允许
-代理、转发、连接复用、自动接受/更新主机密钥或密码交互。仅使用显式固定身份，
-不会为传输新增长期权限。预检与传输是两次单独连接，各无自动重试。
+- `installed`：目标发布和目录持久化完成，不证明供应商接受密钥。
+- `blocked` / `not_installed` / `expired` / `cancelled`：按阶段未创建目标；会话已
+  耗用或不可用。先检查固定结果，不自动重发。
+- `outcome_unknown`：发布/持久化/结果传回可能不确定。不要称作回滚成功；先核对
+  固定目标的**存在性和元数据**，不读取正文或删除可能已经安装的凭据。
 
-密钥只进入本进程内存和 SSH stdin，不进入 argv、环境、日志、文件或 renderer。
-SSH stdout/stderr 不原样转发；工具只给出有限状态。Python/SSH/内核可能保留内存
-副本，工具不承诺取证级清除、禁用系统交换区或抵抗被攻陷的主机/同权限调试器。
+目录fsync或结果回传失败不能据此删除最终凭据。已有结果文件会阻止新会话，
+让操作员明确检查。删除控制文件不会删除最终凭据，也不是重试授权。服务重启、
+预算CLI真实调用和供应商密钥验证均由独立部署流程处理，本工具不执行它们。
 
-## SIGQUIT、回显恢复与core防护
-
-程序在读取或持有密钥前主动设置并验证`RLIMIT_CORE`软/硬上限均为0，SSH子进程
-继承该限制，不假定用户终端原来的core上限。Linux的Python端还设置并验证
-`PR_SET_DUMPABLE=0`，因为管道式core收集器可能忽略RLIMIT_CORE。接收器在sudo/exec
-之后自行执行防护，不能只依赖发送端或父进程。
-
-Linux启动外部SSH会重新经过exec边界，所以发送器还要求本机公开的core策略可
-验证为非管道式；未知/管道式策略拒绝启动子进程，不修改内核配置。macOS按已设
-硬上限约束自身及子进程；此项仍需真实Mac验证。工具不更改用户shell或既有网关
-服务的limits，后续消费凭据的其他进程须有自己的防护。
-
-SIGQUIT与INT/TERM/HUP按取消处理，发送端也处理TSTP。安装处理器和恢复TTY/关闭敏感描述符时
-屏蔽受管信号并收敛重复取消；即使flush失败，也单独尝试恢复回显，然后才恢复
-原处理器/信号掩码。无法建立这些保护时拒绝输入。SIGKILL、断电和被攻陷的内核
-不能通过Python finally保证清理，不能把它们称作已覆盖。
-
-## 接收器的原子保存与失败含义
-
-输入仅为有大小和时间上限的 stdin 管道/套接字；拒绝 TTY、普通输入文件、未知
-字段、其他 provider/targetId 和无效密钥。接收器无网络、解密或通用命令执行接口。
-
-只创建最终凭据所用的私有 inode：以0600匿名 O_TMPFILE 写入并 fsync，之后原子
-link 到固定目标，再 fsync 目录。没有额外命名的明文暂存文件。若匿名文件或
-原子链接不受支持则拒绝，不改用 /tmp 文件；并发接收最多一个创建成功。
-已存在的目标一律拒绝，不读取、覆盖、备份或回滚用户已有文件。
-
-- `installed`：目标链接和目录持久化完成；这不证明供应商密钥有效。
-- `not_installed` / `blocked`：未安装；修复非秘密配置/权限后，仍须明确重新操作。
-- `outcome_unknown`：目标可能已创建，但持久化/结果确认不确定。**不要自动重发**；
-  由部署任务先核查固定目标的存在性、所有者和权限，不能把未知结果当失败退款。
-
-在目标发布前失败，关闭匿名 inode，不留下命名暂存文件；发布后的未知结果保留
-目标并如实报告，不擅自删除凭据。文件系统日志、备份、用户原有副本和强制终止
-的 OS 行为不属于取证擦除保证。SIGKILL/断电也不能保证终端恢复；若终端异常退出，
-用户可在本机恢复终端回显，但不要因此重发密钥或改 SSH 安全策略。
-
-## 免费测试与验证边界
+## 已执行与未执行的验证
 
 ```sh
 npm run test:key-transfer
@@ -161,20 +153,21 @@ npm run build:key-transfer
 npm run verify:key-transfer
 ```
 
-测试只用 dummy secret、Linux临时目录、合成PTY和模拟SSH；阻断真实网络/供应商。
-验证配置拒绝、固定指纹、先预检后输入、无回显/取消恢复、仅stdin传输、原子失败、
-并发与目标已存在保护，以及默认包不连接网络。还覆盖固定identity路径与run-as
-白名单、未审核sudo日志策略拒绝、非零初始core上限、SIGQUIT及清理时重复信号。
-CI分别记录Python和Node版本。
-Linux PTY不是 macOS 终端验收；实际 SSH 认证、韩国 VM 文件系统/服务用户、
-Mac安全输入和真实密钥迁移尚需由已授权本地/部署任务分别验证。
+测试仅用dummy secret、临时Linux目录、合成PTY与本地Unix socket；没有真实
+密钥/Mac/VM/SSH/Azure API/供应商请求。覆盖严格字段、公钥摘要先于输入、期限、
+篡改/错会话/重放、单次消费、权限/并发/旧锁、取消/重复SIGQUIT/core、匿名原子
+保存及失败结果；包默认关闭时用阻断进程/网络的仪器校验。密文可保存，不包含
+私钥；日志和公开结果不含输入、私钥或原始错误。
 
-依据：[OpenSSH配置](https://man.openbsd.org/ssh_config)、
-[Python termios](https://docs.python.org/3/library/termios.html)、
-[Python signals](https://docs.python.org/3/library/signal.html)、
-[sudoers官方说明](https://github.com/sudo-project/sudo/blob/main/docs/sudoers.man.in)、
+CI构建/云Linux合成测试不等于真实Mac隐藏输入、现有Azure通道、VM身份/目录/
+依赖或服务接入验收。尚须部署任务核验这些非秘密前提后，由用户显式输入；
+本批不安装、不迁移、不调用费用接口。累计1元测试限制不变，不能以该工具
+建成推断ASR有成本上界、普通网关已经启用或密钥已经传输。
+
+依据：[PyCA RSA/OAEP](https://cryptography.io/en/50.0.0/hazmat/primitives/asymmetric/rsa/)、
+[RFC8017](https://www.rfc-editor.org/rfc/rfc8017#section-7.1)、
+[PyCA许可](https://github.com/pyca/cryptography/blob/50.0.0/LICENSE)、
 [Linux core](https://man7.org/linux/man-pages/man5/core.5.html)、
-[Linux dumpable](https://man7.org/linux/man-pages/man2/PR_SET_DUMPABLE.2const.html)、
-[Linux O_TMPFILE](https://man7.org/linux/man-pages/man2/open.2.html)、
-[Linux linkat](https://man7.org/linux/man-pages/man2/linkat.2.html)。
-原有项目 CC BY-NC4.0 许可保持不变；没有复制第三方实现、安装新依赖或新增采集权限。
+[dumpable](https://man7.org/linux/man-pages/man2/PR_SET_DUMPABLE.2const.html)、
+[O_TMPFILE](https://man7.org/linux/man-pages/man2/open.2.html)、
+[Python signals](https://docs.python.org/3/library/signal.html)。
