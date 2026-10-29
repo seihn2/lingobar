@@ -1,0 +1,10 @@
+# Review-only drop-in for the existing service. Not installed automatically.
+# Replace ORIGINAL_LEDGER_DIRECTORY with the existing GATEWAY_TEXT_LEDGER_DIRECTORY.
+# No new user/group, SSH permission, network port or public path is created.
+[Service]
+DynamicUser=no
+User=lingobar-test
+UMask=0077
+ProtectSystem=strict
+ReadWritePaths=
+ReadWritePaths=/var/lib/lingobar-text-test/credentials ORIGINAL_LEDGER_DIRECTORY

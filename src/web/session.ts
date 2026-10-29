@@ -19,6 +19,8 @@ interface Options {
   annotationFetch?: typeof fetch
   textBackend?: '/api/translate' | null
   textFetch?: typeof fetch
+  credentialsBackend?: '/api/settings/translation-key' | null
+  credentialsFetch?: typeof fetch
 }
 interface Run {
   id: string
@@ -48,7 +50,7 @@ export const WEB_SETTINGS: Settings = {
 function textCancelled(): Error { const error = new Error('已取消文字翻译。'); error.name = 'AbortError'; return error }
 function cancelled(): Error { const error = new Error('已取消开始录音。'); error.name = 'AbortError'; return error }
 
-/** Browser-owned, microphone-only session. No provider keys, desktop bridge or automatic reconnect. */
+/** Browser-owned audio/text session. Provider calls stay server-side; no desktop bridge or automatic reconnect. */
 export class BrowserSession {
   private state: Snapshot
   private owner: Run | null = null
@@ -61,8 +63,11 @@ export class BrowserSession {
   private socket: (url: string) => WebSocketPort
   private capture: WebCapture
   private textJob: TextJob | null = null
+  private credentialRequest: AbortController | null = null
+  private textServiceConfigured: boolean
   readonly configured: boolean
-  readonly textConfigured: boolean
+  readonly credentialsAvailable: boolean
+  get textConfigured(): boolean { return this.textServiceConfigured }
   constructor(private options: Options) {
     // A fixed same-origin route is the only accepted backend. Public config cannot select an arbitrary upstream.
     const origin = new URL(options.origin)
@@ -70,8 +75,10 @@ export class BrowserSession {
       (origin.protocol === 'http:' && !['localhost', '127.0.0.1', '[::1]'].includes(origin.hostname))) throw new Error('网页版需要 HTTPS。')
     if (options.backend !== null && options.backend !== '/api/session') throw new Error('网页服务地址不正确。')
     if (options.textBackend !== undefined && options.textBackend !== null && options.textBackend !== '/api/translate') throw new Error('文字服务地址不正确。')
+    if (options.credentialsBackend !== undefined && options.credentialsBackend !== null && options.credentialsBackend !== '/api/settings/translation-key') throw new Error('密钥配置地址不正确。')
     this.configured = options.backend === '/api/session'
-    this.textConfigured = options.textBackend === '/api/translate'
+    this.textServiceConfigured = options.textBackend === '/api/translate'
+    this.credentialsAvailable = options.credentialsBackend === '/api/settings/translation-key' && options.disabledReason !== 'unauthorized'
     this.socket = options.socket || (url => new WebSocket(url))
     this.capture = options.capture || ((chunk, error, signal) => startMicrophone(chunk, error, { signal, platform: 'other' }))
     this.state = { settings: structuredClone(WEB_SETTINGS), state: 'idle', message: this.configured ? '尚未连接' : this.textConfigured ? '文字翻译可用' : options.disabledReason === 'unauthorized' ? '服务未授权' : '后端未配置', captions: [], partial: {}, collapsed: false }
@@ -79,6 +86,36 @@ export class BrowserSession {
   snapshot(): Snapshot { return structuredClone(this.state) }
   subscribe(listener: (snapshot: Snapshot) => void): () => void { this.listeners.add(listener); return () => { this.listeners.delete(listener) } }
   private publish(): void { for (const listener of this.listeners) listener(this.snapshot()) }
+
+  /** Explicit owner settings action; the key never enters snapshots or browser storage. */
+  async configureTranslationKey(apiKey: string): Promise<void> {
+    if (!this.credentialsAvailable || new URL(this.options.origin).protocol !== 'https:') throw new Error('密钥配置服务不可用。')
+    if (this.credentialRequest) throw new Error('正在保存密钥。')
+    if (typeof apiKey !== 'string' || !apiKey.trim() || apiKey.length > 4096 || /[\u0000-\u001f\u007f]/u.test(apiKey)) throw new Error('请输入有效密钥。')
+    const controller = new AbortController()
+    this.credentialRequest = controller
+    const timer = setTimeout(() => controller.abort(), 15_000)
+    try {
+      const response = await (this.options.credentialsFetch || fetch)(new URL('/api/settings/translation-key', this.options.origin).toString(), {
+        method: 'POST', credentials: 'same-origin', redirect: 'error', cache: 'no-store', signal: controller.signal,
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ apiKey })
+      })
+      if (!response.ok) throw new Error(response.status === 401 || response.status === 403 ? '密钥配置未授权。' : '密钥保存未完成。')
+      const result: unknown = await response.json()
+      if (!result || typeof result !== 'object' || Array.isArray(result) || Object.keys(result).length !== 1 ||
+        (result as Record<string, unknown>).configured !== true || controller.signal.aborted) throw new Error('密钥保存未完成。')
+      this.textServiceConfigured = true
+      this.state = { ...this.state, message: this.configured ? this.state.message : '文字翻译可用' }
+      this.publish()
+    } catch (error) {
+      // Never surface raw server/transport errors, which may echo request data.
+      if (error instanceof Error && error.message === '密钥配置未授权。') throw error
+      throw new Error('密钥保存未完成。')
+    } finally {
+      clearTimeout(timer)
+      if (this.credentialRequest === controller) this.credentialRequest = null
+    }
+  }
 
   start(): Promise<void> {
     if (!this.configured) return Promise.reject(new Error('后端未配置，暂不能开始录音。'))
@@ -335,5 +372,5 @@ export class BrowserSession {
     for (const id of [...this.annotations.keys()]) this.cancelAnnotation(id)
     if (changed) this.publish()
   }
-  dispose(): void { this.stop(); this.listeners.clear() }
+  dispose(): void { this.credentialRequest?.abort(); this.stop(); this.listeners.clear() }
 }

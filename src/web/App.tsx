@@ -18,6 +18,51 @@ function captionText(caption: Caption, settings: Settings): string {
   return lines.join('\n')
 }
 
+function TranslationKeySettings({ session }: { session: BrowserSession }) {
+  const [apiKey, setApiKey] = useState('')
+  const [pending, setPending] = useState(false)
+  const [status, setStatus] = useState('')
+  const input = useRef<HTMLInputElement>(null)
+  const generation = useRef(0)
+  const submitting = useRef(false)
+  const composing = useRef(false)
+  useLayoutEffect(() => {
+    const field = input.current
+    return () => {
+      generation.current++; submitting.current = false
+      if (field) field.value = ''
+    }
+  }, [])
+  const saveKey = async () => {
+    if (submitting.current || !apiKey.trim()) return
+    const current = ++generation.current
+    submitting.current = true; setPending(true); setStatus('')
+    try {
+      await session.configureTranslationKey(apiKey)
+      if (current !== generation.current) return
+      setApiKey(''); if (input.current) input.current.value = ''
+      setStatus('已保存')
+    } catch {
+      if (current === generation.current) setStatus('密钥保存未完成。')
+    } finally {
+      if (current === generation.current) { submitting.current = false; setPending(false) }
+    }
+  }
+  return <fieldset className="web-key-settings">
+    <legend>翻译服务</legend>
+    <label htmlFor="web-translation-key">DeepSeek API Key</label>
+    <input ref={input} id="web-translation-key" type="password" value={apiKey} onChange={event => setApiKey(event.target.value)} disabled={pending} maxLength={4096} autoComplete="new-password" autoCapitalize="none" autoCorrect="off" spellCheck={false} aria-describedby="web-key-status"
+      onCompositionStart={() => { composing.current = true }} onCompositionEnd={() => { composing.current = false }}
+      onKeyDown={event => {
+        if (event.key === 'Enter' && !event.nativeEvent.isComposing && !composing.current && event.keyCode !== 229) {
+          event.preventDefault(); void saveKey()
+        }
+      }} />
+    <button type="button" onClick={() => void saveKey()} disabled={pending || !apiKey.trim()}>{pending ? '正在保存…' : '保存密钥'}</button>
+    <p id="web-key-status" role="status">{status || (session.textConfigured ? '已配置' : '')}</p>
+  </fieldset>
+}
+
 export default function WebApp({ session }: { session: BrowserSession }) {
   const [snapshot, setSnapshot] = useState(() => session.snapshot())
   const [panel, setPanel] = useState<'settings' | 'history' | 'text' | null>(null)
@@ -155,6 +200,7 @@ export default function WebApp({ session }: { session: BrowserSession }) {
       {panel === 'settings' ? <form className="settings-content" onSubmit={event => { event.preventDefault(); void run(() => { session.saveSettings({ targetLanguages: draft.targetLanguages, showOriginal: draft.showOriginal, showFurigana: draft.showFurigana, fontSize: draft.fontSize }); close() }) }}>
         <LanguageSettings draft={draft} onChange={next => setDraft(previous => ({ ...previous, ...next }))} />
         <label className="web-font" htmlFor="web-font">字号 {draft.fontSize}px<input id="web-font" type="range" min="14" max="24" value={draft.fontSize} onChange={event => setDraft(previous => ({ ...previous, fontSize: Number(event.target.value) }))} /></label>
+        {session.credentialsAvailable && <TranslationKeySettings session={session} />}
         <button type="submit" className="primary-button">保存设置</button>
       </form> : panel === 'text' ? <form className="web-text-form" onSubmit={event => { event.preventDefault(); void submitText() }}>
         <label htmlFor="web-text-input">原文</label>

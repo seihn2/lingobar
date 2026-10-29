@@ -12,6 +12,7 @@ export interface GatewayConfig extends RelayConfig {
   dailyCompletionRequests: number
   audioEnabled?: boolean
   text?: { ledgerDirectory: string }
+  credentialsFile?: string
 }
 const invalid = (): never => { throw new Error('Invalid gateway configuration') }
 const credential = (v: string | undefined): string => {
@@ -23,16 +24,25 @@ function translationCredential(env: Record<string, string | undefined>): string 
   const filename = env.TRANSLATION_API_KEY_FILE
   if (!filename) return credential(env.TRANSLATION_API_KEY)
   if (!isAbsolute(filename)) invalid()
+  const ownerSetup = env.WEB_TEXT_ENABLED === '1'
   let descriptor: number | undefined
   try {
     descriptor = openSync(filename, constants.O_RDONLY | constants.O_NOFOLLOW)
     const file = fstatSync(descriptor)
     if (!file.isFile() || file.size > 8192 || (file.mode & 0o077)) invalid()
-    const value: unknown = JSON.parse(readFileSync(descriptor, 'utf8'))
-    if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).join(',') !== 'apiKey') invalid()
+    let value: unknown
+    try { value = JSON.parse(readFileSync(descriptor, 'utf8')) }
+    catch { if (ownerSetup) return ''; return invalid() }
+    if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).join(',') !== 'apiKey' ||
+        typeof (value as { apiKey?: unknown }).apiKey !== 'string' || !(value as { apiKey: string }).apiKey.trim()) {
+      if (ownerSetup) return ''
+      return invalid()
+    }
     return credential((value as { apiKey: string }).apiKey)
-  } catch { return invalid() }
-  finally { if (descriptor !== undefined) closeSync(descriptor) }
+  } catch (error) {
+    if (ownerSetup && (error as NodeJS.ErrnoException).code === 'ENOENT') return ''
+    return invalid()
+  } finally { if (descriptor !== undefined) closeSync(descriptor) }
 }
 const integer = (v: string | undefined, max: number): number => {
   if (!v || !/^[1-9]\d*$/u.test(v) || !Number.isSafeInteger(Number(v)) || Number(v) > max) invalid()
@@ -61,5 +71,6 @@ export function gatewayConfig(env: Record<string, string | undefined>): GatewayC
     dailySessions: audio ? integer(env.GATEWAY_DAILY_SESSIONS, 288) : 0,
     dailyCompletionRequests: audio ? integer(env.GATEWAY_DAILY_COMPLETION_REQUESTS, 10_000) : 0,
     asrKey: audio ? credential(env.ASR_API_KEY) : '', translationKey: translationCredential(env), model: model as RelayConfig['model'],
-    ...(audio ? {} : { audioEnabled: false }), ...(text ? { text: { ledgerDirectory } } : {}) }
+    ...(audio ? {} : { audioEnabled: false }), ...(text ? { text: { ledgerDirectory } } : {}),
+    ...(text && env.TRANSLATION_API_KEY_FILE ? { credentialsFile: env.TRANSLATION_API_KEY_FILE } : {}) }
 }

@@ -22,7 +22,9 @@ describe('text-only gateway enablement', () => {
       const c = gatewayConfig({ ...env, TRANSLATION_API_KEY:'', TRANSLATION_API_KEY_FILE:filename })!
       expect(c.translationKey).toBe('synthetic-file-key-never-real')
       writeFileSync(filename, '{invalid')
-      expect(()=>gatewayConfig({ ...env, TRANSLATION_API_KEY_FILE:filename })).toThrow('Invalid gateway configuration')
+      expect(gatewayConfig({ ...env, TRANSLATION_API_KEY_FILE:filename })?.translationKey).toBe('')
+      rmSync(filename)
+      expect(gatewayConfig({ ...env, TRANSLATION_API_KEY_FILE:filename })).toMatchObject({ translationKey:'', credentialsFile:filename })
     } finally { rmSync(directory, { recursive:true, force:true }) }
   })
 

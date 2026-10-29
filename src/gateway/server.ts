@@ -6,6 +6,7 @@ import { AccessVerifier } from './access'
 import { DailyBudget } from './budget'
 import { WebTextBudget } from './text-budget'
 import { createTextHandler } from './text'
+import { saveTranslationKey, validTranslationKey } from './credentials'
 import type { GatewayConfig } from './config'
 import { NodePeer, nodeTransport } from './transport'
 import { RelaySession } from '../worker/session'
@@ -13,6 +14,7 @@ import { createAnnotationHandler } from '../worker/annotation'
 import { parseClientMessage } from '../shared/web-protocol'
 import { RelayError, type WorkerFetch } from '../worker/types'
 
+const CREDENTIALS_PATH = '/api/settings/translation-key'
 interface Dependencies { publicFetch?: typeof fetch; upstream?: WorkerFetch; now?: () => number }
 const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status,
   headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } })
@@ -36,7 +38,7 @@ export function createGateway(config: GatewayConfig | null, dependencies: Depend
   const upstream = dependencies.upstream || nodeTransport()
   const textUpstream = textBudget ? textBudget.fetch(upstream) : upstream
   const annotation = createAnnotationHandler(textUpstream)
-  const translate = config && textBudget ? createTextHandler(config.translationKey, textUpstream, { now }) : null
+  let translate = config && textBudget ? createTextHandler(config.translationKey, textUpstream, { now }) : null
   const sockets = new WebSocketServer({ noServer: true, maxPayload: 128 * 1024, perMessageDeflate: false, clientTracking: true })
   const sessions = new Set<RelaySession>(), controllers = new Set<AbortController>(), expiryTimers = new Set<ReturnType<typeof setTimeout>>()
   const pending = new Set<Promise<unknown>>()
@@ -47,7 +49,7 @@ export function createGateway(config: GatewayConfig | null, dependencies: Depend
     if (!config) return 503
     if (req.headers.host !== new URL(config.origin).host) return 403
     const origin = req.headers.origin
-    if ((origin && origin !== config.origin) || req.headers['sec-fetch-site'] === 'cross-site' || (upgrade || req.url === '/api/annotation' || req.url === '/api/translate') && origin !== config.origin) return 403
+    if ((origin && origin !== config.origin) || req.headers['sec-fetch-site'] === 'cross-site' || (upgrade || req.url === '/api/annotation' || req.url === '/api/translate' || req.url === CREDENTIALS_PATH && req.method === 'POST') && origin !== config.origin) return 403
     if (now() - windowAt >= 60_000) { windowAt = now(); requests = 0 }
     if (++requests > 60 || authorizing >= 4) return 429
     return null
@@ -60,8 +62,8 @@ export function createGateway(config: GatewayConfig | null, dependencies: Depend
   const server = createServer({ maxHeaderSize: 16_384, requestTimeout: 30_000, headersTimeout: 10_000 }, (req, res) => {
     const run = async () => {
       if (req.url === '/healthz' && req.method === 'GET') return send(json({ status: config && !closing ? 'configured' : 'disabled' }, config && !closing ? 200 : 503), res)
-      if (!['/app-config.json', '/api/session', '/api/annotation', '/api/translate'].includes(req.url || '')) return send(error(404), res)
-      if (req.method !== (req.url === '/api/annotation' || req.url === '/api/translate' ? 'POST' : 'GET')) return send(error(405), res)
+      if (!['/app-config.json', '/api/session', '/api/annotation', '/api/translate', CREDENTIALS_PATH].includes(req.url || '')) return send(error(404), res)
+      if (req.url === CREDENTIALS_PATH ? !['GET', 'POST'].includes(req.method || '') : req.method !== (req.url === '/api/annotation' || req.url === '/api/translate' ? 'POST' : 'GET')) return send(error(405), res)
       if (!config) return send(req.url === '/app-config.json' ? json({ version: 1, backend: null }) : error(503), res)
       const denied = boundary(req, false)
       if (denied) return send(error(denied), res)
@@ -69,10 +71,32 @@ export function createGateway(config: GatewayConfig | null, dependencies: Depend
       if (!claims) return send(error(401), res)
       if (req.destroyed || res.destroyed || closing) return
       if (req.url === '/app-config.json') return send(json({ version: 1, backend: config.audioEnabled === false ? null : '/api/session',
-        ...(config.text ? { textBackend: '/api/translate' } : {}) }), res)
+        ...(config.text ? { textBackend: config.translationKey ? '/api/translate' : null } : {}),
+        ...(config.text && config.credentialsFile ? { credentialsBackend: CREDENTIALS_PATH } : {}) }), res)
+      if (req.url === CREDENTIALS_PATH) {
+        if (!config.text || !config.credentialsFile) return send(error(503), res)
+        if (req.method === 'GET') return send(json({ configured: Boolean(config.translationKey) }), res)
+        if (req.headers['content-type']?.split(';', 1)[0].trim().toLowerCase() !== 'application/json') return send(error(400), res)
+        let bytes = 0, body = ''
+        for await (const chunk of req) {
+          bytes += Buffer.byteLength(chunk)
+          if (bytes > 8192) return send(error(400), res)
+          body += chunk.toString('utf8')
+        }
+        let value: unknown
+        try { value = JSON.parse(body) } catch { return send(error(400), res) }
+        if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).join(',') !== 'apiKey' ||
+            !validTranslationKey((value as { apiKey: unknown }).apiKey)) return send(error(400), res)
+        const apiKey = (value as { apiKey: string }).apiKey
+        if (req.aborted || res.destroyed || closing || claims.exp * 1000 <= now()) return send(error(401), res)
+        try { saveTranslationKey(config.credentialsFile, apiKey) } catch { return send(error(503), res) }
+        config.translationKey = apiKey
+        translate = textBudget ? createTextHandler(apiKey, textUpstream, { now }) : null
+        return send(json({ configured: true }), res)
+      }
       if (req.url === '/api/session') return send(error(config.audioEnabled === false ? 503 : 426), res)
       if (req.url === '/api/translate') {
-        if (!translate) return send(error(503), res)
+        if (!translate || !config.translationKey) return send(error(503), res)
         if (textRequests >= 1) return send(error(429), res)
         textRequests++
         const controller = new AbortController(); controllers.add(controller)
@@ -91,7 +115,7 @@ export function createGateway(config: GatewayConfig | null, dependencies: Depend
         }
         return
       }
-      if (!budget && !textBudget) return send(error(503), res)
+      if (!config.translationKey || !budget && !textBudget) return send(error(503), res)
       if (annotations >= 2) return send(error(429), res)
       try { budget?.reserve('annotation') } catch (e) { return send(error(e instanceof RelayError && e.code === 'quota' ? 429 : 503), res) }
       annotations++

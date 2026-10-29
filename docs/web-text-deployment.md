@@ -6,15 +6,33 @@
 原PR14/17只有音频会话及独立注音接口，缺少网页文本输入与`/api/translate`；
 `WEB_ENABLED=1`还强制要求ASR密钥。新代码补齐这三处，音频保持关闭。
 
+## 一次输入：现有Access登录后的配置表单
+
+复用当前Cloudflare Access登录及唯一`ACCESS_ALLOWED_EMAIL`所有者。网站能打开
+不代表收费API获准：配置、翻译、注音接口都由后端验证Access JWT；无身份、过期、
+伪造及非所有者请求拒绝，不调用供应商，也不增加人民币预算。
+
+部署本包并填写下面的**非秘密路径和Access元数据**后，所有者登录网页，进入
+“字幕设置”，在DeepSeek API Key密码框中输入并点击保存即可。密钥通过普通HTTPS
+POST直接写入`TRANSLATION_API_KEY_FILE`指定的既有`deepseek.json`，无需SSH交互、
+Azure秘密参数、聊天、额外令牌或PR18传输工具。保存后文字翻译立即可用，无需再输入。
+
+应用不返回或预填原密钥，不写请求正文日志；状态接口只返回`configured`布尔值。
+保存不会调用模型验证密钥或消耗额度。“已保存”不代表供应商已经接受该密钥。
+密码值不放浏览器本地存储，保存成功或关闭设置后清空。代理应沿用不记录请求正文
+的普通HTTPS配置，不能为此路径启用body/debug日志。后端不以“前端隐藏了表单”作为鉴权。
+
+服务用户需能读写原私有凭据目录及原预算账本；目录沿用现有0700，最终JSON为0600。
+缺失或空JSON不会阻止所有者配置页面启动；未保存有效值时，收费接口保持不可用。
+写入为普通私有临时文件+fsync+原子替换，不创建新账号或权限体系。应用不修改目录
+权限或服务身份；部署线程使用已有的相应运行用户。
+
 ## 配置与启动
 
-正式gateway可通过`TRANSLATION_API_KEY_FILE`直接读取既有私有JSON中的`apiKey`，
-也兼容原来的环境变量`TRANSLATION_API_KEY`；显式文件路径优先。固定调用
+正式gateway通过`TRANSLATION_API_KEY_FILE`读取既有私有JSON中的`apiKey`，也兼容
+原来的环境变量`TRANSLATION_API_KEY`；显式文件路径优先。固定调用
 `https://api.deepseek.com/chat/completions`的`deepseek-flash`，禁用思考与工具。
-配置`TRANSLATION_API_KEY_FILE=/var/lib/lingobar-text-test/credentials/deepseek.json`即可
-衔接用户已填写的同一文件，无需再输入或复制密钥；文件须为可读的私有普通JSON。
 它不自动搜索密钥，也不读取Electron或浏览器密钥。
-不要把密钥放进命令参数、聊天、静态前端或Git。无需PR18传输工具。
 
 环境文件只需以下配置；Access三项沿用当前已有应用的值：
 
@@ -45,14 +63,45 @@ node --env-file=/etc/lingobar-gateway/gateway.env gateway.cjs
 VM服务或开机启动规则。Node的`--env-file`只在命令行包含路径，不包含密钥值。
 不要同时设置`WEB_ENABLED=1`：当前1元约束尚不能覆盖ASR，混合启用会被拒绝。
 
+## 当前VM必须先调整的服务身份与写目录
+
+部署线程已确认：原gateway是独立动态用户，文件系统只读，不能写原`lingobar-test`
+凭据目录。仅换前端/代码不足以保存，必须先执行下列经确认的服务配置变化。
+包内`gateway-text.service.example`只供审阅，不自动安装：
+
+```ini
+[Service]
+DynamicUser=no
+User=lingobar-test
+UMask=0077
+ProtectSystem=strict
+ReadWritePaths=
+ReadWritePaths=/var/lib/lingobar-text-test/credentials ORIGINAL_LEDGER_DIRECTORY
+```
+
+`ORIGINAL_LEDGER_DIRECTORY`必须替换为现有`GATEWAY_TEXT_LEDGER_DIRECTORY`的实际
+绝对目录，不能新建或复制账本。若账本就在`/var/lib/lingobar-text-test`，该目录已
+包含凭据子目录，只需列一次。`ReadWritePaths=`表示将原可写白名单替换为这两个
+必要位置，部署线程须结合原服务配置填写，不能直接复制占位符启动。
+
+这里使用已有静态`lingobar-test`账户及其原目录，不创建账号、不新增SSH权限。
+凭据目录/账本目录须由该身份持有且0700，JSON/账本0600；不改为全员或宽松组权限，
+不新增公开路径。其余代码与系统仍只读，监听仍为`127.0.0.1:8788`。修改服务身份、
+白名单及重启由部署线程按用户确认执行；本云任务没有应用这些变化。若未调整，
+表单保存会失败，不能称为已上线。
+
 ## 同源接线
 
 同时替换本批静态前端与gateway构建，保留现有Access/Tunnel。代理继续指向
 `127.0.0.1:8788`，透传原公共Host、Origin和`Cf-Access-Jwt-Assertion`：
 
 - `GET /app-config.json`必须交给gateway，覆盖旧静态`backend:null`文件。
-  文本模式返回`{version:1,backend:null,textBackend:"/api/translate"}`；不返回密钥。
+  文本模式返回`backend:null`，保存密钥后`textBackend:"/api/translate"`；
+  配置了JSON路径的所有者另获`credentialsBackend:"/api/settings/translation-key"`。未保存时
+  `textBackend:null`，不返回密钥。
 - `POST /api/translate`新增文本翻译路径，必须送到gateway。
+- `GET/POST /api/settings/translation-key`交给gateway，复用同一Access应用。
+  GET只返回是否配置；POST只接受`apiKey`，不能选择文件路径。
 - `POST /api/annotation`保留日语独立补注音，同样走累计预算。
 - `/healthz`仅本机检查。`/api/session`保持拒绝，不能因此启用录音。
 

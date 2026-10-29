@@ -10,7 +10,7 @@ async function main() {
     define: { 'process.env.WS_NO_BUFFER_UTIL': '"1"', 'process.env.WS_NO_UTF_8_VALIDATE': '"1"' } })
   const inputs = Object.keys(result.metafile.inputs)
   if (inputs.some(name => /node_modules\/(?!ws\/)/.test(name) || /(?:^|\/)src\/main\/(?!translation\.ts$|japanese\.ts$)/.test(name))) throw new Error('Unexpected gateway runtime dependency')
-  for (const name of ['LICENSE', 'NOTICE.md', 'gateway.env.example']) copyFileSync(join(root, name), join(out, name))
+  for (const name of ['LICENSE', 'NOTICE.md', 'gateway.env.example', 'gateway-text.service.example']) copyFileSync(join(root, name), join(out, name))
   cpSync(join(root, 'licenses'), join(out, 'licenses'), { recursive: true })
   copyFileSync(join(root, 'docs/vm-gateway.md'), join(out, 'DEPLOYMENT.md'))
   writeFileSync(join(out, 'web-text-deployment.md'), readFileSync(join(root, 'docs/web-text-deployment.md'), 'utf8').replaceAll('](../evidence/', '](evidence/'))
