@@ -42,3 +42,11 @@ html,body,#root{height:100%;height:100dvh;min-width:0;background:#141a1e}
 .web-shell.has-panel[data-viewport-short="true"] .history-search-hint{display:none}
 .web-shell.has-panel[data-viewport-short="true"] .panel-history:has(.history-search-input:focus) .history-toolbar{display:none}
 @media(max-width:420px){.web-header,.web-capture,.web-footer{padding-left:12px;padding-right:12px}.web-shell .caption-row{grid-template-columns:54px minmax(0,1fr)}.web-shell .caption-card-meta{flex-wrap:wrap}.web-shell .caption-card-actions{gap:0}.web-shell .caption-card-heading{align-items:flex-start}.web-shell .caption-card-actions button{min-width:30px}.web-panel .language-options{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.web-text-form{display:flex;flex-direction:column;gap:10px;overflow:auto;min-height:0;padding:8px 16px 20px}
+.web-text-form label,.web-text-form p{font-size:13px;color:#a0c6bc;margin:0}
+.web-text-form textarea{box-sizing:border-box;width:100%;min-height:140px;resize:vertical;border:1px solid #9ebdb333;border-radius:7px;background:#10201d;color:#e3efeb;padding:12px;font:inherit;font-size:16px;line-height:1.5;-webkit-app-region:no-drag;overflow-wrap:anywhere}
+.web-text-form textarea:focus-visible{outline:2px solid #a0ded7;outline-offset:2px}
+.web-text-form .web-text-over-limit{color:#d7b995}
+.web-text-actions{display:flex;flex-wrap:wrap;gap:10px}
+.web-text-actions button{padding:8px 16px;min-height:44px}

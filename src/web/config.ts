@@ -1,11 +1,13 @@
 /** Public routing metadata only. Provider credentials never belong in this file. */
-export function parseWebConfig(value: unknown): { backend: '/api/session' | null } {
+interface WebConfig { backend: '/api/session' | null; textBackend?: '/api/translate' | null }
+export function parseWebConfig(value: unknown): WebConfig {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('网页配置格式不正确。')
   const input = value as Record<string, unknown>
-  if (input.version !== 1 || Object.keys(input).some(key => !['version', 'backend'].includes(key)) || (input.backend !== null && input.backend !== '/api/session')) throw new Error('网页配置格式不正确。')
-  return { backend: input.backend }
+  if (input.version !== 1 || Object.keys(input).some(key => !['version', 'backend', 'textBackend'].includes(key)) || (input.backend !== null && input.backend !== '/api/session') ||
+    (Object.hasOwn(input, 'textBackend') && input.textBackend !== null && input.textBackend !== '/api/translate')) throw new Error('网页配置格式不正确。')
+  return { backend: input.backend, ...(Object.hasOwn(input, 'textBackend') ? { textBackend: input.textBackend as WebConfig['textBackend'] } : {}) }
 }
-export async function loadWebConfig(): Promise<{ backend: '/api/session' | null; disabledReason?: 'unauthorized' }> {
+export async function loadWebConfig(): Promise<WebConfig & { disabledReason?: 'unauthorized' }> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 2000)
   try {

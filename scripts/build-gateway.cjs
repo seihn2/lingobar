@@ -13,6 +13,7 @@ async function main() {
   for (const name of ['LICENSE', 'NOTICE.md', 'gateway.env.example']) copyFileSync(join(root, name), join(out, name))
   cpSync(join(root, 'licenses'), join(out, 'licenses'), { recursive: true })
   copyFileSync(join(root, 'docs/vm-gateway.md'), join(out, 'DEPLOYMENT.md'))
+  writeFileSync(join(out, 'web-text-deployment.md'), readFileSync(join(root, 'docs/web-text-deployment.md'), 'utf8').replaceAll('](../evidence/', '](evidence/'))
   const textGuide = readFileSync(join(root, 'docs/one-rmb-test.md'), 'utf8')
     .replaceAll('](../evidence/', '](evidence/').replaceAll('](../scripts/', '](scripts/')
   writeFileSync(join(out, 'one-rmb-test.md'), textGuide)

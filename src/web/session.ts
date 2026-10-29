@@ -4,6 +4,7 @@ import { parseServerMessage, MAX_WEB_CAPTIONS, type WebClientMessage } from '../
 import { startMicrophone } from '../renderer/microphone'
 import { annotationText, type AnnotationRequest } from '../shared/annotation-protocol'
 import { annotationCancelled, requestAnnotation } from './annotation-client'
+import { parseTextRequest, parseTextResponse, type TextTranslationRequest } from '../shared/text-protocol'
 
 export type WebSocketPort = Pick<WebSocket, 'readyState' | 'bufferedAmount' | 'send' | 'close' | 'addEventListener' | 'removeEventListener'>
 export type WebCapture = (onChunk: (pcm: ArrayBuffer) => void, onError: (message: string) => void, signal: AbortSignal) => Promise<() => void>
@@ -16,6 +17,8 @@ interface Options {
   startupMs?: number
   disabledReason?: 'unauthorized'
   annotationFetch?: typeof fetch
+  textBackend?: '/api/translate' | null
+  textFetch?: typeof fetch
 }
 interface Run {
   id: string
@@ -30,6 +33,7 @@ interface Run {
   reject(error: Error): void
 }
 interface AnnotationJob { request: AnnotationRequest; abort: AbortController; epoch: number }
+interface TextJob { request: TextTranslationRequest; abort: AbortController; captionId?: string }
 const MAX_BUFFERED_AUDIO = 512_000
 const errors = {
   unauthorized: '服务未授权，请检查服务端配置。', quota: '服务额度已用尽。',
@@ -41,6 +45,7 @@ export const WEB_SETTINGS: Settings = {
   opacity: 1, fontSize: 16, launchAtLogin: false, asrModel: '', asrEndpoint: '',
   translationBaseUrl: '', translationModel: '', hasAsrKey: false, hasTranslationKey: false
 }
+function textCancelled(): Error { const error = new Error('已取消文字翻译。'); error.name = 'AbortError'; return error }
 function cancelled(): Error { const error = new Error('已取消开始录音。'); error.name = 'AbortError'; return error }
 
 /** Browser-owned, microphone-only session. No provider keys, desktop bridge or automatic reconnect. */
@@ -55,17 +60,21 @@ export class BrowserSession {
   private listeners = new Set<(snapshot: Snapshot) => void>()
   private socket: (url: string) => WebSocketPort
   private capture: WebCapture
+  private textJob: TextJob | null = null
   readonly configured: boolean
+  readonly textConfigured: boolean
   constructor(private options: Options) {
     // A fixed same-origin route is the only accepted backend. Public config cannot select an arbitrary upstream.
     const origin = new URL(options.origin)
     if (origin.username || origin.password || !['https:', 'http:'].includes(origin.protocol) ||
       (origin.protocol === 'http:' && !['localhost', '127.0.0.1', '[::1]'].includes(origin.hostname))) throw new Error('网页版需要 HTTPS。')
     if (options.backend !== null && options.backend !== '/api/session') throw new Error('网页服务地址不正确。')
+    if (options.textBackend !== undefined && options.textBackend !== null && options.textBackend !== '/api/translate') throw new Error('文字服务地址不正确。')
     this.configured = options.backend === '/api/session'
+    this.textConfigured = options.textBackend === '/api/translate'
     this.socket = options.socket || (url => new WebSocket(url))
     this.capture = options.capture || ((chunk, error, signal) => startMicrophone(chunk, error, { signal, platform: 'other' }))
-    this.state = { settings: structuredClone(WEB_SETTINGS), state: 'idle', message: this.configured ? '尚未连接' : options.disabledReason === 'unauthorized' ? '服务未授权' : '后端未配置', captions: [], partial: {}, collapsed: false }
+    this.state = { settings: structuredClone(WEB_SETTINGS), state: 'idle', message: this.configured ? '尚未连接' : this.textConfigured ? '文字翻译可用' : options.disabledReason === 'unauthorized' ? '服务未授权' : '后端未配置', captions: [], partial: {}, collapsed: false }
   }
   snapshot(): Snapshot { return structuredClone(this.state) }
   subscribe(listener: (snapshot: Snapshot) => void): () => void { this.listeners.add(listener); return () => { this.listeners.delete(listener) } }
@@ -186,10 +195,11 @@ export class BrowserSession {
     this.state = { ...this.state, state: 'error', message }; this.publish()
   }
   stop(): void {
+    this.cancelText()
     this.cancelAnnotations()
     const owner = this.owner
     if (owner) { if (owner.socket.readyState === 1) this.send(owner, { version: 1, type: 'stop', sessionId: owner.id }); this.release(owner) }
-    this.state = { ...this.state, state: 'idle', message: this.configured ? '已暂停' : this.options.disabledReason === 'unauthorized' ? '服务未授权' : '后端未配置' }; this.publish()
+    this.state = { ...this.state, state: 'idle', message: this.configured ? '已暂停' : this.textConfigured ? '文字翻译可用' : this.options.disabledReason === 'unauthorized' ? '服务未授权' : '后端未配置' }; this.publish()
   }
   saveSettings(input: SettingsInput): Settings {
     const allowed = ['targetLanguages', 'showOriginal', 'showFurigana', 'fontSize', 'opacity']
@@ -199,7 +209,7 @@ export class BrowserSession {
     if (input.fontSize !== undefined && (!Number.isFinite(input.fontSize) || input.fontSize < 14 || input.fontSize > 24)) throw new Error('字号须为14–24。')
     if (input.opacity !== undefined && (!Number.isFinite(input.opacity) || input.opacity < 0.45 || input.opacity > 1)) throw new Error('不透明度须为45–100%。')
     const changesTranslation = (input.targetLanguages !== undefined && input.targetLanguages.join('|') !== this.state.settings.targetLanguages.join('|')) || (input.showFurigana !== undefined && input.showFurigana !== this.state.settings.showFurigana)
-    if (changesTranslation) { if (this.owner) this.stop(); else this.cancelAnnotations() }
+    if (changesTranslation) { this.cancelText(); if (this.owner) this.stop(); else this.cancelAnnotations() }
     this.state = { ...this.state, settings: { ...this.state.settings, ...input, targetLanguages: [...(input.targetLanguages || this.state.settings.targetLanguages)] } }
     this.publish(); return structuredClone(this.state.settings)
   }
@@ -208,7 +218,9 @@ export class BrowserSession {
     if (!caption || (!caption.saved && (caption.live || caption.translationPending || caption.status !== 'ready'))) throw new Error('请等待这段翻译完成。')
     this.state = { ...this.state, captions: this.state.captions.map(item => item.id === id ? { ...item, saved: !item.saved } : item) }; this.publish()
   }
-  retry(id: string): void {
+  retry(id: string): void | Promise<void> {
+    const candidate = this.state.captions.find(item => item.id === id)
+    if (candidate?.source === 'text') return this.requestText(candidate.original, id)
     if (!this.owner?.ready || this.state.state !== 'listening') throw new Error('请先连接服务，再重试这段翻译。')
     const caption = this.state.captions.find(item => item.id === id)
     if (!caption || caption.live || caption.translationPending) throw new Error('这段尚未定稿。')
@@ -219,9 +231,68 @@ export class BrowserSession {
     this.publish()
     this.send(this.owner, { version: 1, type: 'retry', sessionId: this.owner.id, id: upstreamId })
   }
+  /** Explicit text only: never acquires media or creates an audio WebSocket. */
+  translateText(original: string): Promise<void> { return this.requestText(original) }
+  private async requestText(original: string, captionId?: string): Promise<void> {
+    if (!this.textConfigured) throw new Error('文字翻译服务尚未配置。')
+    if (this.textJob) throw new Error('请等待当前文字翻译完成，或先取消。')
+    if (!captionId && this.state.captions.length >= MAX_WEB_CAPTIONS && this.state.captions.every(caption => caption.saved)) throw new Error('本页记录已满，请先导出收藏。')
+    const request = parseTextRequest(JSON.stringify({ version: 1, requestId: crypto.randomUUID(), original,
+      targetLanguages: [...this.state.settings.targetLanguages], showFurigana: this.state.settings.showFurigana }))
+    const job: TextJob = { request, abort: new AbortController(), captionId }
+    this.textJob = job
+    if (captionId) {
+      this.cancelAnnotation(captionId)
+      this.state = { ...this.state, captions: this.state.captions.map(caption => caption.id === captionId ? { ...caption, translationPending: true } : caption) }
+      this.publish()
+    }
+    let timedOut = false
+    const timer = setTimeout(() => { timedOut = true; job.abort.abort() }, 60_000)
+    try {
+      const response = await (this.options.textFetch || fetch)(new URL('/api/translate', this.options.origin).toString(), {
+        method: 'POST', credentials: 'same-origin', redirect: 'error', cache: 'no-store', signal: job.abort.signal,
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request)
+      })
+      if (!response.ok) throw new Error(response.status === 401 || response.status === 403 ? '文字翻译服务未授权。' : response.status === 429 ? '服务额度已用尽。' : '文字翻译暂不可用。')
+      const result = parseTextResponse(await response.text(), request)
+      if (this.textJob !== job || job.abort.signal.aborted || (captionId && !this.state.captions.some(caption => caption.id === captionId))) throw textCancelled()
+      const id = captionId || `text:${request.requestId}`
+      const previous = this.state.captions.find(caption => caption.id === id)
+      const caption: Caption = { ...result.caption, id, saved: previous?.saved || false }
+      const captions = previous ? this.state.captions.map(item => item.id === id ? caption : item) : [...this.state.captions, caption]
+      while (captions.length > MAX_WEB_CAPTIONS) {
+        const index = captions.findIndex(item => !item.saved)
+        if (index < 0) throw new Error('本页记录已满，请先导出收藏。')
+        const [evicted] = captions.splice(index, 1)
+        this.cancelAnnotation(evicted.id); this.captionRevisions.delete(evicted.id)
+      }
+      this.captionRevisions.set(id, (this.captionRevisions.get(id) || 0) + 1)
+      this.state = { ...this.state, captions }; this.publish()
+    } catch (error) {
+      if (this.textJob !== job) throw textCancelled()
+      const cancelled = job.abort.signal.aborted
+      if (captionId) {
+        this.state = { ...this.state, captions: this.state.captions.map(caption => caption.id === captionId ? {
+          ...caption, translationPending: false, ...(cancelled ? {} : { status: 'error' as const, error: '这段文字翻译尚未完成。' })
+        } : caption) }
+        this.publish()
+      }
+      if (cancelled) { if (timedOut) throw new Error('文字翻译超时，请重试。'); throw textCancelled() }
+      throw error
+    } finally { clearTimeout(timer); if (this.textJob === job) this.textJob = null }
+  }
+  cancelText(): void {
+    const job = this.textJob
+    if (!job) return
+    this.textJob = null; job.abort.abort()
+    if (job.captionId) {
+      this.state = { ...this.state, captions: this.state.captions.map(caption => caption.id === job.captionId ? { ...caption, translationPending: false } : caption) }
+      this.publish()
+    }
+  }
   /** Retained finalized text can be annotated while paused, without an audio socket or capture. */
   async retryAnnotation(id: string): Promise<void> {
-    if (!this.configured) throw new Error('注音服务尚未配置完成。')
+    if (!this.configured && !this.textConfigured) throw new Error('注音服务尚未配置完成。')
     if (this.annotations.has(id)) return
     const caption = this.state.captions.find(item => item.id === id)
     const text = caption && annotationText(caption), revision = this.captionRevisions.get(id)

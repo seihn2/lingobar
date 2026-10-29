@@ -21,6 +21,8 @@ const entries = [...files(join(dist, 'gateway')), ...files(join(dist, 'web'))].s
 })
 writeFileSync(join(dist, 'GATEWAY-MANIFEST.json'), JSON.stringify({ sourceHead: head, sourceTree: tree, sourceBase: process.env.LINGOBAR_SOURCE_BASE || '', checkoutHead: git('rev-parse', 'HEAD'),
   runtime: 'Node.js22 Linux, loopback gateway only', enabled: false, deployed: false, backend: null,
+  webText: { enabled: false, endpoint: '/api/translate', provider: 'deepseek-flash', cumulativeLimitMicroCny: 1_000_000,
+    ledger: 'Same existing PR17 test-budget.json directory; no initialization/reset', asr: false, guide: 'gateway/web-text-deployment.md' },
   textTestExecutor: { enabled: false, batchId: 'lingobar-test-2026-10-28', limitMicroCny: 1_000_000,
     steps: ['translation', 'ruby'], asr: false, entrypoint: 'scripts/run-one-rmb-text-test.cjs',
     installation: 'scripts/text-test-installation.json', proof: 'evidence/text-test-proof.json',
