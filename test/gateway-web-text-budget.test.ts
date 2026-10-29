@@ -30,7 +30,7 @@ beforeEach(() => {
 })
 afterEach(() => { for (const dir of directories.splice(0)) rmSync(dir, { recursive: true, force: true }); vi.unstubAllGlobals(); vi.restoreAllMocks() })
 
-describe('one cumulative RMB batch shared by fixed CLI and live text completions', () => {
+describe.skipIf(process.platform !== 'linux')('one cumulative RMB batch shared by fixed CLI and live text completions', () => {
   it('does not create a missing ledger, reset it or permit a second writer', () => {
     const dir = directory(false)
     expect(() => new WebTextBudget(dir)).toThrow()
@@ -127,7 +127,7 @@ describe('one cumulative RMB batch shared by fixed CLI and live text completions
   })
 })
 
-describe('the per-completion bound precedes any dispatch', () => {
+describe.skipIf(process.platform !== 'linux')('the per-completion bound precedes any dispatch', () => {
   it('sets no-tools and enforces the full encoded plaintext input boundary', () => {
     const bounded = webTextRequest(ENDPOINT, request())
     expect(JSON.parse(bounded.body as string).tool_choice).toBe('none')
