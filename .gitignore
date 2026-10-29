@@ -22,3 +22,8 @@ diagnostics-until
 LingoBar-*.md
 resources/native/win-*/
 resources/native/windows/build*/
+__pycache__/
+scripts/secure-key/key-transfer-sender.json
+scripts/secure-key/key-transfer-receiver.json
+
+scripts/secure-key/key-transfer-envelope.json

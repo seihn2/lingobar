@@ -23,6 +23,16 @@ jobs:
       - name: Confirm Node 22 budget-test runtime
         run: node -e "if(process.versions.node.split('.')[0]!=='22')process.exit(1);console.log('Budget tests use Node '+process.versions.node)"
       - run: npm run typecheck
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install reviewed hash-locked encryption dependency
+        run: |
+          python3 -m pip install --require-hashes --only-binary=:all: -r scripts/secure-key/requirements.txt
+      - run: python3 --version
+      - name: Record initial process core limits
+        run: python3 -c "import resource; print('Initial RLIMIT_CORE soft/hard', resource.getrlimit(resource.RLIMIT_CORE))"
+      - run: npm run test:key-transfer
       - run: npm run test:worker
       - run: npm run test:gateway
       - run: npm run plan:test-budget
@@ -30,6 +40,16 @@ jobs:
       - run: npm run build:web && npm run verify:web
       - run: npm run build:worker && npm run verify:worker
       - run: npm run build:gateway && npm run verify:gateway
+      - run: npm run build:key-transfer && npm run verify:key-transfer
+        env:
+          LINGOBAR_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+          LINGOBAR_SOURCE_BASE: ${{ github.event.pull_request.base.sha || '' }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: key-transfer-disabled-${{ github.event.pull_request.head.sha || github.sha }}
+          path: dist/key-transfer/
+          if-no-files-found: error
+          retention-days: 14
       - run: node scripts/archive-worker.cjs
         env:
           LINGOBAR_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}

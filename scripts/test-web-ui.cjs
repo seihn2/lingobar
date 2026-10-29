@@ -37,7 +37,9 @@ async function main() {
     child.stderr.on('data', chunk => { browserDiagnostics = (browserDiagnostics + chunk).slice(-8192) })
     let launchError
     child.once('error', error => { launchError = error })
-    const deadline = Date.now() + 15_000
+    // A slow browser launch is separate from renderer assertions; stay bounded
+    // without restarting the browser or hiding early process exit diagnostics.
+    const deadline = Date.now() + 30_000
     let port
     while (!port && Date.now() < deadline) {
       if (launchError) throw launchError

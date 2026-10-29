@@ -222,12 +222,28 @@ async function prepareTouch(mode: TouchState['mode']): Promise<TouchState> {
   const diagnostics = { width: innerWidth, scale: visualViewport?.scale, box: { x: box.x, y: box.y, w: box.width, h: box.height }, hit: document.elementFromPoint(box.x + box.width * 0.65, box.y + box.height * 0.5)?.className, touchAction: getComputedStyle(surface).touchAction, bodyTouchAction: getComputedStyle(document.body).touchAction }
   return { diagnostics, mode, id: peer.sessionId + ':' + id, top: surface.scrollTop, x: box.x + box.width * 0.65, y: box.y + box.height * 0.5, overflow: surface.scrollHeight - surface.clientHeight }
 }
+async function waitForTouchIdle(surface: HTMLElement) {
+  // Native fling can continue after touchEnd. Record the reading baseline only
+  // after it settles, before any synthetic caption updates are dispatched.
+  const started = performance.now(), deadline = started + 2000
+  let top = surface.scrollTop, stableSince = started, samples = 0
+  while (performance.now() < deadline) {
+    await new Promise(resolve => setTimeout(resolve, 20))
+    const next = surface.scrollTop, now = performance.now()
+    samples++
+    if (Math.abs(next - top) > 0.1) { stableSince = now; top = next }
+    if (now - stableSince >= 120) return { elapsed: now - started, samples, top: next }
+  }
+  throw new Error('Native touch scroll did not become idle before caption updates')
+}
+
 async function verifyTouch(before: TouchState) {
   const checks: string[] = [], failures: string[] = []
   const check = (ok: unknown, message: string) => { checks.push(message); if (!ok) failures.push(message) }
   const surface = query(before.mode === 'expanded' ? '.stream-viewport' : '.compact-viewport')
   const reviewing = () => before.mode === 'expanded' ? query('.stream-label').textContent?.includes('正在回看') : Boolean(document.querySelector('.compact-review'))
-  const initial = { events: (surface as HTMLElement & { __touchEvents?: unknown }).__touchEvents, pageTop: document.scrollingElement?.scrollTop, top: surface.scrollTop, reviewing: Boolean(reviewing()), overflow: surface.scrollHeight - surface.clientHeight }
+  const settled = await waitForTouchIdle(surface)
+  const initial = { settled, events: (surface as HTMLElement & { __touchEvents?: unknown }).__touchEvents, pageTop: document.scrollingElement?.scrollTop, top: surface.scrollTop, reviewing: Boolean(reviewing()), overflow: surface.scrollHeight - surface.clientHeight }
   check(Math.abs(surface.scrollTop - before.top) > 5 && ((surface as HTMLElement & { __touchEvents?: { move: number } }).__touchEvents?.move || 0) > 0, before.mode + ' native touch swipe actually scrolls captions')
   check(reviewing(), before.mode + ' native touch swipe pauses following')
   const top = surface.scrollTop, peer = sockets.at(-1)!, id = 'touch-arrival-' + sockets.length

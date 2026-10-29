@@ -16,6 +16,7 @@ async function main() {
   const textGuide = readFileSync(join(root, 'docs/one-rmb-test.md'), 'utf8')
     .replaceAll('](../evidence/', '](evidence/').replaceAll('](../scripts/', '](scripts/')
   writeFileSync(join(out, 'one-rmb-test.md'), textGuide)
+  copyFileSync(join(root, 'docs/secure-key-transfer.md'), join(out, 'secure-key-transfer.md'))
   copyFileSync(join(root, 'scripts/plan-one-rmb-test.cjs'), join(out, 'plan-one-rmb-test.cjs'))
   // Preserve the source-relative proof path; this CLI is separate from the HTTP gateway.
   mkdirSync(join(out, 'scripts'), { recursive: true }); mkdirSync(join(out, 'evidence'), { recursive: true })

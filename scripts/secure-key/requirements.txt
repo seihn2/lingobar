@@ -1,0 +1,12 @@
+# Reviewed PyCA runtime, Python3.12 binary wheels only: Linux x86_64/macOS arm64.
+# No code or dependencies are installed by the transfer entrypoints.
+cryptography==50.0.0 \
+ --hash=sha256:031e2d5dd4bb9caa3ca9c82e5a197fd8ae680232cee62603d1a813f3f07e3d03 \
+ --hash=sha256:06a32a980526a6ab9a4b9bf8f7385800791e2bb960903cb6b530e4817509a3b7 \
+ --hash=sha256:b42a28c1844fd9de8f3f7d540e36b66f3a9c83fceac7170ebc7a6a19edd9dcae \
+ --hash=sha256:82148ec5bddac30b51a5b3c1945075f896fa022cb93f8e4a01e9f6ee95292c5f
+cffi==2.1.1 \
+ --hash=sha256:f81b3b8f3d4e343550fa4baa0e479bba9f2d29ce9c2e9b51d1ce1718d7442fcf \
+ --hash=sha256:c1453022f490d2459a11819d83ad1d586e9ff65a12ac3e705ffebd46d3685dcf
+pycparser==3.0 \
+ --hash=sha256:b727414169a36b7d524c1c3e31839a521725078d7b2ff038656844266160a992
