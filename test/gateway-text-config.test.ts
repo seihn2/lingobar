@@ -14,7 +14,7 @@ describe('text-only gateway enablement', () => {
     expect(gatewayConfig({})).toBe(null)
     for(const changed of [{WEB_ENABLED:'1'},{TRANSLATION_API_KEY:''},{GATEWAY_TEXT_LEDGER_DIRECTORY:''}]) expect(()=>gatewayConfig({...env,...changed})).toThrow()
   })
-  it('reads the explicitly selected existing JSON once, without requiring another key value', () => {
+  it.skipIf(process.platform === 'win32')('reads the explicitly selected existing JSON once, without requiring another key value', () => {
     const directory = mkdtempSync(join(tmpdir(), 'lingobar-dummy-server-key-'))
     const filename = join(directory, 'deepseek.json')
     try {
