@@ -1,0 +1,631 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Portable evidence index. Paths prefixed data/ are logical evidence locations rather than a required private workspace path. No raw dictionary, SQLite database, user data or credentials are stored here.",
+  "derivatives": [
+    {
+      "path": "offline-multilingual-inventory.json",
+      "bytes": 137573,
+      "portableSha256": "900bbf76e809c4178b63399b0a5265a65cd25140538f2eabcf13ce1c3f1d2504"
+    },
+    {
+      "path": "offline-multilingual-cases.json",
+      "bytes": 26484,
+      "portableSha256": "cbd74881ee1af489ff0051b927bc0c8ef3abcbc4334eb854300a959cff35fc9e"
+    },
+    {
+      "path": "offline-multilingual-results.json",
+      "bytes": 76376,
+      "portableSha256": "3231cc43b30b34136edbd721dcb74541d64e1a612132cf9f3ae9ec563fd3e206"
+    }
+  ],
+  "originalSourceReceipts": [
+    {
+      "originalLogicalPath": "data/enwiktionary-en-20261025/download-metadata.json",
+      "originalByteSha256": "b10d58755e8dbbd41f1ddede8911988d835fdd74271aacb7ebc53d1415e3c6fc"
+    },
+    {
+      "originalLogicalPath": "data/enwiktionary-en-20261025/source-description.json",
+      "originalByteSha256": "0004334bad884ff0071f416f3783a9831613c8835d1d1be4a6d340b17cce27e4"
+    },
+    {
+      "originalLogicalPath": "data/enwiktionary-en-20261025/text.jsonl.provenance.json",
+      "originalByteSha256": "3f4099cd572fea08228b9176c8579b15225500bd901da1c322debb73929461e4"
+    },
+    {
+      "originalLogicalPath": "data/enwiktionary-en-20261025/build-result.json",
+      "originalByteSha256": "6e77bbaa6de9049609909a24c282a68141d7d325087b2c0528e2da479b11e823"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-enwiktionary-en-en/manifest.json",
+      "originalByteSha256": "9a2cf34c27434bc862f251b9c45350b9c79bb81ad32125dab30dab8c7c418211"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-enwiktionary-en-en/BUILD-REPORT.json",
+      "originalByteSha256": "d014e6f327394836c776f840d8f0d0f25e90343b7d6325edbdcd6764253a24c7"
+    },
+    {
+      "originalLogicalPath": "data/enwiktionary-ja-20261025/download-metadata.json",
+      "originalByteSha256": "1043106ee1ba79a85d46ef8c425882d754a4eaa36a2c034a33d609139404ec90"
+    },
+    {
+      "originalLogicalPath": "data/enwiktionary-ja-20261025/source-description.json",
+      "originalByteSha256": "1eacaffbec6e305179754984fe404474c8290142b29ef455c9768594850baefd"
+    },
+    {
+      "originalLogicalPath": "data/enwiktionary-ja-20261025/text.jsonl.provenance.json",
+      "originalByteSha256": "454003d39e1b42c6e1b8ac5faf74cf0bd6ea4729d2cffebc48900c2db9b4c3da"
+    },
+    {
+      "originalLogicalPath": "data/enwiktionary-ja-20261025/build-result.json",
+      "originalByteSha256": "5920a2ee2811c8904de83100cf0aa34aefe66dc7e78d653312dba477c5c2bae6"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-enwiktionary-ja-en/manifest.json",
+      "originalByteSha256": "7525d4573493662d607e661ff980bbd68cca83e63c890074cd47a2a429e291f7"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-enwiktionary-ja-en/BUILD-REPORT.json",
+      "originalByteSha256": "ed62fc27815b9fd86d17f93aa3942d107a46174fd3c8d3da5175d26dc4c05c74"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-de-hans-label-20261029/download-metadata.json",
+      "originalByteSha256": "b8af71d76b81a0609e9de5d259657b614efb67435063b74529a0d565215f2cac"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-de-hans-label-20261029/source-description.json",
+      "originalByteSha256": "6f6a4ef2a0759aa69f55bb8a22bc6a2be52628ce863bbc3a8d93c21bb069c7ee"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-de-hans-label-20261029/text.jsonl.provenance.json",
+      "originalByteSha256": "cc26e32e806541405c90dfc763363f8eca96732605ac1ef0655c057ef4da4e40"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-de-hans-label-20261029/build-result.json",
+      "originalByteSha256": "bc5da68c20cd4ef122ae6330510fedd0fcf122a2916f1ce6dbdf7d24ad2a6100"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-de-zh-hans-label/manifest.json",
+      "originalByteSha256": "8c7658b6b255aa60eecd01164fd13b5ce8d184682d9c4392067353ca7dad2c4b"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-de-zh-hans-label/BUILD-REPORT.json",
+      "originalByteSha256": "ef51e391b2281bec7a6680b082f7f53fc248caa192afcd0044232420976a9b3c"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-de-hant-label-20261029/download-metadata.json",
+      "originalByteSha256": "ba36670a1bdab52a2c8c5cab6de663dd6ce7684ee514e336ca373cfa06bf6814"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-de-hant-label-20261029/source-description.json",
+      "originalByteSha256": "306a3b9f8dd8f97d7dfcf90e112f01ae4eef3eb25a313adc0336787b84943a1a"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-de-hant-label-20261029/text.jsonl.provenance.json",
+      "originalByteSha256": "fe71a2fb3152c9206ed519f3b7e1ecaccef85bb3679cdf4b2f86bce4b7f19caf"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-de-hant-label-20261029/build-result.json",
+      "originalByteSha256": "70da76677fa5ec22daf1c25e3279d4028b8fe233cda7e8d58c9e103a5532c372"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-de-zh-hant-label/manifest.json",
+      "originalByteSha256": "ecf2d3f7115a9b8e9bdd76a7ac1f653f703df7deeda24bf1fcf838d8ddace568"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-de-zh-hant-label/BUILD-REPORT.json",
+      "originalByteSha256": "415f9b156430d484a0a93e2f3fa36c0a8c99c0cad1d790ac91ec1b4cc79bb515"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-en-hans-label-20261029/download-metadata.json",
+      "originalByteSha256": "2ed5e1b39099f5f9a3a05657575d77baae8e99037c9fa64e781dfcc7a3d98788"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-en-hans-label-20261029/source-description.json",
+      "originalByteSha256": "a254b74bbb40d487114090c0d889d474191015e6a457ef0e14dd56ec09b8d825"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-en-hans-label-20261029/text.jsonl.provenance.json",
+      "originalByteSha256": "1c973ce6c17c74504fcd909e141069aeb83a65996e70cbe4a99da3b0f709e259"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-en-hans-label-20261029/build-result.json",
+      "originalByteSha256": "3c5ec08b9889deeb57e48b93f05804b566508b6eb816180028637551776201cd"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-en-zh-hans-label/manifest.json",
+      "originalByteSha256": "afb90e9f80b20c2c9d48d1a81d7c3661e15f8b101576917b0be3015adab569a6"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-en-zh-hans-label/BUILD-REPORT.json",
+      "originalByteSha256": "e19404a2669a34b1c7862c7685c94308af84ac9a4fe6c8e3d7056a4d9035c3be"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-en-hant-label-20261029/download-metadata.json",
+      "originalByteSha256": "6d3e30a979dcdfe35c3d90e31b064823f92dea0345e29eea53faa1b719588385"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-en-hant-label-20261029/source-description.json",
+      "originalByteSha256": "f160fcb07257c2bd108b9b3f266e758d0ac7498b5b798126eb66d9e0ecceb7b7"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-en-hant-label-20261029/text.jsonl.provenance.json",
+      "originalByteSha256": "eb66f27d5b4e6e2f0829b7a340efa833d51617ce02a8f453c8cacf8a63184343"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-en-hant-label-20261029/build-result.json",
+      "originalByteSha256": "6b8513ae95ef4a68789ef4291f0c84e947f31da808e55723ef871e960452eabd"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-en-zh-hant-label/manifest.json",
+      "originalByteSha256": "0ab270fd7bcf40d360fef646cff238a986e44986dbb26a7978730439c58cead8"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-en-zh-hant-label/BUILD-REPORT.json",
+      "originalByteSha256": "e3cbc5d5678238a46452c8d9545196d77f1d1a94e75ece243361ba3ff557170d"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-es-hans-label-20261029/download-metadata.json",
+      "originalByteSha256": "dabeab7ca4c13725e3e3caafb13f3896a8978320a06f71bf389bde54b9bc103a"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-es-hans-label-20261029/source-description.json",
+      "originalByteSha256": "18a995aab5d7b1c2b7e4db1102a98de604458edc7bfcf7a1cf8d0d093d9fe50e"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-es-hans-label-20261029/text.jsonl.provenance.json",
+      "originalByteSha256": "0ea189765a40266cdfaae30780bd5391f32e2b2ca12e8f0d20e9e2762d26afe2"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-es-hans-label-20261029/build-result.json",
+      "originalByteSha256": "0b7a728fed99483126b648803180f7873288375f5235137e78c97dfb901da52d"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-es-zh-hans-label/manifest.json",
+      "originalByteSha256": "e014e0d6f02263b963cd5c0273742425c5945e34270d2441db52b875f5388bb3"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-es-zh-hans-label/BUILD-REPORT.json",
+      "originalByteSha256": "8e88d573c1db00f63da83424bac0834a47fe591ef270274a97b91c40ff545de3"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-es-hant-label-20261029/download-metadata.json",
+      "originalByteSha256": "05d99350738cd7571161c3191b05988861310c5fadfab070c6a11f875e8a65b6"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-es-hant-label-20261029/source-description.json",
+      "originalByteSha256": "0669578f9eb69b78918c66f26cbcbfbec2572dccd901cbca4574c5ebf9566332"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-es-hant-label-20261029/text.jsonl.provenance.json",
+      "originalByteSha256": "f0a3da79c3b3fdf42f6a8a12c911aa0039430fbdd9661eaf34f90a4c771aef7e"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-es-hant-label-20261029/build-result.json",
+      "originalByteSha256": "bc0ad75bf519916365ec1f259e3e3d7f28897f1277f49031b212515f704db8c0"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-es-zh-hant-label/manifest.json",
+      "originalByteSha256": "9676a41bf977cc12487aa18b618496ba1562beaf0760104bf5ec6a37c7c67325"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-es-zh-hant-label/BUILD-REPORT.json",
+      "originalByteSha256": "7a8d21c48579c3a45492518b268403bb2c098912ea794b6f273daa1d46fd6026"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-fr-hans-label-20261029/download-metadata.json",
+      "originalByteSha256": "c628787bb119273c5d1e266193e00d8434127b440761096d00e382b7171e4490"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-fr-hans-label-20261029/source-description.json",
+      "originalByteSha256": "6094f79cf06dff2b695e49922e1c7497a9f5c6e1f94cc56fc09a36d9411fddf8"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-fr-hans-label-20261029/text.jsonl.provenance.json",
+      "originalByteSha256": "4280d47182956cfe07d00aee71ebaa2f5cfb73de8d7f785fff545b989b730a54"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-fr-hans-label-20261029/build-result.json",
+      "originalByteSha256": "7d20496b023252d5c38692b50cda00a90a4b1a4dea6dfbd8a5fa328038895422"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-fr-zh-hans-label/manifest.json",
+      "originalByteSha256": "56ebfd3fa40eb161f2d598a425c2d0e5a89c56a17b300f844381634c9fe4ac7e"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-fr-zh-hans-label/BUILD-REPORT.json",
+      "originalByteSha256": "e447660ca3a5e12564069ee061e46ab9aca0adf459ef1b9cb2cceb3a820d8af9"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-fr-hant-label-20261029/download-metadata.json",
+      "originalByteSha256": "71c421258e4a6cef5b18eece2ed4fc619fff9e4ca23cbf62d839d8c07a69e0e8"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-fr-hant-label-20261029/source-description.json",
+      "originalByteSha256": "aa80b6f4ad87fcbbf5481ea7c11ed15af774722b19b3088d3a5d2b14488f0e30"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-fr-hant-label-20261029/text.jsonl.provenance.json",
+      "originalByteSha256": "01e0f908f727db7152bf3e5691ba446b91d5856377ce9c18cba9a22ea3ac9a80"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-fr-hant-label-20261029/build-result.json",
+      "originalByteSha256": "4f4317b7e3a009074184c76b7f4abc6f8f239022ee3749a44fbb10f1b762bdf6"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-fr-zh-hant-label/manifest.json",
+      "originalByteSha256": "f209402d70358eb8501dce9573978b618f275756efe4a01c3a9984ecc801894b"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-fr-zh-hant-label/BUILD-REPORT.json",
+      "originalByteSha256": "ef82a8d1f1e1fc4881c9c0e810714b2ca1637e0d5360d8c8cb1e7449ff002579"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-ja-hans-label-20261029/download-metadata.json",
+      "originalByteSha256": "b36ec0e8d7b9a03b479f2fca0441758aa5e12ca8adb970c866f18903b9048e74"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-ja-hans-label-20261029/source-description.json",
+      "originalByteSha256": "dbbe856e23a3e4163c88ef0d5e1b5ec1a578754c2e95f8a3319c1267b134ce58"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-ja-hans-label-20261029/text.jsonl.provenance.json",
+      "originalByteSha256": "838a7c6ee82edf1baff20c9a7cf174a78a5e41230ef142e0949facb74f2bb5a4"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-ja-hans-label-20261029/build-result.json",
+      "originalByteSha256": "2f142d46fcb5b4084e563034807da09ea8e9bb1937abedf7ce519bf34edc86c8"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-ja-zh-hans-label/manifest.json",
+      "originalByteSha256": "657cec46ffffd3da344ab0572ebc2114b61276fd481b723d731b9ebd669683a7"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-ja-zh-hans-label/BUILD-REPORT.json",
+      "originalByteSha256": "0182e19f25cbfd85b57f775ce32e53337d453c4b673dce06e7db043ed5176663"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-ja-hant-label-20261029/download-metadata.json",
+      "originalByteSha256": "2bedfd3d7751a202075d6b67cfdb56b846f67a61656a037980ba8b24d0d4dc69"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-ja-hant-label-20261029/source-description.json",
+      "originalByteSha256": "15d505eca2e62dd960b69d45fea0abf750296607af9541e5b9f1e3fa586c8070"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-ja-hant-label-20261029/text.jsonl.provenance.json",
+      "originalByteSha256": "48e0c8cd6f572f40bb21a106508603ca92376ea04fcd3f7967ddb2bd5e76ba87"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-ja-hant-label-20261029/build-result.json",
+      "originalByteSha256": "7ad7f8c47297220ab61d453c475767c102eac4f918c5ec9ffcccf4fc9b5f0c59"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-ja-zh-hant-label/manifest.json",
+      "originalByteSha256": "4dcc7ed1c621f5e1081d77feabf4173ccc791504a001130eba5fc0da378893c6"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-ja-zh-hant-label/BUILD-REPORT.json",
+      "originalByteSha256": "2c1a13e7d1b7f6443192a98012462400cdc68b131d2bc1851d3f5dad0b2eaaec"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-ko-hans-label-20261029/download-metadata.json",
+      "originalByteSha256": "d70bc1ad9bbf8ba1111c8fed44ac6d11429c715b62ae3b8786cee235b088ba53"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-ko-hans-label-20261029/source-description.json",
+      "originalByteSha256": "b6a8db8e1c395b8442ef4134c9550191e31b284064b8b44afb86ce7c5f92f0bc"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-ko-hans-label-20261029/text.jsonl.provenance.json",
+      "originalByteSha256": "3c9358f296304b3d5a0c6fc1bb1773b5b721eb883733f3753c71421f56a2c372"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-ko-hans-label-20261029/build-result.json",
+      "originalByteSha256": "137f054323795d82c2a4ef378f03a89d1dae8049bc4eee5cb71fc33fd2ddd55b"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-ko-zh-hans-label/manifest.json",
+      "originalByteSha256": "63124c00dfafb5847b33c938065b7c55a1f313c52e97aa63f32230beaa8f0197"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-ko-zh-hans-label/BUILD-REPORT.json",
+      "originalByteSha256": "de48b8c91d63167d9ddb2daa90494ca36ce0153907754d67ca4fc4bb74f8cc86"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-ko-hant-label-20261029/download-metadata.json",
+      "originalByteSha256": "59e15b8c123a2f92c195544e64d1f45829227eb133e8cc755a327ac48044fe77"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-ko-hant-label-20261029/source-description.json",
+      "originalByteSha256": "1f020b389d24e890b7545ad9f7ad1340ef12d1f818da1fe0b18d2347226e4120"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-ko-hant-label-20261029/text.jsonl.provenance.json",
+      "originalByteSha256": "7d740058a0cc45a567864b3707e123f37a8346b7106b34fdaba6860c06359a2a"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-ko-hant-label-20261029/build-result.json",
+      "originalByteSha256": "6291ba319e8ca16672749c37263c25d87afa069325b6dfddeab3e1a403727adc"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-ko-zh-hant-label/manifest.json",
+      "originalByteSha256": "a251d6e5cfc61451cfe7edd5e50db896d83a2a6e2ff8c401ffb2f3a547d046a9"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-ko-zh-hant-label/BUILD-REPORT.json",
+      "originalByteSha256": "0cd4d808488fc9ae2c8d90fd97479d5070e6874b7e5fd2f98dc860452a0e32f9"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-ru-hans-label-20261029/download-metadata.json",
+      "originalByteSha256": "6772dea7dff8d33392278141680bee4921615199348d18a8b8fb5181f9cce7e6"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-ru-hans-label-20261029/source-description.json",
+      "originalByteSha256": "99de9d79e94736210970cac743ec262c06fe643ff968424aafb4958e6ab6b144"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-ru-hans-label-20261029/text.jsonl.provenance.json",
+      "originalByteSha256": "0b29275a3839c139933d7adba7b3ae3623a0599f402193b717849d7269e0b88f"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-ru-hans-label-20261029/build-result.json",
+      "originalByteSha256": "39c7375bba7457cd41f8d8aace0f736f52b486dd3f0db447bce4948defdcb46a"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-ru-zh-hans-label/manifest.json",
+      "originalByteSha256": "039316dd3f64d96fff47158dc61ae881cde0b1d76cfb3a51e41b3d8e634b63f7"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-ru-zh-hans-label/BUILD-REPORT.json",
+      "originalByteSha256": "6d1cfb02eca5e72b63fa0e9a546a777d600ba12f1e36c810a4080341c4a53ef0"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-ru-hant-label-20261029/download-metadata.json",
+      "originalByteSha256": "9cdd05c05be09bbf0a477652cdb46ed2edf7213b85acd35fa5ce6a903d51dd61"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-ru-hant-label-20261029/source-description.json",
+      "originalByteSha256": "c0d2545450fb781ff179edd65b1873e6bc8f1349a3f2d5198fe8b523bc129cdc"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-ru-hant-label-20261029/text.jsonl.provenance.json",
+      "originalByteSha256": "72ed3e68055465d24543e23636736199084e0d9d56854f5c7ddb3180ffa9836f"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-ru-hant-label-20261029/build-result.json",
+      "originalByteSha256": "6ee97e87bf01872387797f6f2de564aa33013933876bede4b8b83f184369b5b0"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-ru-zh-hant-label/manifest.json",
+      "originalByteSha256": "6b344c91ed10ade3c45927457be2cb75e23c0888e591323c9dd08c21c8afd46c"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-ru-zh-hant-label/BUILD-REPORT.json",
+      "originalByteSha256": "eb37f1bc0af91929901fc71c11901c959354af86e218a54a483b00938020e012"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-zh-hans-label-20261029/download-metadata.json",
+      "originalByteSha256": "7d5457d691cd59a80145000d650e8d810795ff8de3fc392cb40f1b5365e2a2c5"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-zh-hans-label-20261029/source-description.json",
+      "originalByteSha256": "05f5f3769a167d897622dfd51bfe28a97c2007d9112c5eea93f33fd081c87b71"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-zh-hans-label-20261029/text.jsonl.provenance.json",
+      "originalByteSha256": "8abb2e3dc61f068967ecd4e38e1584d9fa36ffa3c6c9a57bafc436e997ad8c67"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-zh-hans-label-20261029/build-result.json",
+      "originalByteSha256": "2b700db922822d83a8313017cfbbd23527ac0013ac7782f45dae317f394775a2"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-zh-zh-hans-label/manifest.json",
+      "originalByteSha256": "d128369b4fb5cf28a81d0c9c31e0df758c7691700318b7fd10bd03af369fe7c9"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-zh-zh-hans-label/BUILD-REPORT.json",
+      "originalByteSha256": "21a52f777a04e5f00a084f4f105cb074a15f617fa848a10a819972e742b2ffd8"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-zh-hant-label-20261029/download-metadata.json",
+      "originalByteSha256": "1796917b31646030a605857c5134248750916123072c19d29b2124a5934e75c2"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-zh-hant-label-20261029/source-description.json",
+      "originalByteSha256": "88acd2ef0e72aba720dea0935f0c0cb97bce98bac205bcb75b7ca9565baa26fd"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-zh-hant-label-20261029/text.jsonl.provenance.json",
+      "originalByteSha256": "d43059a646c3892335fc8c2ad1d7cb53c056d144f14d4a0fbbca3ecca8621424"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-zh-hant-label-20261029/build-result.json",
+      "originalByteSha256": "d530dfe0fae361d6f73c2ea405bebb408d5aeb6c6a28fe28fed5f9fc481d76bb"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-zh-zh-hant-label/manifest.json",
+      "originalByteSha256": "a31934b94b3ed57db064bd9d4f721cba1cb4421d92c2b4edd84d5e9e8a7c202b"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-zh-zh-hant-label/BUILD-REPORT.json",
+      "originalByteSha256": "a670ced27fda98bf79058debeff91598031eb93350b915f8398a0de2be3d9574"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-zh-zhongwen-label-20261029/download-metadata.json",
+      "originalByteSha256": "62b7fb33b4ecf0dca6230504cdb44823268b7f0e4c5f319d0730a5c7d83918a9"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-zh-zhongwen-label-20261029/source-description.json",
+      "originalByteSha256": "a38060c46b868223a7aa02b8de224fadb81fc9f116743cfe2ef6292763919a54"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-zh-zhongwen-label-20261029/text.jsonl.provenance.json",
+      "originalByteSha256": "69756accdad901cca216ed81f12d18d2c734a6fe9626ce948f250182107d87b6"
+    },
+    {
+      "originalLogicalPath": "data/zhwiktionary-zh-zhongwen-label-20261029/build-result.json",
+      "originalByteSha256": "1d64a1ea877d9c41bb2376550dca04e1ed15052171c9f89e6a8f23702b3c9d7f"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-zh-zh-zhongwen-label/manifest.json",
+      "originalByteSha256": "8c7c2266ea8fa24c7e27ef5b3c0e142d1c82d9bba2dca26469c297ea5cf01ee9"
+    },
+    {
+      "originalLogicalPath": "data/builds/kaikki-zhwiktionary-zh-zh-zhongwen-label/BUILD-REPORT.json",
+      "originalByteSha256": "b91467068b29123f26986676421fc7248d5b56f8adfa5eccb790f02bccb9307d"
+    },
+    {
+      "originalLogicalPath": "data/validation-cases/en.json",
+      "originalByteSha256": "2466c28e5bfd8b8bcc3ed678fb047776abbf550e115f319b94a617f4dab8cd0e"
+    },
+    {
+      "originalLogicalPath": "data/validation-cases/ko.json",
+      "originalByteSha256": "5c2a528741a9fb463e062fb4d386c2f4835d77fbefb8e86534bf63298c46c001"
+    },
+    {
+      "originalLogicalPath": "data/validation-cases/fr.json",
+      "originalByteSha256": "68ca174f91e52ab3638da81db393a05bb7d628fc79258e1130dc45e2eaab4666"
+    },
+    {
+      "originalLogicalPath": "data/validation-cases/ru.json",
+      "originalByteSha256": "15bd44cf25f76b2ab44f30cc9197e212d6f97476224e14324e19144085c1de60"
+    },
+    {
+      "originalLogicalPath": "data/validation-cases/de.json",
+      "originalByteSha256": "40aea0193221f1c54b14d533947b6f1a8a019bfc57cd6ff90754848e429716da"
+    },
+    {
+      "originalLogicalPath": "data/validation-cases/es.json",
+      "originalByteSha256": "6e30b34d01ce9b7e2e2e5842b148251918fbc4f7608e36c623134223cb4e31c3"
+    },
+    {
+      "originalLogicalPath": "data/validation-cases/zh.json",
+      "originalByteSha256": "624b9fe9912a6e945f5ba4147f4db700ea968e3ef5846ed8ce9ba36fb0900730"
+    },
+    {
+      "originalLogicalPath": "data/validation-cases/FROZEN.json",
+      "originalByteSha256": "4c7e58f5973263ba2fabd1cdeb022442790b7fba809a4b7a5beb8dafe510880f"
+    },
+    {
+      "originalLogicalPath": "data/validation-reports/en-zh-sense256/report.json",
+      "originalByteSha256": "4725e61e67fafe7937fb2bcbc6f08462bd8e42d4c9eea3baa9046037d8c25efd"
+    },
+    {
+      "originalLogicalPath": "data/validation-reports/en-zh-final256/report.json",
+      "originalByteSha256": "1bfc6197e94c8dd254d0f786e3a9713990afb8f78ecd127b506abe0eae62aff0"
+    },
+    {
+      "originalLogicalPath": "data/validation-reports/en-with-en-fallback-final256/report.json",
+      "originalByteSha256": "42f968d863024d97ce648c0cb114a5b2da913e9f0d8ea54efc63d39791ef5474"
+    },
+    {
+      "originalLogicalPath": "data/validation-reports/ko-zh/report.json",
+      "originalByteSha256": "7541e38689e60ca42b83b7603a4e0ccff6eb3a8c1468703074556fb05fe2f281"
+    },
+    {
+      "originalLogicalPath": "data/validation-reports/fr-zh/report.json",
+      "originalByteSha256": "74c43e269e4bd33afa0260ef1c7f6c81cd0a2c2a51c8b8a4027196dd42a0e81d"
+    },
+    {
+      "originalLogicalPath": "data/validation-reports/ru-zh/report.json",
+      "originalByteSha256": "cdf7f6d893632dfedc7fb8cec90b99d015a786f899534b52ced00edaf8d223d1"
+    },
+    {
+      "originalLogicalPath": "data/validation-reports/de-zh/report.json",
+      "originalByteSha256": "36c4c78cf0d64006edc04b5669fc2efa5f9778746df8ab41f72142ce67c671d0"
+    },
+    {
+      "originalLogicalPath": "data/validation-reports/es-zh/report.json",
+      "originalByteSha256": "1a08685457b05ef36062837fa27a2da7e400ac44082ac1396869596fbca39fe4"
+    },
+    {
+      "originalLogicalPath": "data/validation-reports/zh-sense256/report.json",
+      "originalByteSha256": "81ac9ca36a7d369cee76f2356d1b240a7b240556d16edcacbff5164aad3d7e08"
+    },
+    {
+      "originalLogicalPath": "data/validation-reports/en-two-source-lifecycle/report.json",
+      "originalByteSha256": "47eeef59a954734de96f64e21086ef96be051ced946f0748c8dcef0164b18b4d"
+    },
+    {
+      "originalLogicalPath": "data/validation-reports/ko-two-source-lifecycle/report.json",
+      "originalByteSha256": "6a7f4fbefba4365c66760bf058d742bc1890d8b33a3f2d1b89b91a690ede5710"
+    },
+    {
+      "originalLogicalPath": "data/validation-reports/fr-two-source-lifecycle/report.json",
+      "originalByteSha256": "6e9069617a5d28872bb44aa3aadcb0aba85100c2005cd012e3e90783e2bfc8b0"
+    },
+    {
+      "originalLogicalPath": "data/validation-reports/de-zh/all-source-snapshots.json",
+      "originalByteSha256": "91ab10f80fa0d732b19401949f3f92107b375c82cd3e98e9162e6a2f4d54401b"
+    },
+    {
+      "originalLogicalPath": "data/validation-reports/es-zh/all-source-snapshots.json",
+      "originalByteSha256": "2b4ce4f94f8fa123fd5bfa08aaf71839047a77983e8b9b16cb7bfd32d4dd434b"
+    },
+    {
+      "originalLogicalPath": "data/validation-reports/ru-zh/all-source-snapshots.json",
+      "originalByteSha256": "1ea0bb49e68d91ad3a0543d0895f453d747c7118e65a772fac5377b6908e3497"
+    },
+    {
+      "originalLogicalPath": "data/validation-reports/zh-sense256/all-source-snapshots.json",
+      "originalByteSha256": "5ee21ca0a12697e60586be0ae15afa2df03953668b1815941043e5080103cbf8"
+    },
+    {
+      "originalLogicalPath": "data/validation-reports/en-with-en-fallback-final256/comparison.json",
+      "originalByteSha256": "29374d521fabc7967923a8a812dc86c2a700c11d6d8f131a547ba62147b5d4ab"
+    },
+    {
+      "originalLogicalPath": "data/validation-reports/real-many-senses-final256/report.json",
+      "originalByteSha256": "89a4a077a1f6c2abe359c01ee1afeaef84d23e94e13b407f0307422a77d5d4a5"
+    },
+    {
+      "originalLogicalPath": "data/engine-probes/manifest-v2-compatibility.json",
+      "originalByteSha256": "79019e9f67a7950709087e04343a931a0ab3d30b67f1a8c79bb8b0eac8a3a78f"
+    }
+  ],
+  "preservedJapaneseEvidence": [
+    {
+      "path": "offline-scale-before.json",
+      "originalAndCurrentByteSha256": "8972d8424b76e95871b09f01455e6d1cf7c807f051ca4703f5b5d8f7bd998213",
+      "bytes": 48145,
+      "scope": "Original Japanese batch, unchanged and not rerun for this documentation update."
+    },
+    {
+      "path": "offline-scale-after.json",
+      "originalAndCurrentByteSha256": "30cd260d343e8111fe8786d7f2c66d252b0ca15c569e782f95782280a993c9f7",
+      "bytes": 48508,
+      "scope": "Original Japanese batch, unchanged and not rerun for this documentation update."
+    },
+    {
+      "path": "offline-scale-comparison.json",
+      "originalAndCurrentByteSha256": "b68f60ee934438be94eaeef1e52ed0bb91fb2264352db8d8ab8b3ca3d84ebf5e",
+      "bytes": 13910,
+      "scope": "Original Japanese batch, unchanged and not rerun for this documentation update."
+    },
+    {
+      "path": "offline-scale-plans.json",
+      "originalAndCurrentByteSha256": "01d1473e8f983cf5ab24b93fb1668876c262644c689e57b70352239e510b76da",
+      "bytes": 3099,
+      "scope": "Original Japanese batch, unchanged and not rerun for this documentation update."
+    }
+  ],
+  "manifestCompatibilityProbe": {
+    "schemaVersion": 1,
+    "scope": "Synthetic manifest admission only; no data access or installer executed.",
+    "oldCommit": "f1fabe2fcd03e4529eaa0b253384138e43963bc9",
+    "oldSourceSha256": "99be14978f9a03ec9147cf36b64b646123941dcac48cd357cc8fd15ae9fb648f",
+    "newSourceSha256": "ad0a398cbc3c9486d44da5cea02a4c7e17674e9b1dc99c172b08b564a447f9bc",
+    "results": {
+      "oldReader": {
+        "manifest1": "accepted",
+        "manifest2": "rejected"
+      },
+      "newReader": {
+        "manifest1": "accepted",
+        "manifest2": "accepted"
+      }
+    }
+  },
+  "versionBoundary": "Manifest2 advertises greater-than100-sense capability; SQLite user_version remains1. Current reader accepts1/2, older clients reject2; old learning clients may not read snapshots containing2. Not full downgrade compatibility."
+}

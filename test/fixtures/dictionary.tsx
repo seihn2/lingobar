@@ -170,6 +170,7 @@ const api: DictionaryAPI = {
 const offlineWords = [['en', 'cats'], ['ja', '猫'], ['ko', '고양이'], ['fr', 'chat'], ['de', 'Katze'], ['es', 'gato'], ['ru', 'кошка'], ['zh', '猫']] as const
 const offlinePacks = new Map<string, OfflinePackInfo>()
 let offlineQueries = 0, offlineSaves = 0, cancelInstall = false
+let largeEntryFixture = false
 const offlineHits = (language: string, selected: string): OfflineHit[] => {
   const pack = offlinePacks.get(`synthetic-${language}`)
   if (!pack?.enabled || offlineWords.find(item => item[0] === language)?.[1] !== selected) return []
@@ -177,6 +178,7 @@ const offlineHits = (language: string, selected: string): OfflineHit[] => {
     { id: 'sense-1', glosses: [`SYNTHETIC_OFFLINE_MEANING_${language} <img src="https://invalid.test/offline">`], tags: [], examples: [] },
     { id: 'sense-2', glosses: [`SYNTHETIC_SECOND_SENSE_${language}`], tags: ['figurative'], examples: [] },
   ] }, matchPath: language === 'en' ? 'form' : 'exact', matchedText: selected }
+  if (largeEntryFixture && language === 'en') hit.entry.senses = Array.from({ length: 225 }, (_, index) => ({ id: `large-sense-${index + 1}`, glosses: [`SYNTHETIC_LARGE_SENSE_${String(index + 1).padStart(3, '0')}`], tags: [], examples: [] }))
   return [hit]
 }
 const resetOfflinePacks = () => {
@@ -467,7 +469,48 @@ async function prepareOfflineReviewAx() {
   if (saved.providerKind !== 'offline-dictionary') throw new Error('Expected an offline AX snapshot')
   return { forbidden: [...saved.sense.glosses, ...saved.entry.readings], source: text }
 }
+// A capacity regression with synthetic data, not evidence of language coverage.
+async function prepareLargeEntryReviewAx() {
+  const checks: string[] = [], beforeCalls = providerCalls
+  const check = (value: unknown, message: string) => { if (!value) throw new Error(message); checks.push(message) }
+  records.clear(); runs.clear(); resetOfflinePacks(); configured = false; largeEntryFixture = true
+  const pack = offlinePacks.get('synthetic-en')!
+  pack.manifest.schemaVersion = 2; pack.manifest.version = 'large-entry-1'; pack.manifest.counts.senses = 225
+  pack.manifest.sourceName = 'Synthetic 225-sense capacity fixture'
+  mountHistory(); await wait(() => Boolean(document.querySelector(`[data-fixture-mount="${mountId}"] .dictionary-history`)), 'large-entry history did not mount')
+  button('离线查词').click(); await wait(() => Boolean(document.querySelector('[aria-label="离线查词原句"]')), 'large-entry input did not open')
+  setValue(query<HTMLTextAreaElement>('[aria-label="离线查词原句"]'), 'Before cats after.')
+  setValue(query<HTMLInputElement>('[aria-label="离线输入原文语言"]'), 'en'); await frame(); button('开始离线查词').click()
+  await wait(() => Boolean(document.querySelector('[aria-label="离线短语起点"]')), 'large-entry source did not freeze')
+  setValue(query<HTMLInputElement>('[aria-label="离线短语起点"]'), '7'); setValue(query<HTMLInputElement>('[aria-label="离线短语终点"]'), '11'); await frame(); button('采用此范围').click()
+  await wait(() => !button('查询本机词典').disabled, 'large-entry lookup was not ready'); button('查询本机词典').click()
+  await wait(() => document.querySelectorAll('.dictionary-offline-sense').length === 225, 'large-entry lookup did not render all 225 senses')
+  const rendered = [...document.querySelectorAll<HTMLElement>('.dictionary-offline-sense')]
+  check(rendered.length === 225 && rendered.every((sense, index) => sense.textContent?.includes(`SYNTHETIC_LARGE_SENSE_${String(index + 1).padStart(3, '0')}`)), 'synthetic capacity: all225 senses appear completely in the actual renderer')
+  const last = query<HTMLButtonElement>('[data-offline-sense="large-sense-225"] button')
+  last.scrollIntoView({ block: 'center' }); await frame(); last.click()
+  await wait(() => last.disabled && last.textContent === '此义项已收藏' && records.size === 1, 'last large-entry sense did not save')
+  const record = [...records.values()][0], saved = record.explanations[0]
+  if (saved.providerKind !== 'offline-dictionary') throw new Error('Expected an offline large-entry snapshot')
+  check(saved.sense.id === 'large-sense-225' && saved.pack.schemaVersion === 2 && saved.pack.counts.senses === 225, 'synthetic capacity: last-sense explicit save retains its schema2 source pack')
+  check(!('senses' in saved.entry) && record.explanations.length === 1, 'synthetic capacity: history snapshots only the selected sense instead of all225 answers')
+  button('查看学习历史中的收藏').click(); await wait(() => Boolean(document.querySelector('.dictionary-history [data-encounter-id]')), 'large-entry saved history did not open')
+  await openRow(record.id)
+  check(document.querySelectorAll('.dictionary-offline-explanation').length === 1 && getText().includes('SYNTHETIC_LARGE_SENSE_225') && !getText().includes('SYNTHETIC_LARGE_SENSE_001'), 'synthetic capacity: saved detail presents only the selected final sense')
+  button('返回学习历史').click(); await wait(() => Boolean(document.querySelector('.dictionary-history')), 'large-entry detail did not return')
+  button('复习收藏').click(); await wait(() => Boolean(document.querySelector('.dictionary-review')), 'large-entry review did not open')
+  check(session?.cards.length === 1 && session.cards[0].explanationId === saved.explanationId, 'synthetic capacity: review targets the one saved selected-sense snapshot')
+  check(!document.querySelector('.dictionary-explanation,.dictionary-history,.dictionary-detail') && !getText().includes('SYNTHETIC_LARGE_SENSE_'), 'synthetic capacity: every answer is absent from review DOM before reveal')
+  check(providerCalls === beforeCalls && forbiddenNetwork === 0 && forbiddenMedia === 0, 'synthetic capacity: lookup/save/history/review make no service or media call')
+  largeEntryFixture = false
+  return { checks, forbidden: Array.from({ length: 225 }, (_, index) => `SYNTHETIC_LARGE_SENSE_${String(index + 1).padStart(3, '0')}`), sourcePackSchemaVersion: saved.pack.schemaVersion, selectedSense: saved.sense.id, syntheticOnly: true }
+}
+async function finishLargeEntryReview() {
+  button('揭示已保存解释').click(); await wait(() => Boolean(document.querySelector('.dictionary-offline-explanation')), 'large-entry selected answer did not reveal')
+  if (!getText().includes('SYNTHETIC_LARGE_SENSE_225') || getText().includes('SYNTHETIC_LARGE_SENSE_001') || document.querySelectorAll('.dictionary-offline-explanation').length !== 1) throw new Error('Large-entry reveal did not remain limited to its selected answer')
+  return { checks: ['synthetic capacity: reveal presents only the saved225th sense, without the other224 meanings'] }
+}
 function verifyReviewAx() { return { answerNodes: document.querySelectorAll('.dictionary-explanation,.dictionary-history,.dictionary-detail').length, diagnostics: diagnostics() } }
 seed()
-;(window as unknown as { __lingobarDictionaryTest: unknown }).__lingobarDictionaryTest = { run, appIntegration, mountPhrase, mountHistory, prepareReviewAx, prepareOfflineReviewAx, verifyReviewAx, diagnostics, complete }
+;(window as unknown as { __lingobarDictionaryTest: unknown }).__lingobarDictionaryTest = { run, appIntegration, mountPhrase, mountHistory, prepareReviewAx, prepareOfflineReviewAx, prepareLargeEntryReviewAx, finishLargeEntryReview, verifyReviewAx, diagnostics, complete }
 mountHistory()

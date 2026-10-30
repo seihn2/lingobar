@@ -74,7 +74,7 @@ See the [service configuration guide](docs/usage.en.md#services) for all fields,
 
 Desktop learning: [AI context explanations, independent history and active review](docs/dictionary-learning.md); [offline dictionaries and language packs](docs/offline-dictionaries.md) (current draft, real samples for eight languages rather than complete dictionaries; AI remains a separate explicit action).
 
-The follow-up adds [practical-size Japanese dictionaries](docs/offline-dictionary-scale.md) with separate English and genuinely Chinese source glosses, without AI lookup. Practical-size packs for the other languages are still in progress.
+The follow-up draft now covers [practical-scale offline dictionaries for eight languages](docs/offline-dictionary-scale.md): English, Japanese, Korean, French, German, Spanish, Russian and Chinese, imported as local language packs. Sources and genuine Chinese glosses remain separate; where Chinese meanings are unavailable, installed English-gloss sources can provide a fallback. AI explanations require a separate explicit action. Complete official exports do not cover every word; see the linked report for sources, lookup gaps and validation scope.
 
 | Language | User guide |
 | --- | --- |

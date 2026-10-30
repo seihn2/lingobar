@@ -16,7 +16,7 @@ function explanationCopy(explanation: DictionaryExplanation): DictionaryExplanat
   if (explanation.providerKind === 'offline-dictionary') return {
     schemaVersion: 1, encounterId: explanation.encounterId, explanationId: explanation.explanationId, version: explanation.version,
     providerKind: 'offline-dictionary', providerLabel: explanation.providerLabel, createdAt: explanation.createdAt,
-    pack: { schemaVersion: 1, packId: explanation.pack.packId, version: explanation.pack.version, sourceLanguage: explanation.pack.sourceLanguage, glossLanguage: explanation.pack.glossLanguage,
+    pack: { schemaVersion: explanation.pack.schemaVersion, packId: explanation.pack.packId, version: explanation.pack.version, sourceLanguage: explanation.pack.sourceLanguage, glossLanguage: explanation.pack.glossLanguage,
       sourceName: explanation.pack.sourceName, sourceUrl: explanation.pack.sourceUrl, sourceRevision: explanation.pack.sourceRevision, license: explanation.pack.license, licenseUrl: explanation.pack.licenseUrl, attribution: explanation.pack.attribution,
       dbSha256: explanation.pack.dbSha256, counts: { entries: explanation.pack.counts.entries, senses: explanation.pack.counts.senses, forms: explanation.pack.counts.forms } },
     entry: { id: explanation.entry.id, headword: explanation.entry.headword, language: explanation.entry.language, readings: [...explanation.entry.readings], partOfSpeech: explanation.entry.partOfSpeech, forms: explanation.entry.forms.map(form => ({ form: form.form, tags: [...form.tags] })) },

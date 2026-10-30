@@ -1,4 +1,6 @@
 import { createRequire } from 'node:module'
+import { createHash } from 'node:crypto'
+import { DatabaseSync } from 'node:sqlite'
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -112,5 +114,20 @@ describe('local read-only dictionary packs', () => {
     expect(hits).toHaveLength(30)
     expect(hits.map(hit => hit.entry.id)).toEqual(Array.from({ length: 30 }, (_, index) => `line:${index + 1}`))
     expect(hits[0].matchPath).toBe('nfc'); expect(hits.slice(1).every(hit => hit.matchPath === 'exact')).toBe(true)
+  })
+  it('rejects an external package entry above 256 senses instead of returning a truncated answer', async () => {
+    const file = await pack('oversized-fr', 'v2', 'en', undefined, [{ word: 'authored', lang_code: 'fr', senses: [{ glosses: ['Authored first sense.'] }] }])
+    const databaseFile = join(file, '..', 'entries.sqlite'), db = new DatabaseSync(databaseFile)
+    try {
+      const insert = db.prepare('INSERT INTO senses VALUES(?,?,?,?,?)')
+      for (let index = 2; index <= 257; index++) insert.run(`line:1:s${index}`, 'line:1', JSON.stringify([`Authored sense ${index}.`]), '[]', '[]')
+    } finally { db.close() }
+    const manifest = JSON.parse(readFileSync(file, 'utf8'))
+    manifest.schemaVersion = 2; manifest.counts.senses = 257
+    manifest.dbSha256 = createHash('sha256').update(readFileSync(databaseFile)).digest('hex')
+    writeFileSync(file, JSON.stringify(manifest))
+    const packs = manager(join(directory(), 'installed')); packs.install(file)
+    const result = packs.lookup({ text: 'authored', language: 'fr' })
+    expect(result.results).toEqual([]); expect(result.message).toContain('无法查询')
   })
 })

@@ -45,6 +45,18 @@ beforeEach(() => { fault.rename = false; network.mockClear(); vi.stubGlobal('fet
 afterEach(() => { resources.splice(0).forEach(learning => learning.close()); directories.splice(0).forEach(directory => rmSync(directory, { recursive: true, force: true })); expect(network).not.toHaveBeenCalled(); vi.unstubAllGlobals() })
 
 describe('local selected-sense learning without AI configuration', () => {
+  it('preserves an explicitly punctuated spacing headword in learning snapshots without accepting blank ordinary words', () => {
+    const f = fixture()
+    f.state.results[0].entry.headword = ' '
+    expect(() => f.save()).toThrow('学习历史格式')
+    f.state.results[0].entry.partOfSpeech = 'punct'
+    const saved = f.save(), restarted = new DictionaryStore(f.directory)
+    const explanation = restarted.get(saved.id)!.explanations[0]
+    expect(explanation.providerKind).toBe('offline-dictionary')
+    if (explanation.providerKind !== 'offline-dictionary') throw new Error('Expected offline source')
+    expect(explanation.entry.headword).toBe(' ')
+    expect(JSON.parse(dictionaryJson(restarted.exportSnapshot())).entries[0].explanation.entry.headword).toBe(' ')
+  })
   it('opens explicit user input, queries and saves only the selected source/sense without any provider dispatch', () => {
     const f = fixture(), input = f.input()
     const result = f.learning.offlineLookup(1, input)
@@ -115,6 +127,20 @@ describe('local selected-sense learning without AI configuration', () => {
     const markdown = dictionaryMarkdown(doc)
     expect(markdown).toContain('离线词典义项'); expect(markdown).toContain('CC0-1.0 synthetic test content'); expect(markdown).not.toContain('### AI 语境解释')
     for (const line of markdown.split('\n').filter(line => line.includes('remote.invalid'))) expect(line.startsWith('    ')).toBe(true)
+  })
+  it('retains the actual version-two pack format through save, restart, export and review', () => {
+    const f = fixture()
+    f.state.results[0].pack.schemaVersion = 2
+    const saved = f.save(), restarted = new DictionaryStore(f.directory)
+    const explanation = restarted.get(saved.id)!.explanations[0]
+    expect(explanation.providerKind).toBe('offline-dictionary')
+    if (explanation.providerKind !== 'offline-dictionary') throw new Error('Expected offline source')
+    expect(explanation.pack.schemaVersion).toBe(2)
+    expect(JSON.parse(dictionaryJson(restarted.exportSnapshot())).entries[0].explanation.pack.schemaVersion).toBe(2)
+    const review = f.learning.startReview(1)
+    const answer = f.learning.reveal(1, review.sessionId, saved.id, explanation.explanationId).explanation
+    expect(answer.providerKind === 'offline-dictionary' && answer.pack.schemaVersion).toBe(2)
+    expect(f.provider).not.toHaveBeenCalled()
   })
   it('retains old AI records alongside offline cards without rewriting other learning files', () => {
     const f = fixture()

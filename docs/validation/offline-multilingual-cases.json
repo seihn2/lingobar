@@ -1,0 +1,851 @@
+{
+  "schemaVersion": 1,
+  "hashBoundary": "sourceBytesSha256 is SHA256 of the original standalone case file bytes, not of the reserialized embedded data. Cases are unchanged; the aggregate is a portable derivative.",
+  "freezeReceipt": {
+    "schemaVersion": 1,
+    "frozenAt": "2026-10-30T19:29:47.462563+00:00",
+    "scope": "Full-pack follow-up validation only; no application source changes, no query results used to choose these cases. Japanese first benchmark is retained separately and is not rerun.",
+    "sets": [
+      {
+        "language": "en",
+        "path": "data/validation-cases/en.json",
+        "cases": 20,
+        "sha256": "2466c28e5bfd8b8bcc3ed678fb047776abbf550e115f319b94a617f4dab8cd0e"
+      },
+      {
+        "language": "ko",
+        "path": "data/validation-cases/ko.json",
+        "cases": 16,
+        "sha256": "5c2a528741a9fb463e062fb4d386c2f4835d77fbefb8e86534bf63298c46c001"
+      },
+      {
+        "language": "fr",
+        "path": "data/validation-cases/fr.json",
+        "cases": 16,
+        "sha256": "68ca174f91e52ab3638da81db393a05bb7d628fc79258e1130dc45e2eaab4666"
+      },
+      {
+        "language": "ru",
+        "path": "data/validation-cases/ru.json",
+        "cases": 16,
+        "sha256": "15bd44cf25f76b2ab44f30cc9197e212d6f97476224e14324e19144085c1de60"
+      },
+      {
+        "language": "de",
+        "path": "data/validation-cases/de.json",
+        "cases": 16,
+        "sha256": "40aea0193221f1c54b14d533947b6f1a8a019bfc57cd6ff90754848e429716da"
+      },
+      {
+        "language": "es",
+        "path": "data/validation-cases/es.json",
+        "cases": 16,
+        "sha256": "6e30b34d01ce9b7e2e2e5842b148251918fbc4f7608e36c623134223cb4e31c3"
+      },
+      {
+        "language": "zh",
+        "path": "data/validation-cases/zh.json",
+        "cases": 16,
+        "sha256": "624b9fe9912a6e945f5ba4147f4db700ea968e3ef5846ed8ce9ba36fb0900730"
+      }
+    ]
+  },
+  "sets": [
+    {
+      "language": "en",
+      "sourceBytesSha256": "2466c28e5bfd8b8bcc3ed678fb047776abbf550e115f319b94a617f4dab8cd0e",
+      "data": {
+        "schemaVersion": 1,
+        "description": "Fixed source-independent, self-written public common-word and sentence-selection cases frozen before querying the supplied full packs. Expected headwords are literal retrieval expectations, not expert semantic labels; corpus spelling, accent and source lemma conventions can differ. Not a representative vocabulary sample or semantic accuracy benchmark. No definitions copied from source data.",
+        "cases": [
+          {
+            "id": "en-public-01",
+            "language": "en",
+            "text": "water",
+            "expectedHeadword": "water"
+          },
+          {
+            "id": "en-public-02",
+            "language": "en",
+            "text": "house",
+            "expectedHeadword": "house"
+          },
+          {
+            "id": "en-public-03",
+            "language": "en",
+            "text": "book",
+            "expectedHeadword": "book"
+          },
+          {
+            "id": "en-public-04",
+            "language": "en",
+            "text": "school",
+            "expectedHeadword": "school"
+          },
+          {
+            "id": "en-public-05",
+            "language": "en",
+            "text": "teacher",
+            "expectedHeadword": "teacher"
+          },
+          {
+            "id": "en-public-06",
+            "language": "en",
+            "text": "language",
+            "expectedHeadword": "language"
+          },
+          {
+            "id": "en-public-07",
+            "language": "en",
+            "text": "friend",
+            "expectedHeadword": "friend"
+          },
+          {
+            "id": "en-public-08",
+            "language": "en",
+            "text": "work",
+            "expectedHeadword": "work"
+          },
+          {
+            "id": "en-public-09",
+            "language": "en",
+            "text": "read",
+            "expectedHeadword": "read"
+          },
+          {
+            "id": "en-public-10",
+            "language": "en",
+            "text": "write",
+            "expectedHeadword": "write"
+          },
+          {
+            "id": "en-public-11",
+            "language": "en",
+            "text": "eat",
+            "expectedHeadword": "eat"
+          },
+          {
+            "id": "en-public-12",
+            "language": "en",
+            "text": "go",
+            "expectedHeadword": "go"
+          },
+          {
+            "id": "en-public-13",
+            "language": "en",
+            "text": "good",
+            "expectedHeadword": "good"
+          },
+          {
+            "id": "en-public-14",
+            "language": "en",
+            "text": "new",
+            "expectedHeadword": "new"
+          },
+          {
+            "id": "en-public-15",
+            "language": "en",
+            "text": "children",
+            "expectedHeadword": "child",
+            "sentence": "The children are reading."
+          },
+          {
+            "id": "en-public-16",
+            "language": "en",
+            "text": "went",
+            "expectedHeadword": "go",
+            "sentence": "She went to school yesterday."
+          },
+          {
+            "id": "en-public-17",
+            "language": "en",
+            "text": "houses",
+            "expectedHeadword": "house",
+            "sentence": "These houses are new."
+          },
+          {
+            "id": "en-public-18",
+            "language": "en",
+            "text": "reading",
+            "expectedHeadword": "read",
+            "sentence": "He is reading a book."
+          },
+          {
+            "id": "en-public-19",
+            "language": "en",
+            "text": "studies",
+            "expectedHeadword": "study",
+            "sentence": "She studies a language."
+          },
+          {
+            "id": "en-public-20",
+            "language": "en",
+            "text": "ran",
+            "expectedHeadword": "run",
+            "sentence": "My friend ran home."
+          }
+        ]
+      }
+    },
+    {
+      "language": "ko",
+      "sourceBytesSha256": "5c2a528741a9fb463e062fb4d386c2f4835d77fbefb8e86534bf63298c46c001",
+      "data": {
+        "schemaVersion": 1,
+        "description": "Fixed source-independent, self-written public common-word and sentence-selection cases frozen before querying the supplied full packs. Expected headwords are literal retrieval expectations, not expert semantic labels; corpus spelling, accent and source lemma conventions can differ. Not a representative vocabulary sample or semantic accuracy benchmark. No definitions copied from source data.",
+        "cases": [
+          {
+            "id": "ko-public-01",
+            "language": "ko",
+            "text": "사람",
+            "expectedHeadword": "사람"
+          },
+          {
+            "id": "ko-public-02",
+            "language": "ko",
+            "text": "학교",
+            "expectedHeadword": "학교"
+          },
+          {
+            "id": "ko-public-03",
+            "language": "ko",
+            "text": "물",
+            "expectedHeadword": "물"
+          },
+          {
+            "id": "ko-public-04",
+            "language": "ko",
+            "text": "친구",
+            "expectedHeadword": "친구"
+          },
+          {
+            "id": "ko-public-05",
+            "language": "ko",
+            "text": "책",
+            "expectedHeadword": "책"
+          },
+          {
+            "id": "ko-public-06",
+            "language": "ko",
+            "text": "시간",
+            "expectedHeadword": "시간"
+          },
+          {
+            "id": "ko-public-07",
+            "language": "ko",
+            "text": "음식",
+            "expectedHeadword": "음식"
+          },
+          {
+            "id": "ko-public-08",
+            "language": "ko",
+            "text": "가다",
+            "expectedHeadword": "가다"
+          },
+          {
+            "id": "ko-public-09",
+            "language": "ko",
+            "text": "먹다",
+            "expectedHeadword": "먹다"
+          },
+          {
+            "id": "ko-public-10",
+            "language": "ko",
+            "text": "좋다",
+            "expectedHeadword": "좋다"
+          },
+          {
+            "id": "ko-public-11",
+            "language": "ko",
+            "text": "읽다",
+            "expectedHeadword": "읽다"
+          },
+          {
+            "id": "ko-public-12",
+            "language": "ko",
+            "text": "말하다",
+            "expectedHeadword": "말하다"
+          },
+          {
+            "id": "ko-public-13",
+            "language": "ko",
+            "text": "갔다",
+            "expectedHeadword": "가다",
+            "sentence": "친구가 학교에 갔다."
+          },
+          {
+            "id": "ko-public-14",
+            "language": "ko",
+            "text": "먹어요",
+            "expectedHeadword": "먹다",
+            "sentence": "저는 밥을 먹어요."
+          },
+          {
+            "id": "ko-public-15",
+            "language": "ko",
+            "text": "읽었다",
+            "expectedHeadword": "읽다",
+            "sentence": "친구가 책을 읽었다."
+          },
+          {
+            "id": "ko-public-16",
+            "language": "ko",
+            "text": "좋아요",
+            "expectedHeadword": "좋다",
+            "sentence": "이 책이 좋아요."
+          }
+        ]
+      }
+    },
+    {
+      "language": "fr",
+      "sourceBytesSha256": "68ca174f91e52ab3638da81db393a05bb7d628fc79258e1130dc45e2eaab4666",
+      "data": {
+        "schemaVersion": 1,
+        "description": "Fixed source-independent, self-written public common-word and sentence-selection cases frozen before querying the supplied full packs. Expected headwords are literal retrieval expectations, not expert semantic labels; corpus spelling, accent and source lemma conventions can differ. Not a representative vocabulary sample or semantic accuracy benchmark. No definitions copied from source data.",
+        "cases": [
+          {
+            "id": "fr-public-01",
+            "language": "fr",
+            "text": "maison",
+            "expectedHeadword": "maison"
+          },
+          {
+            "id": "fr-public-02",
+            "language": "fr",
+            "text": "eau",
+            "expectedHeadword": "eau"
+          },
+          {
+            "id": "fr-public-03",
+            "language": "fr",
+            "text": "école",
+            "expectedHeadword": "école"
+          },
+          {
+            "id": "fr-public-04",
+            "language": "fr",
+            "text": "ami",
+            "expectedHeadword": "ami"
+          },
+          {
+            "id": "fr-public-05",
+            "language": "fr",
+            "text": "livre",
+            "expectedHeadword": "livre"
+          },
+          {
+            "id": "fr-public-06",
+            "language": "fr",
+            "text": "temps",
+            "expectedHeadword": "temps"
+          },
+          {
+            "id": "fr-public-07",
+            "language": "fr",
+            "text": "travail",
+            "expectedHeadword": "travail"
+          },
+          {
+            "id": "fr-public-08",
+            "language": "fr",
+            "text": "parler",
+            "expectedHeadword": "parler"
+          },
+          {
+            "id": "fr-public-09",
+            "language": "fr",
+            "text": "manger",
+            "expectedHeadword": "manger"
+          },
+          {
+            "id": "fr-public-10",
+            "language": "fr",
+            "text": "aller",
+            "expectedHeadword": "aller"
+          },
+          {
+            "id": "fr-public-11",
+            "language": "fr",
+            "text": "bon",
+            "expectedHeadword": "bon"
+          },
+          {
+            "id": "fr-public-12",
+            "language": "fr",
+            "text": "nouveau",
+            "expectedHeadword": "nouveau"
+          },
+          {
+            "id": "fr-public-13",
+            "language": "fr",
+            "text": "maisons",
+            "expectedHeadword": "maison",
+            "sentence": "Ces maisons sont nouvelles."
+          },
+          {
+            "id": "fr-public-14",
+            "language": "fr",
+            "text": "mangeons",
+            "expectedHeadword": "manger",
+            "sentence": "Nous mangeons à la maison."
+          },
+          {
+            "id": "fr-public-15",
+            "language": "fr",
+            "text": "allait",
+            "expectedHeadword": "aller",
+            "sentence": "Il allait à l’école."
+          },
+          {
+            "id": "fr-public-16",
+            "language": "fr",
+            "text": "parle",
+            "expectedHeadword": "parler",
+            "sentence": "Mon ami parle français."
+          }
+        ]
+      }
+    },
+    {
+      "language": "ru",
+      "sourceBytesSha256": "15bd44cf25f76b2ab44f30cc9197e212d6f97476224e14324e19144085c1de60",
+      "data": {
+        "schemaVersion": 1,
+        "description": "Fixed source-independent, self-written public common-word and sentence-selection cases frozen before querying the supplied full packs. Expected headwords are literal retrieval expectations, not expert semantic labels; corpus spelling, accent and source lemma conventions can differ. Not a representative vocabulary sample or semantic accuracy benchmark. No definitions copied from source data.",
+        "cases": [
+          {
+            "id": "ru-public-01",
+            "language": "ru",
+            "text": "дом",
+            "expectedHeadword": "дом"
+          },
+          {
+            "id": "ru-public-02",
+            "language": "ru",
+            "text": "вода",
+            "expectedHeadword": "вода"
+          },
+          {
+            "id": "ru-public-03",
+            "language": "ru",
+            "text": "школа",
+            "expectedHeadword": "школа"
+          },
+          {
+            "id": "ru-public-04",
+            "language": "ru",
+            "text": "друг",
+            "expectedHeadword": "друг"
+          },
+          {
+            "id": "ru-public-05",
+            "language": "ru",
+            "text": "книга",
+            "expectedHeadword": "книга"
+          },
+          {
+            "id": "ru-public-06",
+            "language": "ru",
+            "text": "время",
+            "expectedHeadword": "время"
+          },
+          {
+            "id": "ru-public-07",
+            "language": "ru",
+            "text": "работа",
+            "expectedHeadword": "работа"
+          },
+          {
+            "id": "ru-public-08",
+            "language": "ru",
+            "text": "говорить",
+            "expectedHeadword": "говорить"
+          },
+          {
+            "id": "ru-public-09",
+            "language": "ru",
+            "text": "читать",
+            "expectedHeadword": "читать"
+          },
+          {
+            "id": "ru-public-10",
+            "language": "ru",
+            "text": "идти",
+            "expectedHeadword": "идти"
+          },
+          {
+            "id": "ru-public-11",
+            "language": "ru",
+            "text": "хороший",
+            "expectedHeadword": "хороший"
+          },
+          {
+            "id": "ru-public-12",
+            "language": "ru",
+            "text": "новый",
+            "expectedHeadword": "новый"
+          },
+          {
+            "id": "ru-public-13",
+            "language": "ru",
+            "text": "книги",
+            "expectedHeadword": "книга",
+            "sentence": "Это новые книги."
+          },
+          {
+            "id": "ru-public-14",
+            "language": "ru",
+            "text": "дома",
+            "expectedHeadword": "дом",
+            "sentence": "Эти дома новые."
+          },
+          {
+            "id": "ru-public-15",
+            "language": "ru",
+            "text": "читаю",
+            "expectedHeadword": "читать",
+            "sentence": "Я читаю книгу."
+          },
+          {
+            "id": "ru-public-16",
+            "language": "ru",
+            "text": "говорил",
+            "expectedHeadword": "говорить",
+            "sentence": "Он говорил с другом."
+          }
+        ]
+      }
+    },
+    {
+      "language": "de",
+      "sourceBytesSha256": "40aea0193221f1c54b14d533947b6f1a8a019bfc57cd6ff90754848e429716da",
+      "data": {
+        "schemaVersion": 1,
+        "description": "Fixed source-independent, self-written public common-word and sentence-selection cases frozen before querying the supplied full packs. Expected headwords are literal retrieval expectations, not expert semantic labels; corpus spelling, accent and source lemma conventions can differ. Not a representative vocabulary sample or semantic accuracy benchmark. No definitions copied from source data.",
+        "cases": [
+          {
+            "id": "de-public-01",
+            "language": "de",
+            "text": "Haus",
+            "expectedHeadword": "Haus"
+          },
+          {
+            "id": "de-public-02",
+            "language": "de",
+            "text": "Wasser",
+            "expectedHeadword": "Wasser"
+          },
+          {
+            "id": "de-public-03",
+            "language": "de",
+            "text": "Schule",
+            "expectedHeadword": "Schule"
+          },
+          {
+            "id": "de-public-04",
+            "language": "de",
+            "text": "Freund",
+            "expectedHeadword": "Freund"
+          },
+          {
+            "id": "de-public-05",
+            "language": "de",
+            "text": "Buch",
+            "expectedHeadword": "Buch"
+          },
+          {
+            "id": "de-public-06",
+            "language": "de",
+            "text": "Zeit",
+            "expectedHeadword": "Zeit"
+          },
+          {
+            "id": "de-public-07",
+            "language": "de",
+            "text": "Arbeit",
+            "expectedHeadword": "Arbeit"
+          },
+          {
+            "id": "de-public-08",
+            "language": "de",
+            "text": "sprechen",
+            "expectedHeadword": "sprechen"
+          },
+          {
+            "id": "de-public-09",
+            "language": "de",
+            "text": "lesen",
+            "expectedHeadword": "lesen"
+          },
+          {
+            "id": "de-public-10",
+            "language": "de",
+            "text": "gehen",
+            "expectedHeadword": "gehen"
+          },
+          {
+            "id": "de-public-11",
+            "language": "de",
+            "text": "gut",
+            "expectedHeadword": "gut"
+          },
+          {
+            "id": "de-public-12",
+            "language": "de",
+            "text": "neu",
+            "expectedHeadword": "neu"
+          },
+          {
+            "id": "de-public-13",
+            "language": "de",
+            "text": "Häuser",
+            "expectedHeadword": "Haus",
+            "sentence": "Diese Häuser sind neu."
+          },
+          {
+            "id": "de-public-14",
+            "language": "de",
+            "text": "Bücher",
+            "expectedHeadword": "Buch",
+            "sentence": "Ich lese zwei Bücher."
+          },
+          {
+            "id": "de-public-15",
+            "language": "de",
+            "text": "ging",
+            "expectedHeadword": "gehen",
+            "sentence": "Er ging zur Schule."
+          },
+          {
+            "id": "de-public-16",
+            "language": "de",
+            "text": "liest",
+            "expectedHeadword": "lesen",
+            "sentence": "Sie liest ein Buch."
+          }
+        ]
+      }
+    },
+    {
+      "language": "es",
+      "sourceBytesSha256": "6e30b34d01ce9b7e2e2e5842b148251918fbc4f7608e36c623134223cb4e31c3",
+      "data": {
+        "schemaVersion": 1,
+        "description": "Fixed source-independent, self-written public common-word and sentence-selection cases frozen before querying the supplied full packs. Expected headwords are literal retrieval expectations, not expert semantic labels; corpus spelling, accent and source lemma conventions can differ. Not a representative vocabulary sample or semantic accuracy benchmark. No definitions copied from source data.",
+        "cases": [
+          {
+            "id": "es-public-01",
+            "language": "es",
+            "text": "casa",
+            "expectedHeadword": "casa"
+          },
+          {
+            "id": "es-public-02",
+            "language": "es",
+            "text": "agua",
+            "expectedHeadword": "agua"
+          },
+          {
+            "id": "es-public-03",
+            "language": "es",
+            "text": "escuela",
+            "expectedHeadword": "escuela"
+          },
+          {
+            "id": "es-public-04",
+            "language": "es",
+            "text": "amigo",
+            "expectedHeadword": "amigo"
+          },
+          {
+            "id": "es-public-05",
+            "language": "es",
+            "text": "libro",
+            "expectedHeadword": "libro"
+          },
+          {
+            "id": "es-public-06",
+            "language": "es",
+            "text": "tiempo",
+            "expectedHeadword": "tiempo"
+          },
+          {
+            "id": "es-public-07",
+            "language": "es",
+            "text": "trabajo",
+            "expectedHeadword": "trabajo"
+          },
+          {
+            "id": "es-public-08",
+            "language": "es",
+            "text": "hablar",
+            "expectedHeadword": "hablar"
+          },
+          {
+            "id": "es-public-09",
+            "language": "es",
+            "text": "comer",
+            "expectedHeadword": "comer"
+          },
+          {
+            "id": "es-public-10",
+            "language": "es",
+            "text": "ir",
+            "expectedHeadword": "ir"
+          },
+          {
+            "id": "es-public-11",
+            "language": "es",
+            "text": "bueno",
+            "expectedHeadword": "bueno"
+          },
+          {
+            "id": "es-public-12",
+            "language": "es",
+            "text": "nuevo",
+            "expectedHeadword": "nuevo"
+          },
+          {
+            "id": "es-public-13",
+            "language": "es",
+            "text": "casas",
+            "expectedHeadword": "casa",
+            "sentence": "Estas casas son nuevas."
+          },
+          {
+            "id": "es-public-14",
+            "language": "es",
+            "text": "libros",
+            "expectedHeadword": "libro",
+            "sentence": "Leo dos libros."
+          },
+          {
+            "id": "es-public-15",
+            "language": "es",
+            "text": "hablamos",
+            "expectedHeadword": "hablar",
+            "sentence": "Nosotros hablamos español."
+          },
+          {
+            "id": "es-public-16",
+            "language": "es",
+            "text": "comió",
+            "expectedHeadword": "comer",
+            "sentence": "Mi amigo comió en casa."
+          }
+        ]
+      }
+    },
+    {
+      "language": "zh",
+      "sourceBytesSha256": "624b9fe9912a6e945f5ba4147f4db700ea968e3ef5846ed8ce9ba36fb0900730",
+      "data": {
+        "schemaVersion": 1,
+        "description": "Fixed source-independent, self-written public common-word and sentence-selection cases frozen before querying the supplied full packs. Expected headwords are literal retrieval expectations, not expert semantic labels; corpus spelling, accent and source lemma conventions can differ. Not a representative vocabulary sample or semantic accuracy benchmark. No definitions copied from source data.",
+        "cases": [
+          {
+            "id": "zh-public-01",
+            "language": "zh",
+            "text": "學校",
+            "expectedHeadword": "學校"
+          },
+          {
+            "id": "zh-public-02",
+            "language": "zh",
+            "text": "朋友",
+            "expectedHeadword": "朋友"
+          },
+          {
+            "id": "zh-public-03",
+            "language": "zh",
+            "text": "時間",
+            "expectedHeadword": "時間"
+          },
+          {
+            "id": "zh-public-04",
+            "language": "zh",
+            "text": "工作",
+            "expectedHeadword": "工作"
+          },
+          {
+            "id": "zh-public-05",
+            "language": "zh",
+            "text": "語言",
+            "expectedHeadword": "語言"
+          },
+          {
+            "id": "zh-public-06",
+            "language": "zh",
+            "text": "新聞",
+            "expectedHeadword": "新聞"
+          },
+          {
+            "id": "zh-public-07",
+            "language": "zh",
+            "text": "水",
+            "expectedHeadword": "水"
+          },
+          {
+            "id": "zh-public-08",
+            "language": "zh",
+            "text": "書",
+            "expectedHeadword": "書"
+          },
+          {
+            "id": "zh-public-09",
+            "language": "zh",
+            "text": "學習",
+            "expectedHeadword": "學習"
+          },
+          {
+            "id": "zh-public-10",
+            "language": "zh",
+            "text": "吃",
+            "expectedHeadword": "吃"
+          },
+          {
+            "id": "zh-public-11",
+            "language": "zh",
+            "text": "去",
+            "expectedHeadword": "去"
+          },
+          {
+            "id": "zh-public-12",
+            "language": "zh",
+            "text": "好",
+            "expectedHeadword": "好"
+          },
+          {
+            "id": "zh-public-13",
+            "language": "zh",
+            "text": "学校",
+            "expectedHeadword": "学校",
+            "sentence": "朋友今天去学校。"
+          },
+          {
+            "id": "zh-public-14",
+            "language": "zh",
+            "text": "学习",
+            "expectedHeadword": "学习",
+            "sentence": "我每天学习新的语言。"
+          },
+          {
+            "id": "zh-public-15",
+            "language": "zh",
+            "text": "新闻",
+            "expectedHeadword": "新闻",
+            "sentence": "我正在阅读新闻。"
+          },
+          {
+            "id": "zh-public-16",
+            "language": "zh",
+            "text": "朋友",
+            "expectedHeadword": "朋友",
+            "sentence": "我的朋友喜欢读书。"
+          }
+        ]
+      }
+    }
+  ]
+}

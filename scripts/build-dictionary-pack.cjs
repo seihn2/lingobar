@@ -97,7 +97,7 @@ function sensesFor(record, entryId) {
     return [{ id: `${entryId}:s${index + 1}`, glosses, tags: unique(texts(sense.tags, 256)), examples }]
   })
 }
-/** Match the first-batch runtime payload bounds; never build a pack that silently loses later senses. */
+/** Match the runtime payload bounds; never build a pack that silently loses later senses. */
 function runtimeBounds(record, forms, readings, senses, lineNumber) {
   const reject = field => { throw new Error(`Source line ${lineNumber} exceeds the local runtime limit for ${field}; no truncated pack was produced.`) }
   const length = (value, maximum, field) => { if (typeof value === 'string' && value.length > maximum) reject(field) }
@@ -118,7 +118,7 @@ function runtimeBounds(record, forms, readings, senses, lineNumber) {
     }
   }
   column(forms, 500, 'forms'); column(readings, 100, 'readings')
-  if (senses.length > 100) reject('senses')
+  if (senses.length > 256) reject('senses')
   for (const form of forms) column(form.tags, 100, 'form tags')
   for (const sense of senses) {
     column(sense.glosses, 100, 'glosses'); column(sense.tags, 100, 'sense tags'); column(sense.examples, 20, 'examples')
@@ -148,7 +148,7 @@ async function buildDictionaryPack({ input, output, manifest: supplied }) {
     const insertForm = db.prepare('INSERT INTO forms VALUES(?,?,?,?)')
     const pendingForm = db.prepare('INSERT INTO pending_forms VALUES(?,?,?)')
     db.exec('BEGIN')
-    let lineNumber = 0
+    let lineNumber = 0, maxSourceSenses = 0
     const records = { parsed: 0, otherLanguage: 0, matchingLanguage: 0, skippedNoLexicalContent: 0, formLinkOnly: 0, withGlosses: 0 }
     for await (const line of jsonlLines(source)) {
       lineNumber++
@@ -166,11 +166,13 @@ async function buildDictionaryPack({ input, output, manifest: supplied }) {
       // Real dumps include empty punctuation/redirect records (even word=" ").
       // They supply neither an answer nor a usable form link, so validate only records that can contribute lexical data.
       if (!senses.length && !formOf.length) { records.skippedNoLexicalContent++; continue }
-      if (!text(record.word, 1024)) throw new Error(`Invalid headword at source line ${lineNumber}.`)
+      const spacingPunctuation = record.pos === 'punct' && typeof record.word === 'string' && record.word.length > 0 && record.word.length <= 1024 && !record.word.trim() && !/[\u0000-\u001f\u007f-\u009f]/u.test(record.word)
+      if (!text(record.word, 1024) && !spacingPunctuation) throw new Error(`Invalid headword at source line ${lineNumber}.`)
       // Inflection records can contain only form_of; index their explicitly named lemma after all base records exist.
       for (const target of formOf) pendingForm.run(record.word, target.word, JSON.stringify(target.tags))
       if (!senses.length) { records.formLinkOnly++; continue }
       records.withGlosses++
+      maxSourceSenses = Math.max(maxSourceSenses, senses.length)
       insertEntry.run(entryId, record.word, nfc(record.word), record.lang_code, JSON.stringify(readings), text(record.pos, 256) ? record.pos : null, JSON.stringify(forms))
       for (const sense of senses) insertSense.run(sense.id, entryId, JSON.stringify(sense.glosses), JSON.stringify(sense.tags), JSON.stringify(sense.examples))
       for (const form of forms.filter(indexableForm)) insertForm.run(form.form, nfc(form.form), entryId, JSON.stringify(form.tags))
@@ -183,10 +185,12 @@ async function buildDictionaryPack({ input, output, manifest: supplied }) {
     if (!counts.entries || !counts.senses) throw new Error('No source-language entries with actual glosses were found.')
     db.close(); db = null
     chmodSync(databasePath, 0o600)
-    const result = { schemaVersion: 1, ...descriptor, dbSha256: await fileSha256(databasePath), counts }
+    // Older applications must reject packages whose entries would exceed their old 100-sense reader.
+    // The SQLite DDL stays v1; only the manifest advertises this larger bounded payload.
+    const result = { schemaVersion: maxSourceSenses > 100 ? 2 : 1, ...descriptor, dbSha256: await fileSha256(databasePath), counts }
     writeFileSync(join(destination, 'manifest.json'), JSON.stringify(result, null, 2) + '\n', { flag: 'wx', mode: 0o600 })
     const report = { schemaVersion: 1, input: { file: basename(source), bytes: statSync(source).size, sha256: await fileSha256(source), compression: source.toLowerCase().endsWith('.gz') ? 'gzip' : 'none' },
-      lines: lineNumber, records, output: { packId: descriptor.packId, version: descriptor.version, dbSha256: result.dbSha256, counts },
+      lines: lineNumber, records, maxSourceSenses, output: { packId: descriptor.packId, version: descriptor.version, dbSha256: result.dbSha256, counts },
       skippedMeaning: 'skippedNoLexicalContent records have neither a usable gloss nor an explicit form_of target; formLinkOnly records add source form links but no fabricated answer.' }
     writeFileSync(join(destination, 'BUILD-REPORT.json'), JSON.stringify(report, null, 2) + '\n', { flag: 'wx', mode: 0o600 })
     return result
