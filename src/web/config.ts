@@ -1,15 +1,16 @@
 /** Public routing metadata only. Provider credentials never belong in this file. */
 export type AudioStatus = 'ready' | 'disabled' | 'missing-key' | 'budget-unverified' | 'quota'
-interface WebConfig { backend: '/api/session' | null; textBackend?: '/api/translate' | null; credentialsBackend?: '/api/settings/translation-key' | null; asrCredentialsBackend?: '/api/settings/asr-key' | null; audioStatus?: AudioStatus }
+interface WebConfig { authBackend?: '/api/auth' | null; backend: '/api/session' | null; textBackend?: '/api/translate' | null; credentialsBackend?: '/api/settings/translation-key' | null; asrCredentialsBackend?: '/api/settings/asr-key' | null; audioStatus?: AudioStatus }
 export function parseWebConfig(value: unknown): WebConfig {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('网页配置格式不正确。')
   const input = value as Record<string, unknown>
-  if (input.version !== 1 || Object.keys(input).some(key => !['version', 'backend', 'textBackend', 'credentialsBackend', 'asrCredentialsBackend', 'audioStatus'].includes(key)) || (input.backend !== null && input.backend !== '/api/session') ||
+  if (input.version !== 1 || Object.keys(input).some(key => !['version', 'backend', 'textBackend', 'credentialsBackend', 'asrCredentialsBackend', 'audioStatus', 'authBackend'].includes(key)) || (input.backend !== null && input.backend !== '/api/session') ||
     (Object.hasOwn(input, 'textBackend') && input.textBackend !== null && input.textBackend !== '/api/translate') ||
     (Object.hasOwn(input, 'credentialsBackend') && input.credentialsBackend !== null && input.credentialsBackend !== '/api/settings/translation-key') ||
     (Object.hasOwn(input, 'asrCredentialsBackend') && input.asrCredentialsBackend !== null && input.asrCredentialsBackend !== '/api/settings/asr-key') ||
+    (Object.hasOwn(input, 'authBackend') && input.authBackend !== null && input.authBackend !== '/api/auth') ||
     (Object.hasOwn(input, 'audioStatus') && !['ready', 'disabled', 'missing-key', 'budget-unverified', 'quota'].includes(input.audioStatus as string))) throw new Error('网页配置格式不正确。')
-  return { backend: input.backend, ...(Object.hasOwn(input, 'textBackend') ? { textBackend: input.textBackend as WebConfig['textBackend'] } : {}),
+  return { backend: input.backend, ...(Object.hasOwn(input, 'authBackend') ? { authBackend: input.authBackend as WebConfig['authBackend'] } : {}), ...(Object.hasOwn(input, 'textBackend') ? { textBackend: input.textBackend as WebConfig['textBackend'] } : {}),
     ...(Object.hasOwn(input, 'credentialsBackend') ? { credentialsBackend: input.credentialsBackend as WebConfig['credentialsBackend'] } : {}),
     ...(Object.hasOwn(input, 'asrCredentialsBackend') ? { asrCredentialsBackend: input.asrCredentialsBackend as WebConfig['asrCredentialsBackend'] } : {}),
     ...(Object.hasOwn(input, 'audioStatus') ? { audioStatus: input.audioStatus as AudioStatus } : {}) }

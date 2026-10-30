@@ -27,6 +27,7 @@ jobs:
       - run: npm run build:web
       - run: npm run verify:web
       - run: npm run test:web-ui
+      - run: node scripts/test-web-auth-ui.cjs
       - run: node scripts/archive-web.cjs
         env:
           LINGOBAR_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -44,6 +45,8 @@ jobs:
         if: always()
         with:
           name: synthetic-web-evidence-${{ github.event.pull_request.head.sha || github.sha }}
-          path: artifacts/web-regression/
+          path: |
+            artifacts/web-regression/
+            artifacts/web-auth/
           if-no-files-found: warn
           retention-days: 14

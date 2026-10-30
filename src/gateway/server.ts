@@ -5,6 +5,10 @@ import { WebSocketServer } from 'ws'
 import { AccessVerifier } from './access'
 import { DailyBudget } from './budget'
 import { AudioBudget } from './audio-budget'
+import { AppAuth } from './app-auth'
+import { AccountBudget } from './account-budget'
+import { AppService, APP_SESSION_LIMITS } from './app-service'
+import { createAppAuthHandler } from './app-auth-routes'
 import { AUDIO_POLICY } from './audio-policy'
 import { WebTextBudget } from './text-budget'
 import { createTextHandler } from './text'
@@ -23,6 +27,7 @@ const json = (value: unknown, status = 200) => new Response(JSON.stringify(value
   headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } })
 const error = (status: number) => json({ error: status === 401 || status === 403 ? 'unauthorized' : status === 429 ? 'quota' : status === 503 ? 'unavailable' : 'protocol' }, status)
 async function send(response: Response, target: ServerResponse): Promise<void> {
+  response.headers.set('Cache-Control', 'no-store'); response.headers.set('X-Content-Type-Options', 'nosniff')
   target.writeHead(response.status, Object.fromEntries(response.headers))
   target.end(await response.text())
 }
@@ -37,17 +42,23 @@ export function createGateway(config: GatewayConfig | null, dependencies: Depend
   const now = dependencies.now || Date.now
   const verifier = config ? new AccessVerifier(config, dependencies.publicFetch, now) : null
   let budget: DailyBudget | null = null, audioBudget: AudioBudget | null = null, textBudget: WebTextBudget | null = null
+  let appAuth: AppAuth | null = null, accountBudget: AccountBudget | null = null
   try {
+    appAuth = config?.app ? new AppAuth(config.app.directory, now) : null
+    accountBudget = config?.app ? new AccountBudget(config.app.budgetDirectory, config.app.siteLimitMicroCny) : null
     budget = config && config.audioEnabled !== false ? new DailyBudget(config, now) : null
     audioBudget = config?.audioLedgerDirectory ? new AudioBudget(config.audioLedgerDirectory) : null
     textBudget = config?.text ? new WebTextBudget(config.text.ledgerDirectory) : null
   } catch (error) {
     // Release only resources acquired by this startup, never another process's lock.
-    textBudget?.close(); audioBudget?.close(); budget?.close()
+    textBudget?.close(); audioBudget?.close(); budget?.close(); accountBudget?.close(); appAuth?.close()
     throw error
   }
   const audioStatus = () => !config || config.audioEnabled === false ? 'disabled' : !config.asrKey || !config.translationKey ? 'missing-key' : !AUDIO_POLICY.verified || !audioBudget || config.model !== AUDIO_POLICY.model ? 'budget-unverified' : audioBudget.remainingMicroCny < AUDIO_POLICY.asrReservationMicroCny ? 'quota' : 'ready'
   const upstream = dependencies.upstream || nodeTransport()
+  const appService = appAuth && accountBudget && config ? new AppService(config, appAuth, accountBudget, upstream, now) : null
+  const appAuthHandler = appAuth ? createAppAuthHandler(appAuth, now) : null
+  const appActive = new Map<string, number>()
   const textUpstream = textBudget ? textBudget.fetch(upstream) : upstream
   const audioUpstream = audioBudget ? audioBudget.fetch(upstream) : async () => { throw new RelayError('unavailable') }
   const audioAnnotation = createAnnotationHandler(audioUpstream)
@@ -63,7 +74,7 @@ export function createGateway(config: GatewayConfig | null, dependencies: Depend
     if (!config) return 503
     if (req.headers.host !== new URL(config.origin).host) return 403
     const origin = req.headers.origin
-    if ((origin && origin !== config.origin) || req.headers['sec-fetch-site'] === 'cross-site' || (upgrade || ['/api/annotation', '/api/audio-annotation'].includes(req.url || '') || req.url === '/api/translate' || [CREDENTIALS_PATH, ASR_CREDENTIALS_PATH].includes(req.url || '') && req.method === 'POST') && origin !== config.origin) return 403
+    if ((origin && origin !== config.origin) || req.headers['sec-fetch-site'] === 'cross-site' || (upgrade || req.url?.startsWith('/api/auth/') && req.method !== 'GET' || ['/api/annotation', '/api/audio-annotation'].includes(req.url || '') || req.url === '/api/translate' || [CREDENTIALS_PATH, ASR_CREDENTIALS_PATH].includes(req.url || '') && req.method === 'POST') && origin !== config.origin) return 403
     if (now() - windowAt >= 60_000) { windowAt = now(); requests = 0 }
     if (++requests > 60 || authorizing >= 4) return 429
     return null
@@ -76,15 +87,49 @@ export function createGateway(config: GatewayConfig | null, dependencies: Depend
   const server = createServer({ maxHeaderSize: 16_384, requestTimeout: 30_000, headersTimeout: 10_000 }, (req, res) => {
     const run = async () => {
       if (req.url === '/healthz' && req.method === 'GET') return send(json({ status: config && !closing ? 'configured' : 'disabled' }, config && !closing ? 200 : 503), res)
-      if (!['/app-config.json', '/api/session', '/api/annotation', '/api/audio-annotation', '/api/translate', CREDENTIALS_PATH, ASR_CREDENTIALS_PATH].includes(req.url || '')) return send(error(404), res)
-      if ([CREDENTIALS_PATH, ASR_CREDENTIALS_PATH].includes(req.url || '') ? !['GET', 'POST'].includes(req.method || '') : req.method !== (['/api/annotation', '/api/audio-annotation'].includes(req.url || '') || req.url === '/api/translate' ? 'POST' : 'GET')) return send(error(405), res)
+      const authRoute = Boolean(appAuthHandler && req.url?.startsWith('/api/auth/'))
+      if (!authRoute && !['/app-config.json', '/api/session', '/api/annotation', '/api/audio-annotation', '/api/translate', CREDENTIALS_PATH, ASR_CREDENTIALS_PATH].includes(req.url || '')) return send(error(404), res)
+      if (!authRoute && ([CREDENTIALS_PATH, ASR_CREDENTIALS_PATH].includes(req.url || '') ? !['GET', 'POST'].includes(req.method || '') : req.method !== (['/api/annotation', '/api/audio-annotation'].includes(req.url || '') || req.url === '/api/translate' ? 'POST' : 'GET'))) return send(error(405), res)
       if (!config) return send(req.url === '/app-config.json' ? json({ version: 1, backend: null }) : error(503), res)
       const denied = boundary(req, false)
       if (denied) return send(error(denied), res)
       const claims = await identity(req)
+      if (authRoute) {
+        const controller = new AbortController(); controllers.add(controller)
+        const timer = setTimeout(() => controller.abort(), claims ? Math.min(30_000, claims.exp * 1000 - now()) : 30_000)
+        const abort = () => controller.abort(), closed = () => { if (!res.writableEnded) abort() }
+        req.once('aborted', abort); res.once('close', closed)
+        try {
+          const request = new Request(config.origin + req.url, { method: req.method, headers: headers(req), signal: controller.signal,
+            ...(req.method === 'GET' ? {} : { body: Readable.toWeb(req), duplex: 'half' }) } as RequestInit)
+          const result = await appAuthHandler!(request, () => Boolean(claims && claims.exp * 1000 > now() && !controller.signal.aborted))
+          if (!res.destroyed) await send(result, res)
+        } finally { controller.abort(); clearTimeout(timer); controllers.delete(controller); req.removeListener('aborted', abort); res.removeListener('close', closed) }
+        return
+      }
+      const principal = !claims && appAuth ? appAuth.resolve(req.headers.cookie) : null
+      if (!claims && !principal) return send(req.url === '/app-config.json' && appAuth ? json({ version: 1, backend: null, textBackend: null, authBackend: '/api/auth' }) : error(401), res)
+      if (principal && appService) {
+        if (req.url === '/app-config.json') return send(json(appService.publicConfig(principal)), res)
+        if ([CREDENTIALS_PATH, ASR_CREDENTIALS_PATH].includes(req.url || '')) return send(error(403), res)
+        if (req.url === '/api/session') return send(error(appService.audioStatus(principal) === 'ready' ? 426 : 503), res)
+        const controller = new AbortController(); controllers.add(controller)
+        const timer = setTimeout(() => controller.abort(), Math.min(60_000, principal.expiresAt - now()))
+        const revoked = setInterval(() => { if (closing || !appService.valid(principal, req.headers.cookie)) controller.abort() }, 1000)
+        const abort = () => controller.abort(), closed = () => { if (!res.writableEnded) abort() }
+        req.once('aborted', abort); res.once('close', closed)
+        try {
+          const request = new Request(config.origin + req.url, { method: 'POST', headers: headers(req), signal: controller.signal,
+            body: Readable.toWeb(req), duplex: 'half' } as RequestInit)
+          const result = await appService.request(request, principal)
+          if (!res.destroyed) await send(result, res)
+        } finally { controller.abort(); clearTimeout(timer); clearInterval(revoked); controllers.delete(controller); req.removeListener('aborted', abort); res.removeListener('close', closed) }
+        return
+      }
       if (!claims) return send(error(401), res)
       if (req.destroyed || res.destroyed || closing) return
       if (req.url === '/app-config.json') return send(json({ version: 1, backend: audioStatus() === 'ready' ? '/api/session' : null,
+        ...(appAuth ? { authBackend: '/api/auth' } : {}),
         ...(config.text ? { textBackend: config.translationKey ? '/api/translate' : null } : {}),
         ...(config.text && config.credentialsFile ? { credentialsBackend: CREDENTIALS_PATH } : {}),
         ...(config.audioRequested || config.asrCredentialsFile ? { audioStatus: audioStatus() } : {}),
@@ -165,11 +210,32 @@ export function createGateway(config: GatewayConfig | null, dependencies: Depend
       if (!socket.destroyed) socket.end(`HTTP/1.1 ${status} Rejected\r\nConnection: close\r\nCache-Control: no-store\r\nContent-Length: 0\r\n\r\n`)
     }
     const run = async () => {
-      if (config?.audioEnabled === false) return reject(503)
+      if (config?.audioEnabled === false && !appAuth) return reject(503)
       if (req.url !== '/api/session' || req.method !== 'GET' || req.headers.upgrade?.toLowerCase() !== 'websocket') return reject(400)
       const denied = boundary(req, true)
       if (denied) return reject(denied)
       const claims = await identity(req)
+      const principal = !claims && appAuth ? appAuth.resolve(req.headers.cookie) : null
+      if (principal && appService) {
+        if (socket.destroyed || closing || appService.audioStatus(principal) !== 'ready') return reject(503)
+        if (appActive.size >= 4 || appActive.has(principal.id)) return reject(429)
+        appActive.set(principal.id, 1)
+        let handed = false
+        try {
+          sockets.handleUpgrade(req, socket, head, ws => {
+            handed = true
+            const peer = new NodePeer(ws, () => { if (appService.valid(principal, req.headers.cookie)) return true; peer.close(); return false })
+            const session = new RelaySession(peer, appService.keys(principal), { fetch: appService.transport(principal, req.headers.cookie), hold, id: randomUUID, now, limits: APP_SESSION_LIMITS })
+            sessions.add(session)
+            const timer = setTimeout(() => session.stop(), Math.min(APP_SESSION_LIMITS.durationMs, principal.expiresAt - now()))
+            const revoked = setInterval(() => { if (closing || !appService.valid(principal, req.headers.cookie)) session.stop() }, 1000)
+            expiryTimers.add(timer)
+            ws.once('close', () => { appActive.delete(principal.id); session.stop(); sessions.delete(session); clearTimeout(timer); clearInterval(revoked); expiryTimers.delete(timer) })
+            peer.accept()
+          })
+        } catch { if (!handed) appActive.delete(principal.id); reject(503) }
+        return
+      }
       if (!claims) return reject(401)
       if (socket.destroyed || closing) return reject(503)
       if (audioStatus() !== 'ready') return reject(audioStatus() === 'quota' ? 429 : 503)
@@ -215,7 +281,7 @@ export function createGateway(config: GatewayConfig | null, dependencies: Depend
       for (const ws of sockets.clients) ws.terminate()
       server.closeAllConnections()
       await new Promise<void>(resolve => { if (server.listening) server.close(() => resolve()); else resolve() })
-      sockets.close(); budget?.close(); textBudget?.close(); audioBudget?.close()
+      sockets.close(); budget?.close(); textBudget?.close(); audioBudget?.close(); accountBudget?.close(); appAuth?.close()
     }
   }
 }

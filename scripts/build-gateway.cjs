@@ -15,6 +15,7 @@ async function main() {
   copyFileSync(join(root, 'docs/vm-gateway.md'), join(out, 'DEPLOYMENT.md'))
   writeFileSync(join(out, 'web-text-deployment.md'), readFileSync(join(root, 'docs/web-text-deployment.md'), 'utf8').replaceAll('](../evidence/', '](evidence/'))
   copyFileSync(join(root, 'docs/web-audio-deployment.md'), join(out, 'web-audio-deployment.md'))
+  copyFileSync(join(root, 'docs/web-accounts-deployment.md'), join(out, 'web-accounts-deployment.md'))
   const textGuide = readFileSync(join(root, 'docs/one-rmb-test.md'), 'utf8')
     .replaceAll('](../evidence/', '](evidence/').replaceAll('](../scripts/', '](scripts/')
   writeFileSync(join(out, 'one-rmb-test.md'), textGuide)

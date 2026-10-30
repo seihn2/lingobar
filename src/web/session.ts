@@ -10,6 +10,7 @@ import { parseTextRequest, parseTextResponse, type TextTranslationRequest } from
 export type WebSocketPort = Pick<WebSocket, 'readyState' | 'bufferedAmount' | 'send' | 'close' | 'addEventListener' | 'removeEventListener'>
 export type WebCapture = (onChunk: (pcm: ArrayBuffer) => void, onError: (message: string) => void, signal: AbortSignal) => Promise<() => void>
 interface Options {
+  authBackend?: '/api/auth' | null
   backend: '/api/session' | null
   origin: string
   socket?: (url: string) => WebSocketPort
@@ -68,12 +69,14 @@ export class BrowserSession {
   private textJob: TextJob | null = null
   private credentialRequest: AbortController | null = null
   private textServiceConfigured: boolean
+  readonly authAvailable: boolean
   readonly configured: boolean
   readonly credentialsAvailable: boolean
   readonly asrCredentialsAvailable: boolean
   get audioStatusMessage(): string {
     if (this.options.disabledReason === 'unauthorized') return '服务未授权'
     if (this.configured) return ''
+    if (this.authAvailable && !this.textConfigured) return '请登录或使用自己的 API Key'
     return ({ ready: '语音入口尚未启用', disabled: '语音入口尚未启用', 'missing-key': '请在字幕设置中保存百炼语音密钥', 'budget-unverified': '语音费用上界尚未核实，暂不能开始聆听；文字翻译仍按独立配置使用', quota: '本次语音测试预算已用尽' })[this.options.audioStatus || 'disabled']
   }
   get textConfigured(): boolean { return this.textServiceConfigured }
@@ -87,6 +90,8 @@ export class BrowserSession {
     if (options.credentialsBackend !== undefined && options.credentialsBackend !== null && options.credentialsBackend !== '/api/settings/translation-key') throw new Error('密钥配置地址不正确。')
     if (options.asrCredentialsBackend !== undefined && options.asrCredentialsBackend !== null && options.asrCredentialsBackend !== '/api/settings/asr-key') throw new Error('语音密钥配置地址不正确。')
     this.asrCredentialsAvailable = options.asrCredentialsBackend === '/api/settings/asr-key' && options.disabledReason !== 'unauthorized'
+    if (options.authBackend !== undefined && options.authBackend !== null && options.authBackend !== '/api/auth') throw new Error('账号服务地址不正确。')
+    this.authAvailable = options.authBackend === '/api/auth'
     this.configured = options.backend === '/api/session'
     this.textServiceConfigured = options.textBackend === '/api/translate'
     this.credentialsAvailable = options.credentialsBackend === '/api/settings/translation-key' && options.disabledReason !== 'unauthorized'
