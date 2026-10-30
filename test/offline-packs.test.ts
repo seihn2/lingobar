@@ -119,8 +119,10 @@ describe('local read-only dictionary packs', () => {
     const file = await pack('oversized-fr', 'v2', 'en', undefined, [{ word: 'authored', lang_code: 'fr', senses: [{ glosses: ['Authored first sense.'] }] }])
     const databaseFile = join(file, '..', 'entries.sqlite'), db = new DatabaseSync(databaseFile)
     try {
+      db.exec('BEGIN')
       const insert = db.prepare('INSERT INTO senses VALUES(?,?,?,?,?)')
       for (let index = 2; index <= 257; index++) insert.run(`line:1:s${index}`, 'line:1', JSON.stringify([`Authored sense ${index}.`]), '[]', '[]')
+      db.exec('COMMIT')
     } finally { db.close() }
     const manifest = JSON.parse(readFileSync(file, 'utf8'))
     manifest.schemaVersion = 2; manifest.counts.senses = 257
