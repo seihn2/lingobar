@@ -1,3 +1,4 @@
+import type { AudioStatus } from './config'
 import type { Caption, Settings, SettingsInput, Snapshot } from '../shared/types'
 import { validTargetLanguages } from '../shared/languages'
 import { parseServerMessage, MAX_WEB_CAPTIONS, type WebClientMessage } from '../shared/web-protocol'
@@ -20,6 +21,8 @@ interface Options {
   textBackend?: '/api/translate' | null
   textFetch?: typeof fetch
   credentialsBackend?: '/api/settings/translation-key' | null
+  asrCredentialsBackend?: '/api/settings/asr-key' | null
+  audioStatus?: AudioStatus
   credentialsFetch?: typeof fetch
 }
 interface Run {
@@ -67,6 +70,12 @@ export class BrowserSession {
   private textServiceConfigured: boolean
   readonly configured: boolean
   readonly credentialsAvailable: boolean
+  readonly asrCredentialsAvailable: boolean
+  get audioStatusMessage(): string {
+    if (this.options.disabledReason === 'unauthorized') return '服务未授权'
+    if (this.configured) return ''
+    return ({ ready: '语音入口尚未启用', disabled: '语音入口尚未启用', 'missing-key': '请在字幕设置中保存百炼语音密钥', 'budget-unverified': '语音费用上界尚未核实，暂不能开始聆听；文字翻译仍按独立配置使用', quota: '本次语音测试预算已用尽' })[this.options.audioStatus || 'disabled']
+  }
   get textConfigured(): boolean { return this.textServiceConfigured }
   constructor(private options: Options) {
     // A fixed same-origin route is the only accepted backend. Public config cannot select an arbitrary upstream.
@@ -76,6 +85,8 @@ export class BrowserSession {
     if (options.backend !== null && options.backend !== '/api/session') throw new Error('网页服务地址不正确。')
     if (options.textBackend !== undefined && options.textBackend !== null && options.textBackend !== '/api/translate') throw new Error('文字服务地址不正确。')
     if (options.credentialsBackend !== undefined && options.credentialsBackend !== null && options.credentialsBackend !== '/api/settings/translation-key') throw new Error('密钥配置地址不正确。')
+    if (options.asrCredentialsBackend !== undefined && options.asrCredentialsBackend !== null && options.asrCredentialsBackend !== '/api/settings/asr-key') throw new Error('语音密钥配置地址不正确。')
+    this.asrCredentialsAvailable = options.asrCredentialsBackend === '/api/settings/asr-key' && options.disabledReason !== 'unauthorized'
     this.configured = options.backend === '/api/session'
     this.textServiceConfigured = options.textBackend === '/api/translate'
     this.credentialsAvailable = options.credentialsBackend === '/api/settings/translation-key' && options.disabledReason !== 'unauthorized'
@@ -88,15 +99,17 @@ export class BrowserSession {
   private publish(): void { for (const listener of this.listeners) listener(this.snapshot()) }
 
   /** Explicit owner settings action; the key never enters snapshots or browser storage. */
-  async configureTranslationKey(apiKey: string): Promise<void> {
-    if (!this.credentialsAvailable || new URL(this.options.origin).protocol !== 'https:') throw new Error('密钥配置服务不可用。')
+  async configureTranslationKey(apiKey: string): Promise<void> { return this.configureProviderKey(apiKey, false) }
+  async configureAsrKey(apiKey: string): Promise<void> { return this.configureProviderKey(apiKey, true) }
+  private async configureProviderKey(apiKey: string, asr: boolean): Promise<void> {
+    if (!(asr ? this.asrCredentialsAvailable : this.credentialsAvailable) || new URL(this.options.origin).protocol !== 'https:') throw new Error('密钥配置服务不可用。')
     if (this.credentialRequest) throw new Error('正在保存密钥。')
     if (typeof apiKey !== 'string' || !apiKey.trim() || apiKey.length > 4096 || /[\u0000-\u001f\u007f]/u.test(apiKey)) throw new Error('请输入有效密钥。')
     const controller = new AbortController()
     this.credentialRequest = controller
     const timer = setTimeout(() => controller.abort(), 15_000)
     try {
-      const response = await (this.options.credentialsFetch || fetch)(new URL('/api/settings/translation-key', this.options.origin).toString(), {
+      const response = await (this.options.credentialsFetch || fetch)(new URL(asr ? '/api/settings/asr-key' : '/api/settings/translation-key', this.options.origin).toString(), {
         method: 'POST', credentials: 'same-origin', redirect: 'error', cache: 'no-store', signal: controller.signal,
         headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ apiKey })
       })
@@ -104,6 +117,7 @@ export class BrowserSession {
       const result: unknown = await response.json()
       if (!result || typeof result !== 'object' || Array.isArray(result) || Object.keys(result).length !== 1 ||
         (result as Record<string, unknown>).configured !== true || controller.signal.aborted) throw new Error('密钥保存未完成。')
+      if (asr) return // Saving is not provider verification or permission to capture; refresh to reload readiness.
       this.textServiceConfigured = true
       this.state = { ...this.state, message: this.configured ? this.state.message : '文字翻译可用' }
       this.publish()
@@ -342,7 +356,7 @@ export class BrowserSession {
     this.annotations.set(id, job)
     this.state = { ...this.state, captions: this.state.captions.map(item => item.id === id ? { ...item, furiganaStatus: 'pending' } : item) }; this.publish()
     try {
-      const result = await requestAnnotation(job.request, this.options.origin, job.abort.signal, this.options.annotationFetch)
+      const result = await requestAnnotation(job.request, this.options.origin, job.abort.signal, this.options.annotationFetch, caption.source === 'microphone' ? '/api/audio-annotation' : '/api/annotation')
       if (!this.annotationCurrent(job)) throw annotationCancelled()
       this.state = { ...this.state, captions: this.state.captions.map(item => item.id === id ? { ...item, reading: result.reading, jaSegments: result.jaSegments, furiganaStatus: 'ready' } : item) }
     } catch (error) {

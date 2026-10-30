@@ -12,6 +12,7 @@ interface Dependencies {
   id(): string
   now?: () => number
   completion?: CompletionService
+  limits?: { durationMs: number; audioBytes: number }
 }
 type Published = { fields: unknown[]; revision: number; live: boolean }
 const fields = (caption: Caption): unknown[] => [caption.original, caption.translatedOriginal, caption.status, caption.live, caption.translationPending,
@@ -39,7 +40,7 @@ export class RelaySession {
   constructor(private peer: WorkerSocket, private config: RelayConfig, private dependencies: Dependencies) {
     this.lastAudioAt = this.now()
     this.firstTimer = this.timer(() => this.fail('protocol'), SESSION_LIMITS.firstControlMs)
-    this.timer(() => this.fail('quota'), SESSION_LIMITS.durationMs)
+    this.timer(() => this.fail('quota'), this.dependencies.limits?.durationMs ?? SESSION_LIMITS.durationMs)
     peer.addEventListener('message', event => this.receive((event as MessageEvent).data))
     peer.addEventListener('close', () => this.stop())
     peer.addEventListener('error', () => this.stop())
@@ -58,7 +59,7 @@ export class RelaySession {
         const now = this.now()
         this.allowance = Math.min(64_000, this.allowance + Math.max(0, now - this.lastAudioAt) * 32)
         this.lastAudioAt = now
-        if (data.byteLength > this.allowance || this.audioBytes + data.byteLength > SESSION_LIMITS.audioBytes) throw new RelayError('quota')
+        if (data.byteLength > this.allowance || this.audioBytes + data.byteLength > (this.dependencies.limits?.audioBytes ?? SESSION_LIMITS.audioBytes)) throw new RelayError('quota')
         this.allowance -= data.byteLength; this.audioBytes += data.byteLength
         this.armIdle(); this.asr.push(data); return
       }

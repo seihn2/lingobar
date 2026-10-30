@@ -49,13 +49,13 @@ describe('VM gateway Access verification with generated synthetic signatures', (
 })
 describe('disabled-by-default gateway configuration', () => {
   const env = { WEB_ENABLED: '1', GATEWAY_PUBLIC_ORIGIN: 'https://lingobar.example', ACCESS_ISSUER: configuration('').issuer,
-    ACCESS_AUDIENCE: configuration('').audience, ACCESS_ALLOWED_EMAIL: configuration('').email, GATEWAY_STATE_DIRECTORY: '/tmp/synthetic-state',
+    ACCESS_AUDIENCE: configuration('').audience, ACCESS_ALLOWED_EMAIL: configuration('').email, GATEWAY_STATE_DIRECTORY: '/tmp/synthetic-state', GATEWAY_AUDIO_LEDGER_DIRECTORY: '/tmp/synthetic-audio-ledger',
     GATEWAY_DAILY_SESSIONS: '1', GATEWAY_DAILY_COMPLETION_REQUESTS: '42', ASR_API_KEY: 'synthetic-asr', TRANSLATION_API_KEY: 'synthetic-translation' }
   it('ignores all credentials while disabled and requires explicit nonzero caps when enabled', () => {
     expect(gatewayConfig({})).toBeNull(); expect(gatewayConfig({ WEB_ENABLED: '0', ASR_API_KEY: 'not-used' })).toBeNull()
     expect(gatewayConfig(env)).toMatchObject({ dailySessions: 1, dailyCompletionRequests: 42 })
   })
-  it.each(['GATEWAY_PUBLIC_ORIGIN', 'ACCESS_ISSUER', 'ACCESS_AUDIENCE', 'ACCESS_ALLOWED_EMAIL', 'GATEWAY_STATE_DIRECTORY', 'GATEWAY_DAILY_SESSIONS', 'GATEWAY_DAILY_COMPLETION_REQUESTS', 'ASR_API_KEY', 'TRANSLATION_API_KEY'])('rejects missing %s with a fixed redacted error', name => {
+  it.each(['GATEWAY_PUBLIC_ORIGIN', 'ACCESS_ISSUER', 'ACCESS_AUDIENCE', 'ACCESS_ALLOWED_EMAIL', 'GATEWAY_STATE_DIRECTORY', 'GATEWAY_DAILY_SESSIONS', 'GATEWAY_DAILY_COMPLETION_REQUESTS', 'GATEWAY_AUDIO_LEDGER_DIRECTORY', 'TRANSLATION_API_KEY'])('rejects missing %s with a fixed redacted error', name => {
     expect(() => gatewayConfig({ ...env, [name]: '' })).toThrow('Invalid gateway configuration')
   })
   it.each([['GATEWAY_PUBLIC_ORIGIN', 'http://lingobar.example'], ['GATEWAY_PUBLIC_ORIGIN', 'https://lingobar.example/api'],

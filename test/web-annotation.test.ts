@@ -35,11 +35,11 @@ const response = (input: AnnotationRequest) => new Response(JSON.stringify(annot
 function stable(value: Caption) { const { reading: _reading, jaSegments: _segments, furiganaStatus: _state, ...rest } = value; return rest }
 type HttpJob = ReturnType<typeof deferred<Response>> & { input: AnnotationRequest; signal: AbortSignal }
 const fixtures: Array<{ session: BrowserSession; jobs: HttpJob[] }> = []
-function fixture(backend: '/api/session' | null = '/api/session') {
+function fixture(backend: '/api/session' | null = '/api/session', endpoint = '/api/audio-annotation') {
   const sockets: Socket[] = [], jobs: HttpJob[] = [], cleanup = vi.fn()
   const capture = vi.fn<WebCapture>(async () => cleanup)
   const annotationFetch = vi.fn<typeof fetch>((url, init) => {
-    expect(String(url)).toBe('https://lingobar.example/api/annotation')
+    expect(String(url)).toBe('https://lingobar.example' + endpoint)
     expect(init).toMatchObject({ method: 'POST', credentials: 'same-origin', redirect: 'error', cache: 'no-store', headers: { 'Content-Type': 'application/json' } })
     const job = { ...deferred<Response>(), input: JSON.parse(init!.body as string) as AnnotationRequest, signal: init!.signal as AbortSignal }
     jobs.push(job); return job.promise // Deliberately ignores AbortSignal.
@@ -61,6 +61,18 @@ afterEach(async () => {
 })
 
 describe('browser annotation of retained text', () => {
+  it('keeps microphone annotation retries in the audio batch and text retries in the original text batch', async () => {
+    for (const source of ['microphone', 'text'] as const) {
+      const endpoint = source === 'microphone' ? '/api/audio-annotation' : '/api/annotation'
+      const f = fixture('/api/session', endpoint), socket = await f.start()
+      const id = f.seed(socket, { ...row(), source }); f.session.stop()
+      const pending = f.session.retryAnnotation(id)
+      expect(String(f.annotationFetch.mock.calls[0][0])).toBe('https://lingobar.example' + endpoint)
+      f.jobs[0].resolve(response(f.jobs[0].input)); await pending
+      expect(f.capture).toHaveBeenCalledOnce(); expect(f.sockets).toHaveLength(1)
+    }
+  })
+
   it('annotates a saved ready caption after pause with HTTP only, preserving all source/translation fields', async () => {
     const f = fixture(), socket = await f.start(), id = f.seed(socket)
     f.session.toggleSaved(id); f.session.stop()
@@ -137,6 +149,13 @@ describe('browser annotation of retained text', () => {
 })
 
 describe('bounded same-origin annotation client', () => {
+  it('rejects arbitrary destinations even when passed outside TypeScript', async () => {
+    const transport = vi.fn<typeof fetch>()
+    await expect(requestAnnotation(sample, 'https://lingobar.example', new AbortController().signal, transport,
+      'https://attacker.example/annotation' as '/api/annotation')).rejects.toMatchObject({ code: 'protocol' })
+    expect(transport).not.toHaveBeenCalled()
+  })
+
   it('uses the fixed text-only request and accepts only the exact identity and Japanese alignment', async () => {
     const transport = vi.fn<typeof fetch>(async () => response(sample))
     expect(await requestAnnotation(sample, 'https://lingobar.example', new AbortController().signal, transport)).toEqual(annotated(sample))

@@ -4,6 +4,8 @@ import { Readable } from 'node:stream'
 import { WebSocketServer } from 'ws'
 import { AccessVerifier } from './access'
 import { DailyBudget } from './budget'
+import { AudioBudget } from './audio-budget'
+import { AUDIO_POLICY } from './audio-policy'
 import { WebTextBudget } from './text-budget'
 import { createTextHandler } from './text'
 import { saveTranslationKey, validTranslationKey } from './credentials'
@@ -14,6 +16,7 @@ import { createAnnotationHandler } from '../worker/annotation'
 import { parseClientMessage } from '../shared/web-protocol'
 import { RelayError, type WorkerFetch } from '../worker/types'
 
+const ASR_CREDENTIALS_PATH = '/api/settings/asr-key'
 const CREDENTIALS_PATH = '/api/settings/translation-key'
 interface Dependencies { publicFetch?: typeof fetch; upstream?: WorkerFetch; now?: () => number }
 const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status,
@@ -33,11 +36,22 @@ function headers(req: IncomingMessage): Headers {
 export function createGateway(config: GatewayConfig | null, dependencies: Dependencies = {}) {
   const now = dependencies.now || Date.now
   const verifier = config ? new AccessVerifier(config, dependencies.publicFetch, now) : null
-  const budget = config && config.audioEnabled !== false ? new DailyBudget(config, now) : null
-  const textBudget = config?.text ? new WebTextBudget(config.text.ledgerDirectory) : null
+  let budget: DailyBudget | null = null, audioBudget: AudioBudget | null = null, textBudget: WebTextBudget | null = null
+  try {
+    budget = config && config.audioEnabled !== false ? new DailyBudget(config, now) : null
+    audioBudget = config?.audioLedgerDirectory ? new AudioBudget(config.audioLedgerDirectory) : null
+    textBudget = config?.text ? new WebTextBudget(config.text.ledgerDirectory) : null
+  } catch (error) {
+    // Release only resources acquired by this startup, never another process's lock.
+    textBudget?.close(); audioBudget?.close(); budget?.close()
+    throw error
+  }
+  const audioStatus = () => !config || config.audioEnabled === false ? 'disabled' : !config.asrKey || !config.translationKey ? 'missing-key' : !AUDIO_POLICY.verified || !audioBudget || config.model !== AUDIO_POLICY.model ? 'budget-unverified' : audioBudget.remainingMicroCny < AUDIO_POLICY.asrReservationMicroCny ? 'quota' : 'ready'
   const upstream = dependencies.upstream || nodeTransport()
   const textUpstream = textBudget ? textBudget.fetch(upstream) : upstream
-  const annotation = createAnnotationHandler(textUpstream)
+  const audioUpstream = audioBudget ? audioBudget.fetch(upstream) : async () => { throw new RelayError('unavailable') }
+  const audioAnnotation = createAnnotationHandler(audioUpstream)
+  const annotation = createAnnotationHandler(textBudget ? textUpstream : audioUpstream)
   let translate = config && textBudget ? createTextHandler(config.translationKey, textUpstream, { now }) : null
   const sockets = new WebSocketServer({ noServer: true, maxPayload: 128 * 1024, perMessageDeflate: false, clientTracking: true })
   const sessions = new Set<RelaySession>(), controllers = new Set<AbortController>(), expiryTimers = new Set<ReturnType<typeof setTimeout>>()
@@ -49,7 +63,7 @@ export function createGateway(config: GatewayConfig | null, dependencies: Depend
     if (!config) return 503
     if (req.headers.host !== new URL(config.origin).host) return 403
     const origin = req.headers.origin
-    if ((origin && origin !== config.origin) || req.headers['sec-fetch-site'] === 'cross-site' || (upgrade || req.url === '/api/annotation' || req.url === '/api/translate' || req.url === CREDENTIALS_PATH && req.method === 'POST') && origin !== config.origin) return 403
+    if ((origin && origin !== config.origin) || req.headers['sec-fetch-site'] === 'cross-site' || (upgrade || ['/api/annotation', '/api/audio-annotation'].includes(req.url || '') || req.url === '/api/translate' || [CREDENTIALS_PATH, ASR_CREDENTIALS_PATH].includes(req.url || '') && req.method === 'POST') && origin !== config.origin) return 403
     if (now() - windowAt >= 60_000) { windowAt = now(); requests = 0 }
     if (++requests > 60 || authorizing >= 4) return 429
     return null
@@ -62,20 +76,24 @@ export function createGateway(config: GatewayConfig | null, dependencies: Depend
   const server = createServer({ maxHeaderSize: 16_384, requestTimeout: 30_000, headersTimeout: 10_000 }, (req, res) => {
     const run = async () => {
       if (req.url === '/healthz' && req.method === 'GET') return send(json({ status: config && !closing ? 'configured' : 'disabled' }, config && !closing ? 200 : 503), res)
-      if (!['/app-config.json', '/api/session', '/api/annotation', '/api/translate', CREDENTIALS_PATH].includes(req.url || '')) return send(error(404), res)
-      if (req.url === CREDENTIALS_PATH ? !['GET', 'POST'].includes(req.method || '') : req.method !== (req.url === '/api/annotation' || req.url === '/api/translate' ? 'POST' : 'GET')) return send(error(405), res)
+      if (!['/app-config.json', '/api/session', '/api/annotation', '/api/audio-annotation', '/api/translate', CREDENTIALS_PATH, ASR_CREDENTIALS_PATH].includes(req.url || '')) return send(error(404), res)
+      if ([CREDENTIALS_PATH, ASR_CREDENTIALS_PATH].includes(req.url || '') ? !['GET', 'POST'].includes(req.method || '') : req.method !== (['/api/annotation', '/api/audio-annotation'].includes(req.url || '') || req.url === '/api/translate' ? 'POST' : 'GET')) return send(error(405), res)
       if (!config) return send(req.url === '/app-config.json' ? json({ version: 1, backend: null }) : error(503), res)
       const denied = boundary(req, false)
       if (denied) return send(error(denied), res)
       const claims = await identity(req)
       if (!claims) return send(error(401), res)
       if (req.destroyed || res.destroyed || closing) return
-      if (req.url === '/app-config.json') return send(json({ version: 1, backend: config.audioEnabled === false ? null : '/api/session',
+      if (req.url === '/app-config.json') return send(json({ version: 1, backend: audioStatus() === 'ready' ? '/api/session' : null,
         ...(config.text ? { textBackend: config.translationKey ? '/api/translate' : null } : {}),
-        ...(config.text && config.credentialsFile ? { credentialsBackend: CREDENTIALS_PATH } : {}) }), res)
-      if (req.url === CREDENTIALS_PATH) {
-        if (!config.text || !config.credentialsFile) return send(error(503), res)
-        if (req.method === 'GET') return send(json({ configured: Boolean(config.translationKey) }), res)
+        ...(config.text && config.credentialsFile ? { credentialsBackend: CREDENTIALS_PATH } : {}),
+        ...(config.audioRequested || config.asrCredentialsFile ? { audioStatus: audioStatus() } : {}),
+        ...(config.asrCredentialsFile ? { asrCredentialsBackend: ASR_CREDENTIALS_PATH } : {}) }), res)
+      if ([CREDENTIALS_PATH, ASR_CREDENTIALS_PATH].includes(req.url || '')) {
+        const asr = req.url === ASR_CREDENTIALS_PATH
+        const filename = asr ? config.asrCredentialsFile : config.text && config.credentialsFile
+        if (!filename) return send(error(503), res)
+        if (req.method === 'GET') return send(json({ configured: Boolean(asr ? config.asrKey : config.translationKey) }), res)
         if (req.headers['content-type']?.split(';', 1)[0].trim().toLowerCase() !== 'application/json') return send(error(400), res)
         let bytes = 0, body = ''
         for await (const chunk of req) {
@@ -89,12 +107,15 @@ export function createGateway(config: GatewayConfig | null, dependencies: Depend
             !validTranslationKey((value as { apiKey: unknown }).apiKey)) return send(error(400), res)
         const apiKey = (value as { apiKey: string }).apiKey
         if (req.aborted || res.destroyed || closing || claims.exp * 1000 <= now()) return send(error(401), res)
-        try { saveTranslationKey(config.credentialsFile, apiKey) } catch { return send(error(503), res) }
-        config.translationKey = apiKey
-        translate = textBudget ? createTextHandler(apiKey, textUpstream, { now }) : null
+        try { saveTranslationKey(filename, apiKey) } catch { return send(error(503), res) }
+        if (asr) config.asrKey = apiKey
+        else {
+          config.translationKey = apiKey
+          translate = textBudget ? createTextHandler(apiKey, textUpstream, { now }) : null
+        }
         return send(json({ configured: true }), res)
       }
-      if (req.url === '/api/session') return send(error(config.audioEnabled === false ? 503 : 426), res)
+      if (req.url === '/api/session') return send(error(audioStatus() === 'ready' ? 426 : 503), res)
       if (req.url === '/api/translate') {
         if (!translate || !config.translationKey) return send(error(503), res)
         if (textRequests >= 1) return send(error(429), res)
@@ -115,9 +136,10 @@ export function createGateway(config: GatewayConfig | null, dependencies: Depend
         }
         return
       }
+      if (req.url === '/api/audio-annotation' && audioStatus() !== 'ready') return send(error(503), res)
       if (!config.translationKey || !budget && !textBudget) return send(error(503), res)
       if (annotations >= 2) return send(error(429), res)
-      try { budget?.reserve('annotation') } catch (e) { return send(error(e instanceof RelayError && e.code === 'quota' ? 429 : 503), res) }
+      try { if (req.url === '/api/audio-annotation' || !textBudget) budget?.reserve('annotation') } catch (e) { return send(error(e instanceof RelayError && e.code === 'quota' ? 429 : 503), res) }
       annotations++
       const controller = new AbortController(); controllers.add(controller)
       const timer = setTimeout(() => controller.abort(), Math.min(25_000, claims.exp * 1000 - now()))
@@ -125,9 +147,9 @@ export function createGateway(config: GatewayConfig | null, dependencies: Depend
       const responseClosed = () => { if (!res.writableEnded) abort() }
       req.once('aborted', abort); res.once('close', responseClosed)
       try {
-        const request = new Request(config.origin + req.url, { method: 'POST', headers: headers(req), signal: controller.signal,
+        const request = new Request(config.origin + (req.url === '/api/audio-annotation' ? '/api/annotation' : req.url), { method: 'POST', headers: headers(req), signal: controller.signal,
           body: Readable.toWeb(req), duplex: 'half' } as RequestInit)
-        const result = await annotation(request, { WEB_ENABLED: '1', TRANSLATION_API_KEY: config.translationKey,
+        const result = await (req.url === '/api/audio-annotation' ? audioAnnotation : annotation)(request, { WEB_ENABLED: '1', TRANSLATION_API_KEY: config.translationKey,
           AUTH_SERVICE: { fetch: async () => new Response(null, { status: !controller.signal.aborted && claims.exp * 1000 > now() ? 204 : 401 }) } })
         if (!res.destroyed) await send(result, res)
       } finally {
@@ -150,6 +172,7 @@ export function createGateway(config: GatewayConfig | null, dependencies: Depend
       const claims = await identity(req)
       if (!claims) return reject(401)
       if (socket.destroyed || closing) return reject(503)
+      if (audioStatus() !== 'ready') return reject(audioStatus() === 'quota' ? 429 : 503)
       if (active >= 1) return reject(429)
       // Reserve concurrency before handleUpgrade. No provider/budget work happens until a valid start control.
       active++
@@ -170,7 +193,8 @@ export function createGateway(config: GatewayConfig | null, dependencies: Depend
               peer.close(); return false
             }
           })
-          const session = new RelaySession(peer, config!, { fetch: upstream, hold, id: randomUUID, now })
+          const session = new RelaySession(peer, config!, { fetch: audioUpstream, hold, id: randomUUID, now,
+            limits: { durationMs: AUDIO_POLICY.maxSessionMs, audioBytes: AUDIO_POLICY.maxAudioBytes } })
           sessions.add(session)
           const timer = setTimeout(() => session.stop(), Math.min(300_000, claims.exp * 1000 - now()))
           expiryTimers.add(timer)
@@ -191,7 +215,7 @@ export function createGateway(config: GatewayConfig | null, dependencies: Depend
       for (const ws of sockets.clients) ws.terminate()
       server.closeAllConnections()
       await new Promise<void>(resolve => { if (server.listening) server.close(() => resolve()); else resolve() })
-      sockets.close(); budget?.close(); textBudget?.close()
+      sockets.close(); budget?.close(); textBudget?.close(); audioBudget?.close()
     }
   }
 }
