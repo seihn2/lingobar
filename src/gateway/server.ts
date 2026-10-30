@@ -36,10 +36,17 @@ function headers(req: IncomingMessage): Headers {
 export function createGateway(config: GatewayConfig | null, dependencies: Dependencies = {}) {
   const now = dependencies.now || Date.now
   const verifier = config ? new AccessVerifier(config, dependencies.publicFetch, now) : null
-  const budget = config && config.audioEnabled !== false ? new DailyBudget(config, now) : null
-  const audioBudget = config?.audioLedgerDirectory ? new AudioBudget(config.audioLedgerDirectory) : null
+  let budget: DailyBudget | null = null, audioBudget: AudioBudget | null = null, textBudget: WebTextBudget | null = null
+  try {
+    budget = config && config.audioEnabled !== false ? new DailyBudget(config, now) : null
+    audioBudget = config?.audioLedgerDirectory ? new AudioBudget(config.audioLedgerDirectory) : null
+    textBudget = config?.text ? new WebTextBudget(config.text.ledgerDirectory) : null
+  } catch (error) {
+    // Release only resources acquired by this startup, never another process's lock.
+    textBudget?.close(); audioBudget?.close(); budget?.close()
+    throw error
+  }
   const audioStatus = () => !config || config.audioEnabled === false ? 'disabled' : !config.asrKey || !config.translationKey ? 'missing-key' : !AUDIO_POLICY.verified || !audioBudget || config.model !== AUDIO_POLICY.model ? 'budget-unverified' : audioBudget.remainingMicroCny < AUDIO_POLICY.asrReservationMicroCny ? 'quota' : 'ready'
-  const textBudget = config?.text ? new WebTextBudget(config.text.ledgerDirectory) : null
   const upstream = dependencies.upstream || nodeTransport()
   const textUpstream = textBudget ? textBudget.fetch(upstream) : upstream
   const audioUpstream = audioBudget ? audioBudget.fetch(upstream) : async () => { throw new RelayError('unavailable') }

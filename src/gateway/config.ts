@@ -1,5 +1,5 @@
-import { isAbsolute, resolve } from 'node:path'
-import { openSync, fstatSync, readFileSync, closeSync, constants } from 'node:fs'
+import { isAbsolute, resolve, dirname, basename, join } from 'node:path'
+import { realpathSync, openSync, fstatSync, readFileSync, closeSync, constants } from 'node:fs'
 import type { RelayConfig } from '../worker/types'
 
 export interface GatewayConfig extends RelayConfig {
@@ -69,7 +69,12 @@ export function gatewayConfig(env: Record<string, string | undefined>): GatewayC
   if (text && !isAbsolute(ledgerDirectory)) invalid()
   const audioLedgerDirectory = env.GATEWAY_AUDIO_LEDGER_DIRECTORY || ''
   if (audio && (!isAbsolute(audioLedgerDirectory) || audioLedgerDirectory === ledgerDirectory || audioLedgerDirectory === stateDirectory)) invalid()
-  if (env.ASR_API_KEY_FILE && env.TRANSLATION_API_KEY_FILE && resolve(env.ASR_API_KEY_FILE) === resolve(env.TRANSLATION_API_KEY_FILE)) invalid()
+  if (env.ASR_API_KEY_FILE && env.TRANSLATION_API_KEY_FILE) {
+    const target = (filename: string) => {
+      try { return join(realpathSync(dirname(resolve(filename))), basename(filename)) } catch { return invalid() }
+    }
+    if (target(env.ASR_API_KEY_FILE) === target(env.TRANSLATION_API_KEY_FILE)) invalid()
+  }
   const model = env.ASR_MODEL || 'qwen3-asr-flash-realtime'
   if (!['qwen-audio-3.1-asr-flash-streaming', 'qwen-audio-3.0-asr-flash-streaming', 'qwen3-asr-flash-realtime'].includes(model)) invalid()
   return { origin: origin.origin, issuer, audience, email: email.toLowerCase(), stateDirectory,
