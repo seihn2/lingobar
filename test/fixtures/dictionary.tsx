@@ -4,7 +4,8 @@ import { createRoot } from 'react-dom/client'
 import App from '../../src/renderer/App'
 import type { Caption, LingoAPI, Settings, Snapshot } from '../../src/shared/types'
 import DictionaryPanel, { PhraseExplanation } from '../../src/renderer/DictionaryPanel'
-import type { DictionaryAPI, DictionaryDetail, DictionaryEncounter, DictionaryExplanation, DictionaryHandleResult, DictionaryQuery, DictionaryReviewEvent, DictionaryReviewSession, DictionaryRunState, DictionarySnapshot, DictionaryOpen } from '../../src/shared/dictionary'
+import { usableDictionaryExplanation, type DictionaryAPI, type DictionaryDetail, type DictionaryEncounter, type DictionaryExplanation, type GeneratedDictionaryExplanation, type DictionaryHandleResult, type DictionaryQuery, type DictionaryReviewEvent, type DictionaryReviewSession, type DictionaryRunState, type DictionarySnapshot, type DictionaryOpen } from '../../src/shared/dictionary'
+import type { OfflineHit, OfflinePackInfo } from '../../src/shared/offline-dictionary'
 import type { Phrase } from '../../src/shared/learning'
 import type { TargetLanguage } from '../../src/shared/languages'
 import '../../src/renderer/style.css'
@@ -39,7 +40,7 @@ const eventPositions = new Map<string, number>()
 const undone = new Set<string>()
 let exportSnapshot: DictionaryEncounter[] = []
 
-function explanation(id: string, nullable = false, status: 'ok' | 'ambiguous' = 'ok'): DictionaryExplanation {
+function explanation(id: string, nullable = false, status: 'ok' | 'ambiguous' = 'ok'): GeneratedDictionaryExplanation {
   const target = records.get(id)?.source.span.exact || phrase.exact
   return {
     schemaVersion: 1, encounterId: id, explanationId: `${id}-explanation-${(records.get(id)?.explanations.length || 0) + 1}`, version: (records.get(id)?.explanations.length || 0) + 1,
@@ -120,7 +121,7 @@ const api: DictionaryAPI = {
   discardUnsaved: async (id, attemptId) => { runs.set(id, { encounterId: id, attemptId, state: 'cancelled', dispatchState: 'may_have_started', message: '已放弃未保存结果' }); emit() },
   list: async (query: DictionaryQuery) => {
     const words = (query.query || '').toLocaleLowerCase()
-    const items = [...records.values()].filter(item => (!query.language || item.source.language === query.language) && (!query.provenance || item.source.provenance === query.provenance) && (query.favorite === undefined || item.favorite === query.favorite) && (query.incomplete === undefined || ((!item.explanations.length && !item.favorite && !item.note.trim()) === query.incomplete)) && (!words || [item.source.text, item.source.span.exact, item.note, ...item.explanations.map(value => value.content.contextMeaning || '')].some(value => value.toLocaleLowerCase().includes(words))))
+    const items = [...records.values()].filter(item => (!query.language || item.source.language === query.language) && (!query.provenance || item.source.provenance === query.provenance) && (query.favorite === undefined || item.favorite === query.favorite) && (query.incomplete === undefined || ((!item.explanations.length && !item.favorite && !item.note.trim()) === query.incomplete)) && (!words || [item.source.text, item.source.span.exact, item.note, ...item.explanations.map(value => value.providerKind === 'offline-dictionary' ? value.sense.glosses.join(' ') : value.content.contextMeaning || '')].some(value => value.toLocaleLowerCase().includes(words))))
     const pageSize = query.pageSize || 20, page = Math.min(Math.max(1, query.page || 1), Math.max(1, Math.ceil(items.length / pageSize)))
     return clone({ items: items.slice((page - 1) * pageSize, page * pageSize), total: items.length, page, pageSize, revision, warning: '' })
   },
@@ -135,7 +136,7 @@ const api: DictionaryAPI = {
   remove: async id => { deleteCalls++; records.delete(id); runs.delete(id); for (let i = reviews.length - 1; i >= 0; i--) if (reviews[i].encounterId === id) reviews.splice(i, 1); if (currentRequest?.id === id) { currentRequest = null; generation++ }; emit() },
   export: async _format => { exportCalls++; exportSnapshot = clone([...records.values()].filter(item => item.explanations.length)); return { saved: true, message: '合成导出已完成' } },
   startReview: async () => {
-    session = { sessionId: `session-${++nextId}`, cards: [...records.values()].filter(item => item.favorite && item.explanations.some(value => value.content.status === 'ok')).map(item => ({ encounterId: item.id, explanationId: item.explanations.filter(value => value.content.status === 'ok').at(-1)!.explanationId, source: clone(item.source) })), cursor: 0, completed: 0, lastEventId: null }; reveal = null; return clone(session)
+    session = { sessionId: `session-${++nextId}`, cards: [...records.values()].filter(item => item.favorite && item.explanations.some(usableDictionaryExplanation)).map(item => ({ encounterId: item.id, explanationId: item.explanations.filter(usableDictionaryExplanation).at(-1)!.explanationId, source: clone(item.source) })), cursor: 0, completed: 0, lastEventId: null }; reveal = null; return clone(session)
   },
   reviewState: async sessionId => { if (!session || session.sessionId !== sessionId) throw new Error('复习会话已变化'); return clone(session) },
   endReview: async sessionId => { if (session?.sessionId === sessionId) { session = null; reveal = null } },
@@ -162,6 +163,54 @@ const api: DictionaryAPI = {
     reviews.splice(reviews.indexOf(item), 1); undone.add(eventId); session.completed--; session.cursor = eventPositions.get(eventId)!; session.lastEventId = [...reviews].reverse().find(item => item.sessionId === sessionId)?.id || null; reveal = null; emit(); return clone(session)
   },
   onChanged: callback => { listeners.add(callback); return () => listeners.delete(callback) },
+}
+
+// Renderer fixtures only: these are deliberately synthetic entries, not the real
+// Kaikki extraction samples exercised by the separate pack/engine tests.
+const offlineWords = [['en', 'cats'], ['ja', '猫'], ['ko', '고양이'], ['fr', 'chat'], ['de', 'Katze'], ['es', 'gato'], ['ru', 'кошка'], ['zh', '猫']] as const
+const offlinePacks = new Map<string, OfflinePackInfo>()
+let offlineQueries = 0, offlineSaves = 0, cancelInstall = false
+const offlineHits = (language: string, selected: string): OfflineHit[] => {
+  const pack = offlinePacks.get(`synthetic-${language}`)
+  if (!pack?.enabled || offlineWords.find(item => item[0] === language)?.[1] !== selected) return []
+  const hit: OfflineHit = { pack: clone(pack.manifest), entry: { id: `entry-${language}`, headword: language === 'en' ? 'cat' : selected, language, readings: language === 'ja' ? ['ねこ'] : [], partOfSpeech: 'noun', forms: language === 'en' ? [{ form: 'cats', tags: ['plural'] }] : [], senses: [
+    { id: 'sense-1', glosses: [`SYNTHETIC_OFFLINE_MEANING_${language} <img src="https://invalid.test/offline">`], tags: [], examples: [] },
+    { id: 'sense-2', glosses: [`SYNTHETIC_SECOND_SENSE_${language}`], tags: ['figurative'], examples: [] },
+  ] }, matchPath: language === 'en' ? 'form' : 'exact', matchedText: selected }
+  return [hit]
+}
+const resetOfflinePacks = () => {
+  offlinePacks.clear()
+  for (const [language] of offlineWords) offlinePacks.set(`synthetic-${language}`, { enabled: true, manifest: {
+    schemaVersion: 1, packId: `synthetic-${language}`, version: '1', sourceLanguage: language, glossLanguage: 'en', sourceName: `Synthetic ${language} source`, sourceUrl: 'https://invalid.test/synthetic-source', sourceRevision: 'synthetic-1', license: 'CC0 synthetic fixture', licenseUrl: 'https://invalid.test/synthetic-license', attribution: 'Synthetic UI data only', dbSha256: 'a'.repeat(64), counts: { entries: 1, senses: 2, forms: language === 'en' ? 1 : 0 },
+  } })
+}
+resetOfflinePacks()
+api.openInput = async input => {
+  const handle = `user-input-${++nextId}`, snapshot: DictionarySnapshot = { text: input.text, language: input.language, sourceType: 'text', provenance: 'user-input', captionId: null, sourceVersion: null, displayedVersion: null }
+  handles.set(handle, clone(snapshot)); return availableHandle(handle, snapshot)
+}
+api.offlineLookup = async input => {
+  offlineQueries++
+  if (!handles.has(input.handle)) throw new Error('离线源文句柄已失效')
+  return { query: input.span.exact, language: input.language, requestedGlossLanguage: input.glossLanguage || 'zh', results: offlineHits(input.language, input.span.exact), message: '' }
+}
+api.saveOffline = async input => {
+  const snapshot = handles.get(input.handle), hit = offlineHits(input.language, input.span.exact).find(hit => hit.pack.packId === input.packId && hit.entry.id === input.entryId), sense = hit?.entry.senses.find(sense => sense.id === input.senseId)
+  if (!snapshot || !hit || !sense || hit.pack.version !== input.packVersion || hit.pack.dbSha256 !== input.packSha256) throw new Error('所选离线义项已变化，请重新查询')
+  offlineSaves++
+  const id = `offline-encounter-${++nextId}`, { senses: _senses, ...entry } = hit.entry
+  const record: DictionaryEncounter = { id, createdAt: Date.now(), source: { ...clone(snapshot), span: clone(input.span) }, favorite: true, note: '', attempts: [], explanations: [{ schemaVersion: 1, encounterId: id, explanationId: `offline-explanation-${nextId}`, version: 1, providerKind: 'offline-dictionary', providerLabel: hit.pack.sourceName, createdAt: Date.now(), pack: clone(hit.pack), entry: clone(entry), sense: clone(sense), matchPath: hit.matchPath, matchedText: hit.matchedText }] }
+  records.set(id, record); emit(); return clone(record)
+}
+api.packs = {
+  list: async () => clone([...offlinePacks.values()]),
+  install: async () => {
+    if (cancelInstall) { cancelInstall = false; return { installed: false, pack: null } }
+    const pack = clone(offlinePacks.get('synthetic-en')!); pack.manifest.version = '2'; pack.manifest.sourceRevision = 'synthetic-2'; offlinePacks.set(pack.manifest.packId, pack); emit(); return { installed: true, pack: clone(pack) }
+  },
+  setEnabled: async (id, enabled) => { const pack = offlinePacks.get(id); if (!pack) throw new Error('语言包不存在'); pack.enabled = enabled; emit() },
+  uninstall: async id => { offlinePacks.delete(id); emit() },
 }
 
 const root = createRoot(document.getElementById('root')!)
@@ -280,7 +329,7 @@ async function run() {
   // Review starts a separate view: answer-bearing history/detail DOM must be removed.
   records.get('seed-01')!.favorite = true; emit(); await frame()
   button('复习收藏').click(); await wait(() => Boolean(document.querySelector('.dictionary-review')), 'review did not start')
-  const current = session!.cards[session!.cursor], answer = records.get(current.encounterId)!.explanations.find(item => item.explanationId === current.explanationId)!.content.contextMeaning!
+  const current = session!.cards[session!.cursor], answer = (records.get(current.encounterId)!.explanations.find(item => item.explanationId === current.explanationId)! as GeneratedDictionaryExplanation).content.contextMeaning!
   check(!document.querySelector('.dictionary-history,.dictionary-detail,.dictionary-explanation') && !getText().includes(answer) && !getText().includes(records.get(current.encounterId)!.note), 'before reveal, answer and note are absent from review DOM rather than visually hidden')
   check(reviews.length === 0, 'entering review and viewing a prompt are not review events')
   button('揭示已保存解释').click(); await frame(); check(getText().includes(answer) && reviews.length === 0, 'reveal shows its saved version without counting a self-review')
@@ -291,7 +340,52 @@ async function run() {
   const undo = button('撤销本次自评'); undo.click(); undo.click(); await frame()
   check(reviews.length === 0 && session!.completed === 0, 'undo is idempotent and removes only the latest actual rating in this session')
   check(providerCalls === historyBaseline && forbiddenNetwork === 0 && forbiddenMedia === 0, 'all history/review behavior is offline and opens no media')
+  checks.push(...await offlineRendererChecks())
   return { checks, failures: [] as string[] }
+}
+
+async function offlineRendererChecks() {
+  const checks: string[] = []
+  const check = (value: unknown, message: string) => { if (!value) throw new Error(message); checks.push(message) }
+  configured = false; records.clear(); runs.clear(); resetOfflinePacks(); offlineQueries = 0; offlineSaves = 0
+  const callsBefore = providerCalls
+  for (const [language, word] of offlineWords) {
+    mountHistory(); await wait(() => Boolean(document.querySelector('.dictionary-history')), 'offline history did not mount')
+    button('离线查词').click(); await wait(() => Boolean(document.querySelector('[aria-label="离线查词原句"]')), 'offline input did not open')
+    const original = `Before ${word} after.`
+    setValue(query<HTMLTextAreaElement>('[aria-label="离线查词原句"]'), original)
+    setValue(query<HTMLInputElement>('[aria-label="离线输入原文语言"]'), language)
+    await frame(); button('开始离线查词').click()
+    await wait(() => Boolean(document.querySelector('[aria-label="离线短语起点"]')), 'offline frozen input did not mount')
+    setValue(query<HTMLInputElement>('[aria-label="离线短语起点"]'), '7'); setValue(query<HTMLInputElement>('[aria-label="离线短语终点"]'), String(7 + word.length)); await frame(); button('采用此范围').click()
+    await wait(() => !button('查询本机词典').disabled, 'offline selection not ready')
+    button('查询本机词典').click(); await wait(() => Boolean(document.querySelector('.dictionary-offline-hit')), `no offline result for ${language}`)
+    check(getText().includes(`SYNTHETIC_OFFLINE_MEANING_${language}`) && document.querySelectorAll('.dictionary-offline-sense').length === 2, `${language}: real offline renderer shows each selected source sense independently`)
+    check(getText().includes('暂无中文释义') && !document.querySelector('img,a[href*="invalid.test"]'), `${language}: non-Chinese glosses have explicit fallback and source text never creates remote resources`)
+    const savesBefore = offlineSaves, save = query<HTMLButtonElement>('.dictionary-offline-sense button'); save.click(); save.click()
+    await wait(() => offlineSaves === savesBefore + 1 && save.disabled, 'offline sense save did not settle')
+    check(offlineSaves === savesBefore + 1 && [...records.values()].at(-1)?.source.span.exact === word, `${language}: duplicate save is locked and the selected phrase/context is preserved`)
+  }
+  check(providerCalls === callsBefore && offlineQueries === 8 && offlineSaves === 8, 'eight-language offline input/query/save works without configured AI or any provider request')
+  const english = [...records.values()].find(item => item.source.language === 'en')!, saved = clone(english.explanations[0])
+  mountHistory(); await wait(() => Boolean(document.querySelector('.dictionary-history')), 'pack history did not mount')
+  const packsButton = button('管理语言包'); packsButton.focus(); packsButton.click(); await wait(() => Boolean(document.querySelector('.dictionary-packs')), 'pack panel did not mount')
+  check(document.activeElement?.classList.contains('dictionary-packs-heading') && document.querySelectorAll('[data-pack-id]').length === 8, 'package management enters its heading and lists eight actual installed fixture packages')
+  cancelInstall = true; button('导入语言包').click(); await wait(() => getText().includes('导入已取消'), 'cancelled import feedback missing')
+  check(offlinePacks.get('synthetic-en')!.manifest.version === '1', 'cancelled native package selection changes nothing')
+  button('导入语言包').click(); await wait(() => getText().includes('synthetic-2'), 'package update did not appear')
+  const enabled = query<HTMLInputElement>('[aria-label="启用语言包 synthetic-en"]'); enabled.click(); await wait(() => !enabled.checked && !enabled.disabled, 'pack disable did not finish')
+  check(!offlinePacks.get('synthetic-en')!.enabled, 'package enable state is controlled by the saved package list')
+  button('卸载语言包 synthetic-en').click(); await wait(() => !document.querySelector('[data-pack-id="synthetic-en"]'), 'pack removal did not finish')
+  check(JSON.stringify(records.get(english.id)!.explanations[0]) === JSON.stringify(saved), 'pack update/disable/removal leaves the old learning snapshot unchanged')
+  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await wait(() => Boolean(document.querySelector('.dictionary-history')), 'Escape did not return from packages')
+  check(document.activeElement?.textContent === '管理语言包', 'returning from package management restores its internal invoker')
+  button('复习收藏').click(); await wait(() => Boolean(document.querySelector('.dictionary-review')), 'offline review did not open')
+  check(!document.querySelector('.dictionary-offline-explanation') && !getText().includes('SYNTHETIC_OFFLINE_MEANING'), 'offline answers are absent from review DOM before reveal')
+  button('揭示已保存解释').click(); await wait(() => Boolean(document.querySelector('.dictionary-offline-explanation')), 'offline answer not revealed')
+  check(getText().includes('SYNTHETIC_OFFLINE_MEANING') && !getText().includes('AI生成，可能不准确'), 'review reveals the saved offline dictionary sense with its own source instead of an AI label')
+  check(providerCalls === callsBefore && forbiddenNetwork === 0 && forbiddenMedia === 0, 'offline package/history/review renderer path has zero external requests and media access')
+  return checks
 }
 async function appIntegration() {
   const checks: string[] = []
@@ -360,9 +454,20 @@ async function prepareReviewAx() {
   seed(); mountHistory(); await wait(() => Boolean(document.querySelector(`[data-fixture-mount="${mountId}"] .dictionary-history [data-encounter-id]`)), 'history did not mount')
   button('复习收藏').click(); await wait(() => Boolean(document.querySelector('.dictionary-review')), 'review did not mount')
   const current = session!.cards[session!.cursor], item = records.get(current.encounterId)!
-  return { forbidden: [item.note, ...item.explanations.flatMap(value => [value.content.contextMeaning, value.content.usageNote, value.content.partOfSpeech, value.content.reading?.text, ...(value.content.examples || []).flatMap(example => [example.text, example.translation])].filter((value): value is string => Boolean(value)))], source: item.source.text }
+  return { forbidden: [item.note, ...item.explanations.flatMap(value => value.providerKind === 'offline-dictionary' ? [...value.sense.glosses, ...value.entry.readings, ...value.sense.examples.flatMap(example => [example.text, example.translation])].filter((value): value is string => Boolean(value)) : [value.content.contextMeaning, value.content.usageNote, value.content.partOfSpeech, value.content.reading?.text, ...(value.content.examples || []).flatMap(example => [example.text, example.translation])].filter((value): value is string => Boolean(value)))], source: item.source.text }
+}
+async function prepareOfflineReviewAx() {
+  records.clear(); runs.clear(); resetOfflinePacks(); configured = false
+  const text = 'Before cats after.', span = { start: 7, end: 11, exact: 'cats' }
+  const opened = await api.openInput!({ text, language: 'en' }), hit = offlineHits('en', 'cats')[0]
+  const record = await api.saveOffline!({ handle: opened.handle!, span, language: 'en', glossLanguage: 'zh', packId: hit.pack.packId, packVersion: hit.pack.version, packSha256: hit.pack.dbSha256, entryId: hit.entry.id, senseId: hit.entry.senses[0].id })
+  mountHistory(); await wait(() => Boolean(document.querySelector('.dictionary-history [data-encounter-id]')), 'offline AX history did not mount')
+  button('复习收藏').click(); await wait(() => Boolean(document.querySelector('.dictionary-review')), 'offline AX review did not mount')
+  const saved = record.explanations[0]
+  if (saved.providerKind !== 'offline-dictionary') throw new Error('Expected an offline AX snapshot')
+  return { forbidden: [...saved.sense.glosses, ...saved.entry.readings], source: text }
 }
 function verifyReviewAx() { return { answerNodes: document.querySelectorAll('.dictionary-explanation,.dictionary-history,.dictionary-detail').length, diagnostics: diagnostics() } }
 seed()
-;(window as unknown as { __lingobarDictionaryTest: unknown }).__lingobarDictionaryTest = { run, appIntegration, mountPhrase, mountHistory, prepareReviewAx, verifyReviewAx, diagnostics, complete }
+;(window as unknown as { __lingobarDictionaryTest: unknown }).__lingobarDictionaryTest = { run, appIntegration, mountPhrase, mountHistory, prepareReviewAx, prepareOfflineReviewAx, verifyReviewAx, diagnostics, complete }
 mountHistory()

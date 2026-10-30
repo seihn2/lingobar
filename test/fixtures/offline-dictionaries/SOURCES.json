@@ -1,0 +1,517 @@
+{
+  "schemaVersion": 1,
+  "kind": "real-kaikki-text-projections",
+  "retrievedAt": "2026-10-30",
+  "extractedAt": "2026-10-25",
+  "wiktionaryDump": "enwiktionary-2026-10-01",
+  "wiktextractRevision": "f9fe161",
+  "wikitextprocessorRevision": "6f96ddf",
+  "license": "CC-BY-SA-4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "copyrightPolicy": "https://en.wiktionary.org/wiki/Wiktionary:Copyrights",
+  "changes": "Selected real per-word JSONL records. Kept lexical text fields, original forms and written pronunciations. Removed other fields, including etymology, linkages, audio/media URLs and all example/quotation text. Kept sense glosses/tags/form_of only. These are field projections, not unmodified raw dump rows.",
+  "sources": [
+    {
+      "language": "en",
+      "fixture": "en.jsonl",
+      "fixtureSha256": "93022a11fd66fe5b15fcebb145f5cbe2bcdc664bab1afd2ef018aad389410ece",
+      "records": 9,
+      "downloads": [
+        {
+          "language": "en",
+          "word": "cat",
+          "url": "https://kaikki.org/dictionary/English/meaning/c/ca/cat.jsonl",
+          "status": 200,
+          "modified": "Sun, 25 Oct 2026 13:14:54 GMT",
+          "bytes": 235797,
+          "sha256": "3ad70d1f00ba78bf53190e26d832c6a82c48688531ec8934ca649fd96b0c5140",
+          "wiktionaryUrl": "https://en.wiktionary.org/wiki/cat#English",
+          "historyUrl": "https://en.wiktionary.org/w/index.php?title=cat&action=history",
+          "records": [
+            {
+              "line": 1,
+              "originalLineSha256": "ba71207247894d63e7e3ec1eb0a5aad725375c7b5b0dbedb4f384f622205af66",
+              "projectedLine": 1,
+              "projectionSha256": "9f805c023087309f0a3743fb5ed6313dc54b92c659d45840c08935580d97f00c"
+            },
+            {
+              "line": 2,
+              "originalLineSha256": "28001c214acf04dc38c5432f8104a88716f2660d165b2583c84bf267a6958482",
+              "projectedLine": 2,
+              "projectionSha256": "d380122395775988a9c83e192e70bb8dcbea37fa6ea1640181f862f33e446568"
+            },
+            {
+              "line": 3,
+              "originalLineSha256": "833f8a8c00fabd3bbe167527e715994ead1f4d0a0371c9ebcd038e0662bb3a27",
+              "projectedLine": 3,
+              "projectionSha256": "3167bcd57d4909820aa1be64aa6d391e0ebb8005ce807a0c02dbc348e9b738da"
+            },
+            {
+              "line": 4,
+              "originalLineSha256": "817c9874e6acd03c3fd6d60db3693a5877542403128929842923dca2dad6d882",
+              "projectedLine": 4,
+              "projectionSha256": "1e7fd9a2f2b1d26a0ceee1a6a43915d2d3931fb1cefb2048d6bb6b7155069ef6"
+            },
+            {
+              "line": 5,
+              "originalLineSha256": "7e92414599db6f65dea22eb1ac761780459b104198f52a2f2d49245806eb792d",
+              "projectedLine": 5,
+              "projectionSha256": "237ad25a4a5be5d4355f7d31f3963894bbc0b487bdb0dea681e6fbe38835d403"
+            },
+            {
+              "line": 6,
+              "originalLineSha256": "ae5e2f5a1ffbdaca5b20374ece47aad9b9364ba06fd882b92fd58ac2238d5f63",
+              "projectedLine": 6,
+              "projectionSha256": "0bf3a948582b9e303e174f0092256b21479d57afbd5c40eb5f496753ebdde67b"
+            }
+          ]
+        },
+        {
+          "language": "en",
+          "word": "book",
+          "url": "https://kaikki.org/dictionary/English/meaning/b/bo/book.jsonl",
+          "status": 200,
+          "modified": "Sun, 25 Oct 2026 12:40:37 GMT",
+          "bytes": 213803,
+          "sha256": "a5b3a85687547569e2f068a62a1238b94dedff171f2bca8862521af0cd2002ac",
+          "wiktionaryUrl": "https://en.wiktionary.org/wiki/book#English",
+          "historyUrl": "https://en.wiktionary.org/w/index.php?title=book&action=history",
+          "records": [
+            {
+              "line": 1,
+              "originalLineSha256": "74c6dacb57907bc5ec114a4e50ebf96bc9c1b016ae4df46c7a013b106deb2b9c",
+              "projectedLine": 7,
+              "projectionSha256": "567076e3d4a8338f65ed504ea5cd96835a8233fee6800a2e6738f44e45c85b33"
+            },
+            {
+              "line": 2,
+              "originalLineSha256": "1fcf8ee586c743f4a5babcf832736f053e47c2b624514d40d65ab0c4f435e85c",
+              "projectedLine": 8,
+              "projectionSha256": "4aeb448d8f25cd9aa1a1663f0dece9209572dcff7ae6dbd48af0908762a8af0c"
+            },
+            {
+              "line": 3,
+              "originalLineSha256": "161d6844a6c5d74f06d44f2879ebf98289554b7cb0d84ea47fa692b1d9558ec5",
+              "projectedLine": 9,
+              "projectionSha256": "86371cf06ba0670a346aad862a5d853710f0becc11a7c4475bc921eb8e7c13b2"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "language": "ja",
+      "fixture": "ja.jsonl",
+      "fixtureSha256": "73ed3b1943d57c936eab8aebb48f429a0bc1bf495563b4c4a45dac649fe14c2a",
+      "records": 4,
+      "downloads": [
+        {
+          "language": "ja",
+          "word": "猫",
+          "url": "https://kaikki.org/dictionary/Japanese/meaning/%E7%8C%AB/%E7%8C%AB/%E7%8C%AB.jsonl",
+          "status": 200,
+          "modified": "Sun, 25 Oct 2026 13:48:58 GMT",
+          "bytes": 23510,
+          "sha256": "3a0eb696dcfcf667624702355b71fbe25554d95fe763b5b16cd39a59c395458c",
+          "wiktionaryUrl": "https://en.wiktionary.org/wiki/%E7%8C%AB#Japanese",
+          "historyUrl": "https://en.wiktionary.org/w/index.php?title=%E7%8C%AB&action=history",
+          "records": [
+            {
+              "line": 1,
+              "originalLineSha256": "f5f8b1a1dfa367761a4eddeef87a4a277aecfd759e2510f5c0d3789e50e7d653",
+              "projectedLine": 1,
+              "projectionSha256": "64076225b706a790294c700aa39510036d5bc4ed15d32b84f764fd442e689ef0"
+            },
+            {
+              "line": 2,
+              "originalLineSha256": "4baaf1457f9794909c72938f5f663cb9a918ee0c64f8f17134c10dd0e32b5de4",
+              "projectedLine": 2,
+              "projectionSha256": "7e1fe8b9c987302dc613a34c7ce9d10ad3a9b009e7990b60f6a82f21b9512775"
+            },
+            {
+              "line": 3,
+              "originalLineSha256": "cd16a01393f1c712ce0a4bad04d32391de6538e01b06596729e51cadb5836b21",
+              "projectedLine": 3,
+              "projectionSha256": "e3bae0aedea77b096fc93009576256ded881448cd61f4883181bdc6dda4894ab"
+            }
+          ]
+        },
+        {
+          "language": "ja",
+          "word": "食べる",
+          "url": "https://kaikki.org/dictionary/Japanese/meaning/%E9%A3%9F/%E9%A3%9F%E3%81%B9/%E9%A3%9F%E3%81%B9%E3%82%8B.jsonl",
+          "status": 200,
+          "modified": "Sun, 25 Oct 2026 12:07:00 GMT",
+          "bytes": 28111,
+          "sha256": "3c800a6649fa8fa7ec83fa44cf1d2d0d4f016cfd0801e32a3d46f6e2379fb52b",
+          "wiktionaryUrl": "https://en.wiktionary.org/wiki/%E9%A3%9F%E3%81%B9%E3%82%8B#Japanese",
+          "historyUrl": "https://en.wiktionary.org/w/index.php?title=%E9%A3%9F%E3%81%B9%E3%82%8B&action=history",
+          "records": [
+            {
+              "line": 1,
+              "originalLineSha256": "9ee865518e76231fce4b9bdd08f90915a703add2d0d2e7d2a972923829bca281",
+              "projectedLine": 4,
+              "projectionSha256": "3c2845a4165a990d8e2840a4ae92d204022e1269c417d06f201e370c5918679b"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "language": "ko",
+      "fixture": "ko.jsonl",
+      "fixtureSha256": "69a1d7388147ef95c46979618b6c6beee59988b574b1e708a6cb580a74764e62",
+      "records": 2,
+      "downloads": [
+        {
+          "language": "ko",
+          "word": "고양이",
+          "url": "https://kaikki.org/dictionary/Korean/meaning/%EA%B3%A0/%EA%B3%A0%EC%96%91/%EA%B3%A0%EC%96%91%EC%9D%B4.jsonl",
+          "status": 200,
+          "modified": "Sun, 25 Oct 2026 14:23:47 GMT",
+          "bytes": 3941,
+          "sha256": "e94b2dc8d98cc4dff19b211528ff676110b004694f07c68faeaaef67b629fe11",
+          "wiktionaryUrl": "https://en.wiktionary.org/wiki/%EA%B3%A0%EC%96%91%EC%9D%B4#Korean",
+          "historyUrl": "https://en.wiktionary.org/w/index.php?title=%EA%B3%A0%EC%96%91%EC%9D%B4&action=history",
+          "records": [
+            {
+              "line": 1,
+              "originalLineSha256": "ff951c1d2e6b1ac55d438f977a43826882d4a8703d6da292dbe01d5f2bbf9190",
+              "projectedLine": 1,
+              "projectionSha256": "3afa29b4a80f379d3fb953bb780d4097dd080d43b3bb1d4d8e45abb269abf76e"
+            }
+          ]
+        },
+        {
+          "language": "ko",
+          "word": "먹다",
+          "url": "https://kaikki.org/dictionary/Korean/meaning/%EB%A8%B9/%EB%A8%B9%EB%8B%A4/%EB%A8%B9%EB%8B%A4.jsonl",
+          "status": 200,
+          "modified": "Sun, 25 Oct 2026 12:21:44 GMT",
+          "bytes": 12292,
+          "sha256": "446c09c10ee99428a63374c44b53b5c5b41ce07f0ee0cc1cdafbe722056e2177",
+          "wiktionaryUrl": "https://en.wiktionary.org/wiki/%EB%A8%B9%EB%8B%A4#Korean",
+          "historyUrl": "https://en.wiktionary.org/w/index.php?title=%EB%A8%B9%EB%8B%A4&action=history",
+          "records": [
+            {
+              "line": 1,
+              "originalLineSha256": "c1d41aa9065bd99e6c9edc8b8ac6e88009efcb3a83eb0191f2784d63d7c97861",
+              "projectedLine": 2,
+              "projectionSha256": "70cb5930012d701027e4277356714d56261e76425de8abfcc819ea3b85ae3728"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "language": "fr",
+      "fixture": "fr.jsonl",
+      "fixtureSha256": "a6f0c180325f68966ed0aa64e60d60c01a59f9d5cf4c219baf6dfcf3a07f3295",
+      "records": 4,
+      "downloads": [
+        {
+          "language": "fr",
+          "word": "chat",
+          "url": "https://kaikki.org/dictionary/French/meaning/c/ch/chat.jsonl",
+          "status": 200,
+          "modified": "Sun, 25 Oct 2026 13:25:24 GMT",
+          "bytes": 10869,
+          "sha256": "116418bf7ba7255217485e2d072ea4b9f45d95d3c3ab9e5416130c5922e95941",
+          "wiktionaryUrl": "https://en.wiktionary.org/wiki/chat#French",
+          "historyUrl": "https://en.wiktionary.org/w/index.php?title=chat&action=history",
+          "records": [
+            {
+              "line": 1,
+              "originalLineSha256": "197437ea72f285a4d124ec598fafaeeaae1b81bb7822ad8368824061924a8a11",
+              "projectedLine": 1,
+              "projectionSha256": "3d2f0e4d57b769f3bcd4f7fc2b37ac9a2184b646ec33e0c80bd59695a0336e28"
+            },
+            {
+              "line": 2,
+              "originalLineSha256": "2cdd57a3b02a2bfcd1b56dcec318ba7deaeee4aa56e3096a2946e8ef5232d0d2",
+              "projectedLine": 2,
+              "projectionSha256": "e3576d9e43891a27b35258a5b80c6fbfc55e3c2427ca5f34ad3ff328f35304fd"
+            }
+          ]
+        },
+        {
+          "language": "fr",
+          "word": "manger",
+          "url": "https://kaikki.org/dictionary/French/meaning/m/ma/manger.jsonl",
+          "status": 200,
+          "modified": "Sun, 25 Oct 2026 13:56:10 GMT",
+          "bytes": 37058,
+          "sha256": "9d53a564227001654e19cd222329e3c12e8412de3e2f887a10980c2f6132f7bf",
+          "wiktionaryUrl": "https://en.wiktionary.org/wiki/manger#French",
+          "historyUrl": "https://en.wiktionary.org/w/index.php?title=manger&action=history",
+          "records": [
+            {
+              "line": 1,
+              "originalLineSha256": "166f886c9961d988e2b58cb1a37774eb7eb46173af86c2632288f844011ab0f6",
+              "projectedLine": 3,
+              "projectionSha256": "f0341ab9daf60d0b2e96b6a834b8eedf7d910cf2f30a25aa51941de2e40f5200"
+            },
+            {
+              "line": 2,
+              "originalLineSha256": "fb292d986153e6a8c1795d9c34d81ea34f5c3634f9212491f12e12312218250d",
+              "projectedLine": 4,
+              "projectionSha256": "c1d3cacd4a3630ac39bdd0dfc8c42752298de94af462045e01d33b11d9b25d51"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "language": "de",
+      "fixture": "de.jsonl",
+      "fixtureSha256": "8c74cec24f003a1020b751b29a632721a9e74e9e6a3bb170d1b2fe57072bc30f",
+      "records": 2,
+      "downloads": [
+        {
+          "language": "de",
+          "word": "Katze",
+          "url": "https://kaikki.org/dictionary/German/meaning/K/Ka/Katze.jsonl",
+          "status": 200,
+          "modified": "Sun, 25 Oct 2026 12:23:27 GMT",
+          "bytes": 7665,
+          "sha256": "08d00595cd6268eae48ffa9ff13c34c69fde8c90756b05c0532f5401be9a433e",
+          "wiktionaryUrl": "https://en.wiktionary.org/wiki/Katze#German",
+          "historyUrl": "https://en.wiktionary.org/w/index.php?title=Katze&action=history",
+          "records": [
+            {
+              "line": 1,
+              "originalLineSha256": "5b8a464a450c7f5f0afac406dad644202a770cc575a7e6b73577a6a607cd2f1c",
+              "projectedLine": 1,
+              "projectionSha256": "8e2ea8a8cf1586e17866d1f5a302daaade52828866ffd3ab7575115d06049bfc"
+            }
+          ]
+        },
+        {
+          "language": "de",
+          "word": "gehen",
+          "url": "https://kaikki.org/dictionary/German/meaning/g/ge/gehen.jsonl",
+          "status": 200,
+          "modified": "Sun, 25 Oct 2026 13:24:13 GMT",
+          "bytes": 38400,
+          "sha256": "02228028b2b238dc03481f6f95de3af5ed699ce0004629f0221d9c8f257e32bd",
+          "wiktionaryUrl": "https://en.wiktionary.org/wiki/gehen#German",
+          "historyUrl": "https://en.wiktionary.org/w/index.php?title=gehen&action=history",
+          "records": [
+            {
+              "line": 1,
+              "originalLineSha256": "63cca43dc081449514e62ffcd6ddfa25d05d443724c90bd1834eb1715db9946c",
+              "projectedLine": 2,
+              "projectionSha256": "68c27fd9c742f9aa61324f0da2854da07b52afa34c55a3665d924e2bdfe22daf"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "language": "es",
+      "fixture": "es.jsonl",
+      "fixtureSha256": "9119a1fc6c800504f2eb19073c17ba1a521b399150880cbc0d20e9cdf46ba338",
+      "records": 4,
+      "downloads": [
+        {
+          "language": "es",
+          "word": "gato",
+          "url": "https://kaikki.org/dictionary/Spanish/meaning/g/ga/gato.jsonl",
+          "status": 200,
+          "modified": "Sun, 25 Oct 2026 14:08:05 GMT",
+          "bytes": 19503,
+          "sha256": "537fb7dc1c9e77d63c4243c9c4b41733e56a78fae4b903915294ad84da01ae3b",
+          "wiktionaryUrl": "https://en.wiktionary.org/wiki/gato#Spanish",
+          "historyUrl": "https://en.wiktionary.org/w/index.php?title=gato&action=history",
+          "records": [
+            {
+              "line": 1,
+              "originalLineSha256": "658b73b37b8fe451f99de2537cc7e36f0d29add7503e5f07aaa430df9a3babaa",
+              "projectedLine": 1,
+              "projectionSha256": "7e715e00b245df6e6bfb6f60c1c47d392aae0ee72b89f8a9146309be054821e2"
+            },
+            {
+              "line": 2,
+              "originalLineSha256": "754aab9182cce26b4d92bb19316839fb127e55352c10247e64b9132a82f27b5e",
+              "projectedLine": 2,
+              "projectionSha256": "a711304d28b52a30d52e5ad6b992276b109e1714b4a445898a82a1bc9c1e66d7"
+            },
+            {
+              "line": 3,
+              "originalLineSha256": "0c749fe4886689e1fbe5ac282d883aa957746489304361bee78da7a34039cc0c",
+              "projectedLine": 3,
+              "projectionSha256": "ee9e293e0ea83a564053cb9635fa1adc2e30f6cbe53b6fc57d219810790b8558"
+            }
+          ]
+        },
+        {
+          "language": "es",
+          "word": "hablar",
+          "url": "https://kaikki.org/dictionary/Spanish/meaning/h/ha/hablar.jsonl",
+          "status": 200,
+          "modified": "Sun, 25 Oct 2026 13:35:10 GMT",
+          "bytes": 52111,
+          "sha256": "de26caad26818dea4a4732d661716fe070f5b35291ee4af10871b696a673461a",
+          "wiktionaryUrl": "https://en.wiktionary.org/wiki/hablar#Spanish",
+          "historyUrl": "https://en.wiktionary.org/w/index.php?title=hablar&action=history",
+          "records": [
+            {
+              "line": 1,
+              "originalLineSha256": "28fd5721a90292025de25f11836e315ff46277c573abac40a8968ac5d1475c78",
+              "projectedLine": 4,
+              "projectionSha256": "ee850030efc5b8ab3f9c294bf92dc678ac1708e9711a6bd4e5d885726829760d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "language": "ru",
+      "fixture": "ru.jsonl",
+      "fixtureSha256": "a39c2d7b9f5473e7816e6557f4285cc2e0c710659c13eb9c17714ba92d186145",
+      "records": 2,
+      "downloads": [
+        {
+          "language": "ru",
+          "word": "кошка",
+          "url": "https://kaikki.org/dictionary/Russian/meaning/%D0%BA/%D0%BA%D0%BE/%D0%BA%D0%BE%D1%88%D0%BA%D0%B0.jsonl",
+          "status": 200,
+          "modified": "Sun, 25 Oct 2026 14:28:04 GMT",
+          "bytes": 15443,
+          "sha256": "a182d8e913b8ab7a56e3547721939047375742010938d35c5d3fce3c51a85831",
+          "wiktionaryUrl": "https://en.wiktionary.org/wiki/%D0%BA%D0%BE%D1%88%D0%BA%D0%B0#Russian",
+          "historyUrl": "https://en.wiktionary.org/w/index.php?title=%D0%BA%D0%BE%D1%88%D0%BA%D0%B0&action=history",
+          "records": [
+            {
+              "line": 1,
+              "originalLineSha256": "371753cada37cfb0c4eb8c7c704a04a9fb182e24777215e197e3333e09c07fe4",
+              "projectedLine": 1,
+              "projectionSha256": "5668eb5bc3889be2a1dd243b6f90bb71488269e8f1d2aca742c79b11a55f31a1"
+            }
+          ]
+        },
+        {
+          "language": "ru",
+          "word": "читать",
+          "url": "https://kaikki.org/dictionary/Russian/meaning/%D1%87/%D1%87%D0%B8/%D1%87%D0%B8%D1%82%D0%B0%D1%82%D1%8C.jsonl",
+          "status": 200,
+          "modified": "Sun, 25 Oct 2026 14:01:50 GMT",
+          "bytes": 31049,
+          "sha256": "0ba3d0b4b68eb4ee2df6ce304d56ab15f94155e32befa6a9df50999aab0bee30",
+          "wiktionaryUrl": "https://en.wiktionary.org/wiki/%D1%87%D0%B8%D1%82%D0%B0%D1%82%D1%8C#Russian",
+          "historyUrl": "https://en.wiktionary.org/w/index.php?title=%D1%87%D0%B8%D1%82%D0%B0%D1%82%D1%8C&action=history",
+          "records": [
+            {
+              "line": 1,
+              "originalLineSha256": "a959b55d883c423b497f22f194dc2b0979778194e11d2b3103ec619231b07904",
+              "projectedLine": 2,
+              "projectionSha256": "4d1c6337ad46cf49a0976d8a884688dd253e6c31320f775dc6e462d0dfe45113"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "language": "zh",
+      "fixture": "zh.jsonl",
+      "fixtureSha256": "78d85b605419948c271a8294751c88a14833838d55a3ea4244c5656914ef6c65",
+      "records": 7,
+      "downloads": [
+        {
+          "language": "zh",
+          "word": "猫",
+          "url": "https://kaikki.org/dictionary/Chinese/meaning/%E7%8C%AB/%E7%8C%AB/%E7%8C%AB.jsonl",
+          "status": 200,
+          "modified": "Sun, 25 Oct 2026 13:05:48 GMT",
+          "bytes": 1113,
+          "sha256": "e4ea26e9fab3bd106c6f6266fa0167541518a37509e1d7276089d8c9152231de",
+          "wiktionaryUrl": "https://en.wiktionary.org/wiki/%E7%8C%AB#Chinese",
+          "historyUrl": "https://en.wiktionary.org/w/index.php?title=%E7%8C%AB&action=history",
+          "records": [
+            {
+              "line": 1,
+              "originalLineSha256": "b60d958197e8f9a173e6214eb1ad74843e12b132bbe9561c2feae9279a34d061",
+              "projectedLine": 1,
+              "projectionSha256": "4c8ec034a35cbab5647b14341a2e8d3814dc823fd4d0f97d13695605da390b16"
+            }
+          ]
+        },
+        {
+          "language": "zh",
+          "word": "学习",
+          "url": "https://kaikki.org/dictionary/Chinese/meaning/%E5%AD%A6/%E5%AD%A6%E4%B9%A0/%E5%AD%A6%E4%B9%A0.jsonl",
+          "status": 200,
+          "modified": "Sun, 25 Oct 2026 13:25:04 GMT",
+          "bytes": 142,
+          "sha256": "194c8c7ed4fec724d33aea5ed243ea698245b6290608811fc4a8f1458238e4d4",
+          "wiktionaryUrl": "https://en.wiktionary.org/wiki/%E5%AD%A6%E4%B9%A0#Chinese",
+          "historyUrl": "https://en.wiktionary.org/w/index.php?title=%E5%AD%A6%E4%B9%A0&action=history",
+          "records": [
+            {
+              "line": 1,
+              "originalLineSha256": "0bcbe5238663776fee4381094833156b82a1e614a2bdab903a4a7917dad13037",
+              "projectedLine": 2,
+              "projectionSha256": "85c3211495f7e4a14d32f5fa02fa1eb3e44891406ff989296747efdab7818e34"
+            }
+          ]
+        },
+        {
+          "language": "zh",
+          "word": "貓",
+          "url": "https://kaikki.org/dictionary/Chinese/meaning/%E8%B2%93/%E8%B2%93/%E8%B2%93.jsonl",
+          "status": 200,
+          "modified": "Sun, 25 Oct 2026 12:04:23 GMT",
+          "bytes": 262332,
+          "sha256": "1b1a6c36c5a4541c87ba26863a4c0e9ea67db42eb537b7c281185acf2f498308",
+          "wiktionaryUrl": "https://en.wiktionary.org/wiki/%E8%B2%93#Chinese",
+          "historyUrl": "https://en.wiktionary.org/w/index.php?title=%E8%B2%93&action=history",
+          "records": [
+            {
+              "line": 1,
+              "originalLineSha256": "f53516b06f633e89e7fac59e87867f978309c9190019284b8b385090f2b75306",
+              "projectedLine": 3,
+              "projectionSha256": "bc3dba537f154016771f9f7b247f4d00f46c2099e6b4521323aba4f17730bb59"
+            },
+            {
+              "line": 2,
+              "originalLineSha256": "17958b1e657fd3088efbb390674b654aad83c0fa175891cf356ac82527096941",
+              "projectedLine": 4,
+              "projectionSha256": "01f419b633719a8f39ed5b3858ea14600d3288288165d024f15bb63b777f4bf8"
+            },
+            {
+              "line": 3,
+              "originalLineSha256": "f4312009282ba605974410839cd44231d8335452bd2b35310d13234dcd339d17",
+              "projectedLine": 5,
+              "projectionSha256": "04ad3b64d302b6cd9a6d98c008222e23d5c61a8140219028e89146b6e9e1f41b"
+            },
+            {
+              "line": 4,
+              "originalLineSha256": "3a6bacb6684d85a3ccf10b190b0749abc0b24815abad8e176fee6a64384d52ee",
+              "projectedLine": 6,
+              "projectionSha256": "77c505f86963ceb75b150feb1c7a12a912358d2d6e9983f7bc666fb50d134dc3"
+            }
+          ]
+        },
+        {
+          "language": "zh",
+          "word": "學習",
+          "url": "https://kaikki.org/dictionary/Chinese/meaning/%E5%AD%B8/%E5%AD%B8%E7%BF%92/%E5%AD%B8%E7%BF%92.jsonl",
+          "status": 200,
+          "modified": "Sun, 25 Oct 2026 12:27:30 GMT",
+          "bytes": 16987,
+          "sha256": "3572b816e31e9134c3e7b64280a4df6025bfe77ce32a3cd9f82661967660de9c",
+          "wiktionaryUrl": "https://en.wiktionary.org/wiki/%E5%AD%B8%E7%BF%92#Chinese",
+          "historyUrl": "https://en.wiktionary.org/w/index.php?title=%E5%AD%B8%E7%BF%92&action=history",
+          "records": [
+            {
+              "line": 1,
+              "originalLineSha256": "2641451c1bf48715eef3439d243dda2a6781efc13dfda238dbf7c5f72d346575",
+              "projectedLine": 7,
+              "projectionSha256": "b7db6e83b02064418d481727d29e9e51e6758fd275e82ecaa8dcceae8b33d94c"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

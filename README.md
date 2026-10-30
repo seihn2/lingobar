@@ -72,7 +72,7 @@ Windows x64 支持已合并到 `main`；此前已验证测试包与校验记录�
 <a id="documentation"></a>
 ## 文档
 
-桌面学习：[显式 AI 语境解释、独立学习历史与主动复习](docs/dictionary-learning.md)（当前 draft；生成内容可能不准确，真实词典导入未提供）。
+桌面学习：[AI 语境解释、独立历史与主动复习](docs/dictionary-learning.md)；[离线词典与语言包](docs/offline-dictionaries.md)（当前 draft，提供八语真实小样本，非完整词库；AI 另行主动调用）。
 
 | 语言 | 使用指南 |
 | --- | --- |

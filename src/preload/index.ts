@@ -2,6 +2,15 @@ import { contextBridge, ipcRenderer } from 'electron'
 import type { LingoAPI, Snapshot } from '../shared/types'
 const api: LingoAPI = {
   dictionary: {
+    openInput: input => ipcRenderer.invoke('lingo:dictionary-open-input', input),
+    offlineLookup: input => ipcRenderer.invoke('lingo:dictionary-offline-lookup', input),
+    saveOffline: input => ipcRenderer.invoke('lingo:dictionary-offline-save', input),
+    packs: {
+      list: () => ipcRenderer.invoke('lingo:dictionary-packs-list'),
+      install: () => ipcRenderer.invoke('lingo:dictionary-packs-install'),
+      setEnabled: (packId, enabled) => ipcRenderer.invoke('lingo:dictionary-packs-enabled', packId, enabled),
+      uninstall: packId => ipcRenderer.invoke('lingo:dictionary-packs-uninstall', packId)
+    },
     availability: () => ipcRenderer.invoke('lingo:dictionary-availability'),
     open: input => ipcRenderer.invoke('lingo:dictionary-open', input),
     openEncounter: id => ipcRenderer.invoke('lingo:dictionary-open-encounter', id),

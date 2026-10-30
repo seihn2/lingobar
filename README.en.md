@@ -72,7 +72,7 @@ See the [service configuration guide](docs/usage.en.md#services) for all fields,
 <a id="documentation"></a>
 ## Documentation
 
-Desktop learning: [explicit AI context explanations, independent history and active review](docs/dictionary-learning.md) (current draft; generated content may be inaccurate; no offline dictionary import).
+Desktop learning: [AI context explanations, independent history and active review](docs/dictionary-learning.md); [offline dictionaries and language packs](docs/offline-dictionaries.md) (current draft, real samples for eight languages rather than complete dictionaries; AI remains a separate explicit action).
 
 | Language | User guide |
 | --- | --- |

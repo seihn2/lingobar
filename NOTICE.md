@@ -88,3 +88,17 @@ directory. Project notices and component licenses are included in
 When updating dependencies or producing another platform's package, retain the
 notices supplied with the actual runtime and update this inventory and its
 packaged paths accordingly.
+
+## Optional offline dictionary data
+
+The independently implemented dictionary engine uses the SQLite runtime already
+included with Electron/Node; no new native addon or Yomitan implementation is
+copied. Code remains under the project's existing CC BY-NC4.0 license.
+
+The small Kaikki/Wiktextract-derived fixtures and separately built sample packs
+are **data under their own license**, not CC BY-NC4.0 application code and not
+wiktextract's code license. Their source, transformations, attribution, revision
+and CC BY-SA4.0 terms are recorded in
+`test/fixtures/offline-dictionaries/` and `docs/offline-dictionaries-data.md`, and
+retained in each exported pack/learning snapshot. No full dataset or third-party
+audio/image is bundled in the desktop application.

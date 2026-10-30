@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'n
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DictionaryStore } from '../src/main/dictionary-store'
-import type { DictionaryAttempt, DictionaryEncounter, DictionaryExplanation, DictionaryReviewEvent } from '../src/shared/dictionary'
+import type { DictionaryAttempt, DictionaryEncounter, GeneratedDictionaryExplanation, DictionaryExplanation, DictionaryReviewEvent } from '../src/shared/dictionary'
 
 const fault = vi.hoisted(() => ({ sync: false, rename: false, open: false }))
 vi.mock('node:fs', async importOriginal => {
@@ -17,9 +17,10 @@ vi.mock('node:fs', async importOriginal => {
 const directories: string[] = []
 const directory = () => { const path = mkdtempSync(join(tmpdir(), 'lingobar-dictionary-store-')); directories.push(path); return path }
 afterEach(() => { fault.sync = fault.rename = fault.open = false; directories.splice(0).forEach(path => rmSync(path, { recursive: true, force: true })) })
+const generated = (value: DictionaryExplanation): GeneratedDictionaryExplanation => { if (value.providerKind !== 'llm-generated') throw new Error('Expected generated fixture'); return value }
 const attempt = (id = 'attempt-1'): DictionaryAttempt => ({ id, createdAt: 10, updatedAt: 10, dispatchState: 'not_started', status: 'persisting', explanationId: null })
 const encounter = (id = 'encounter-1', withAttempt = true): DictionaryEncounter => ({ id, createdAt: 10, favorite: false, note: '', source: { text: 'You should pick it up now.', language: 'English', sourceType: 'text', provenance: 'user-input', captionId: null, displayedVersion: null, sourceVersion: null, span: { start: 11, end: 21, exact: 'pick it up' } }, explanations: [], attempts: withAttempt ? [attempt(`attempt-${id}`)] : [] })
-const explanation = (encounterId = 'encounter-1', version = 1): DictionaryExplanation => ({ schemaVersion: 1, encounterId, explanationId: `explanation-${encounterId}-${version}`, version, providerKind: 'llm-generated', providerLabel: 'Synthetic service', model: 'synthetic-model', promptVersion: 'dictionary-v1', createdAt: 20 + version, requestedExplanationLanguage: 'zh', finishReason: 'stop', usage: { promptTokens: 20, completionTokens: 30, totalTokens: 50 }, readingScope: 'requested-surface-unverified', content: { schemaVersion: 1, status: 'ok', reasonCode: null, targetText: 'pick it up', headword: 'pick up', reading: { text: 'pɪk ɪt ʌp', notation: 'ipa' }, partOfSpeech: '动词短语', contextMeaning: '把它拿起来', usageNote: '代词位于中间', examples: [{ text: 'Please pick it up.', translation: '请把它拿起来。' }] }, validationWarnings: [] })
+const explanation = (encounterId = 'encounter-1', version = 1): GeneratedDictionaryExplanation => ({ schemaVersion: 1, encounterId, explanationId: `explanation-${encounterId}-${version}`, version, providerKind: 'llm-generated', providerLabel: 'Synthetic service', model: 'synthetic-model', promptVersion: 'dictionary-v1', createdAt: 20 + version, requestedExplanationLanguage: 'zh', finishReason: 'stop', usage: { promptTokens: 20, completionTokens: 30, totalTokens: 50 }, readingScope: 'requested-surface-unverified', content: { schemaVersion: 1, status: 'ok', reasonCode: null, targetText: 'pick it up', headword: 'pick up', reading: { text: 'pɪk ɪt ʌp', notation: 'ipa' }, partOfSpeech: '动词短语', contextMeaning: '把它拿起来', usageNote: '代词位于中间', examples: [{ text: 'Please pick it up.', translation: '请把它拿起来。' }] }, validationWarnings: [] })
 const review = (encounterId = 'encounter-1', id = 'review-1', sessionId = 'session-1'): DictionaryReviewEvent => ({ id, encounterId, sessionId, explanationId: `explanation-${encounterId}-1`, createdAt: 30, response: 'recalled' })
 function fixture(limits: ConstructorParameters<typeof DictionaryStore>[1] = {}) { const path = directory(); return { path, file: join(path, 'dictionary-learning-v1.json'), store: new DictionaryStore(path, limits) } }
 function finish(store: DictionaryStore, id = 'encounter-1', version = 1): void {
@@ -68,7 +69,7 @@ describe('bounded independent dictionary history', () => {
       const item = explanation(id); item.content = { schemaVersion: 1, status, reasonCode: reason, targetText: 'pick it up', headword: null, reading: null, partOfSpeech: null, contextMeaning: null, usageNote: null, examples: null }
       f.store.appendExplanation(id, current.id, item)
       expect(f.store.get(id)!.attempts[0].status).toBe(status === 'ambiguous' ? 'ambiguous' : 'model_declined')
-      expect(f.store.get(id)!.explanations[0].content.contextMeaning).toBeNull()
+      expect(generated(f.store.get(id)!.explanations[0]).content.contextMeaning).toBeNull()
       expect(() => f.store.addReview(review(id, `review-${id}`))).toThrow()
     }
   })
@@ -223,19 +224,19 @@ describe('source, envelope and review identity constraints', () => {
   it('rejects forged model/application fields and output echo without replacing prior committed data', () => {
     const f = fixture(); f.store.createEncounter(encounter()); f.store.updateAttempt('encounter-1', 'attempt-encounter-1', { status: 'waiting', dispatchState: 'may_have_started' })
     for (const mutate of [
-      (item: DictionaryExplanation) => { Object.assign(item, { endpoint: 'https://private.invalid' }) },
-      (item: DictionaryExplanation) => { item.providerLabel = 'https://private.invalid' },
-      (item: DictionaryExplanation) => { item.content.targetText = 'another word' },
-      (item: DictionaryExplanation) => { item.version = 2 },
-      (item: DictionaryExplanation) => { item.finishReason = 'length' as any },
-      (item: DictionaryExplanation) => { Object.assign(item.content.reading!, { audioUrl: 'https://private.invalid' }) },
+      (item: GeneratedDictionaryExplanation) => { Object.assign(item, { endpoint: 'https://private.invalid' }) },
+      (item: GeneratedDictionaryExplanation) => { item.providerLabel = 'https://private.invalid' },
+      (item: GeneratedDictionaryExplanation) => { item.content.targetText = 'another word' },
+      (item: GeneratedDictionaryExplanation) => { item.version = 2 },
+      (item: GeneratedDictionaryExplanation) => { item.finishReason = 'length' as any },
+      (item: GeneratedDictionaryExplanation) => { Object.assign(item.content.reading!, { audioUrl: 'https://private.invalid' }) },
     ]) {
       const value = explanation(); mutate(value)
       expect(() => f.store.appendExplanation('encounter-1', 'attempt-encounter-1', value)).toThrow()
       expect(f.store.get('encounter-1')!.explanations).toEqual([])
     }
     f.store.appendExplanation('encounter-1', 'attempt-encounter-1', explanation())
-    expect(new DictionaryStore(f.path).get('encounter-1')!.explanations[0].content.reading).toEqual({ text: 'pɪk ɪt ʌp', notation: 'ipa' })
+    expect(generated(new DictionaryStore(f.path).get('encounter-1')!.explanations[0]).content.reading).toEqual({ text: 'pɪk ɪt ʌp', notation: 'ipa' })
   })
   it('does not roll dispatch state backward or duplicate review events; undo is session-scoped and idempotent', () => {
     const f = fixture(); f.store.createEncounter(encounter()); finish(f.store)

@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { closeSync, existsSync, fsyncSync, openSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { DICTIONARY_LIMITS, type AttemptStatus, type DictionaryAttempt, type DictionaryDocument, type DictionaryEncounter, type DictionaryExplanation, type DictionaryPage, type DictionaryQuery, type DictionaryReviewEvent, type DictionarySource } from '../shared/dictionary'
+import { DICTIONARY_LIMITS, usableDictionaryExplanation, type AttemptStatus, type DictionaryAttempt, type DictionaryDocument, type DictionaryEncounter, type DictionaryExplanation, type GeneratedDictionaryExplanation, type OfflineDictionaryExplanation, type DictionaryPage, type DictionaryQuery, type DictionaryReviewEvent, type DictionarySource } from '../shared/dictionary'
 import { validateDictionaryModel } from '../shared/dictionary-model'
 import { isTargetLanguage } from '../shared/languages'
 import { validPhrase } from '../shared/learning'
@@ -44,18 +44,44 @@ function validateAttempt(value: unknown): DictionaryAttempt {
   return { id: item.id, createdAt: item.createdAt, updatedAt: item.updatedAt, dispatchState: item.dispatchState as DictionaryAttempt['dispatchState'], status: item.status as AttemptStatus, explanationId: item.explanationId as string | null }
 }
 function validateExplanation(value: unknown, encounterId: string, source: DictionarySource): DictionaryExplanation {
+  if (object(value) && value.providerKind === 'offline-dictionary') return validateOfflineExplanation(value, encounterId)
   const item = keys(value, ['schemaVersion', 'encounterId', 'explanationId', 'version', 'providerKind', 'providerLabel', 'model', 'promptVersion', 'createdAt', 'requestedExplanationLanguage', 'finishReason', 'usage', 'readingScope', 'content', 'validationWarnings'])
   if (item.schemaVersion !== 1 || item.encounterId !== encounterId || !id(item.explanationId) || !Number.isInteger(item.version) || Number(item.version) < 1 || item.providerKind !== 'llm-generated' || !publicName(item.providerLabel, 80) || !publicName(item.model, 200) || !publicName(item.promptVersion, 100) || !timestamp(item.createdAt) || !isTargetLanguage(item.requestedExplanationLanguage) || item.finishReason !== 'stop' || item.readingScope !== 'requested-surface-unverified') invalid()
   if (!Array.isArray(item.validationWarnings) || item.validationWarnings.length > 1 || item.validationWarnings.some(warning => warning !== 'example_duplicates_source')) invalid()
-  let usage: DictionaryExplanation['usage'] = null
+  let usage: GeneratedDictionaryExplanation['usage'] = null
   if (item.usage !== null) {
     const raw = keys(item.usage, ['promptTokens', 'completionTokens', 'totalTokens'])
     if (Object.values(raw).some(value => value !== null && (!Number.isInteger(value) || Number(value) < 0 || Number(value) > 1_000_000_000))) invalid()
     usage = { promptTokens: raw.promptTokens as number | null, completionTokens: raw.completionTokens as number | null, totalTokens: raw.totalTokens as number | null }
   }
   const model = validateDictionaryModel(item.content, source.span.exact, source.text)
-  const warnings = [...new Set([...item.validationWarnings, ...model.validationWarnings])] as DictionaryExplanation['validationWarnings']
+  const warnings = [...new Set([...item.validationWarnings, ...model.validationWarnings])] as GeneratedDictionaryExplanation['validationWarnings']
   return { schemaVersion: 1, encounterId, explanationId: item.explanationId, version: Number(item.version), providerKind: 'llm-generated', providerLabel: item.providerLabel as string, model: item.model as string, promptVersion: item.promptVersion as string, createdAt: item.createdAt, requestedExplanationLanguage: item.requestedExplanationLanguage, finishReason: 'stop', usage, readingScope: 'requested-surface-unverified', content: model.content, validationWarnings: warnings }
+}
+function validateOfflineExplanation(value: unknown, encounterId: string): OfflineDictionaryExplanation {
+  const item = keys(value, ['schemaVersion', 'encounterId', 'explanationId', 'version', 'providerKind', 'providerLabel', 'createdAt', 'pack', 'entry', 'sense', 'matchPath', 'matchedText'])
+  if (item.schemaVersion !== 1 || item.encounterId !== encounterId || !id(item.explanationId) || !Number.isInteger(item.version) || Number(item.version) < 1 || !text(item.providerLabel, 200, true) || !timestamp(item.createdAt) || !['exact', 'nfc', 'form', 'nfc-form'].includes(String(item.matchPath)) || !text(item.matchedText, 256, true)) invalid()
+  const pack = keys(item.pack, ['schemaVersion', 'packId', 'version', 'sourceLanguage', 'glossLanguage', 'sourceName', 'sourceUrl', 'sourceRevision', 'license', 'licenseUrl', 'attribution', 'dbSha256', 'counts'])
+  if (pack.schemaVersion !== 1 || !id(pack.packId) || !text(pack.version, 200, true) || !text(pack.sourceLanguage, 80, true) || !text(pack.glossLanguage, 80, true) || !text(pack.sourceName, 200, true) || !text(pack.sourceUrl, 2000, true) || !text(pack.sourceRevision, 200, true) || !text(pack.license, 2000, true) || !text(pack.licenseUrl, 2000, true) || !text(pack.attribution, 10000, true) || !digest(pack.dbSha256)) invalid()
+  for (const value of [pack.sourceUrl, pack.licenseUrl]) { try { const url = new URL(String(value)); if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) invalid() } catch { invalid() } }
+  const counts = keys(pack.counts, ['entries', 'senses', 'forms'])
+  if (Object.values(counts).some(count => !Number.isSafeInteger(count) || Number(count) < 0)) invalid()
+  const strings = (value: unknown, maximum: number, length: number): string[] => {
+    if (!Array.isArray(value) || value.length > maximum || !value.every(value => text(value, length, true))) invalid()
+    return value as string[]
+  }
+  const entry = keys(item.entry, ['id', 'headword', 'language', 'readings', 'partOfSpeech', 'forms'])
+  if (!id(entry.id) || !text(entry.headword, 1000, true) || !text(entry.language, 80, true) || entry.language !== pack.sourceLanguage || !(entry.partOfSpeech === null || text(entry.partOfSpeech, 200, true)) || !Array.isArray(entry.forms) || entry.forms.length > 5000) invalid()
+  const readings = strings(entry.readings, 200, 1000)
+  const forms = entry.forms.map(value => { const form = keys(value, ['form', 'tags']); if (!text(form.form, 1000, true)) invalid(); return { form: form.form, tags: strings(form.tags, 100, 200) } })
+  const sense = keys(item.sense, ['id', 'glosses', 'tags', 'examples'])
+  if (!id(sense.id) || !Array.isArray(sense.examples) || sense.examples.length > 100) invalid()
+  const glosses = strings(sense.glosses, 100, 10000), tags = strings(sense.tags, 100, 200)
+  if (!glosses.length) invalid()
+  const examples = sense.examples.map(value => { const example = keys(value, ['text', 'translation']); if (!text(example.text, 10000, true) || !(example.translation === null || text(example.translation, 10000, true))) invalid(); return { text: example.text, translation: example.translation as string | null } })
+  return { schemaVersion: 1, encounterId, explanationId: item.explanationId, version: Number(item.version), providerKind: 'offline-dictionary', providerLabel: item.providerLabel, createdAt: item.createdAt,
+    pack: { schemaVersion: 1, packId: pack.packId, version: pack.version, sourceLanguage: pack.sourceLanguage, glossLanguage: pack.glossLanguage, sourceName: pack.sourceName, sourceUrl: pack.sourceUrl, sourceRevision: pack.sourceRevision, license: pack.license, licenseUrl: pack.licenseUrl, attribution: pack.attribution, dbSha256: pack.dbSha256, counts: { entries: Number(counts.entries), senses: Number(counts.senses), forms: Number(counts.forms) } },
+    entry: { id: entry.id, headword: entry.headword, language: entry.language, readings, partOfSpeech: entry.partOfSpeech as string | null, forms }, sense: { id: sense.id, glosses, tags, examples }, matchPath: item.matchPath as OfflineDictionaryExplanation['matchPath'], matchedText: item.matchedText }
 }
 function validateDocument(value: unknown, limits: DictionaryStoreLimits): DictionaryDocument {
   const raw = keys(value, ['schemaVersion', 'encounters', 'reviews'])
@@ -79,13 +105,13 @@ function validateDocument(value: unknown, limits: DictionaryStoreLimits): Dictio
       attemptIds.add(attempt.id)
       if (attempt.explanationId) {
         const explanation = byId.get(attempt.explanationId)
-        const expected = explanation?.content.status === 'ok' ? 'ready' : explanation?.content.status === 'ambiguous' ? 'ambiguous' : 'model_declined'
-        if (!explanation || owned.has(attempt.explanationId) || attempt.status !== expected) invalid()
+        const expected = explanation?.providerKind === 'llm-generated' && explanation.content.status === 'ok' ? 'ready' : explanation?.providerKind === 'llm-generated' && explanation.content.status === 'ambiguous' ? 'ambiguous' : 'model_declined'
+        if (!explanation || explanation.providerKind !== 'llm-generated' || owned.has(attempt.explanationId) || attempt.status !== expected) invalid()
         owned.add(attempt.explanationId)
       }
       return attempt
     })
-    if (owned.size !== explanations.length) invalid()
+    if (owned.size !== explanations.filter(value => value.providerKind === 'llm-generated').length) invalid()
     return { id: item.id, createdAt: item.createdAt, source, favorite: item.favorite, note: item.note, explanations, attempts }
   })
   const byEncounter = new Map(encounters.map(encounter => [encounter.id, encounter])), reviewIds = new Set<string>(), reviewCounts = new Map<string, number>()
@@ -93,7 +119,7 @@ function validateDocument(value: unknown, limits: DictionaryStoreLimits): Dictio
     const item = keys(value, ['id', 'sessionId', 'encounterId', 'explanationId', 'createdAt', 'response'])
     if (!id(item.id) || reviewIds.has(item.id) || !id(item.sessionId) || !id(item.encounterId) || !id(item.explanationId) || !timestamp(item.createdAt) || !['recalled', 'not_recalled'].includes(String(item.response))) invalid()
     const encounter = byEncounter.get(item.encounterId)
-    if (!encounter?.explanations.some(explanation => explanation.explanationId === item.explanationId && explanation.content.status === 'ok')) invalid()
+    if (!encounter?.explanations.some(explanation => explanation.explanationId === item.explanationId && usableDictionaryExplanation(explanation))) invalid()
     const count = (reviewCounts.get(item.encounterId) || 0) + 1
     if (count > limits.reviewsPerEncounter) invalid()
     reviewCounts.set(item.encounterId, count); reviewIds.add(item.id)
@@ -180,7 +206,7 @@ export class DictionaryStore {
       if (query.favorite !== undefined && encounter.favorite !== query.favorite) return false
       const incomplete = encounter.explanations.length === 0 && !encounter.favorite && !encounter.note.trim()
       if (query.incomplete !== undefined && incomplete !== query.incomplete) return false
-      return !needle || [encounter.source.span.exact, encounter.source.text, encounter.note, ...encounter.explanations.flatMap(explanation => [explanation.content.contextMeaning || '', explanation.content.headword || '', explanation.content.usageNote || ''])].some(value => value.normalize('NFC').toLowerCase().includes(needle))
+      return !needle || [encounter.source.span.exact, encounter.source.text, encounter.note, ...encounter.explanations.flatMap(explanation => explanation.providerKind === 'offline-dictionary' ? [explanation.entry.headword, ...explanation.sense.glosses] : [explanation.content.contextMeaning || '', explanation.content.headword || '', explanation.content.usageNote || ''])].some(value => value.normalize('NFC').toLowerCase().includes(needle))
     }).sort((a, b) => b.createdAt - a.createdAt || a.id.localeCompare(b.id))
     const page = Math.min(query.page || 1, Math.max(1, Math.ceil(items.length / pageSize)))
     return { items: clone(items.slice((page - 1) * pageSize, page * pageSize)), total: items.length, page, pageSize, revision: this._revision, warning: this._warning }
@@ -205,7 +231,7 @@ export class DictionaryStore {
     if (patch.updatedAt !== undefined && patch.updatedAt < attempt.updatedAt) invalid()
     Object.assign(attempt, clone(patch)); this.commit(next)
   }
-  appendExplanation(encounterId: string, attemptId: string, explanation: DictionaryExplanation): void {
+  appendExplanation(encounterId: string, attemptId: string, explanation: GeneratedDictionaryExplanation): void {
     const next = clone(this.document), encounter = next.encounters.find(item => item.id === encounterId), attempt = encounter?.attempts.find(item => item.id === attemptId)
     if (!encounter || !attempt || attempt.status !== 'waiting' || attempt.dispatchState !== 'may_have_started') throw new Error('解释尝试已结束或条目已删除，未追加结果。')
     if (encounter.explanations.length >= this.limits.explanations || explanation.version !== encounter.explanations.length + 1) throw new Error('解释版本已满或版本无效，未追加结果。')
@@ -235,7 +261,7 @@ export class DictionaryStore {
       return
     }
     const encounter = this.document.encounters.find(item => item.id === value.encounterId)
-    if (!encounter?.favorite || !encounter.explanations.some(item => item.explanationId === value.explanationId && item.content.status === 'ok')) throw new Error('只可自评仍在收藏且已有可用解释的条目。')
+    if (!encounter?.favorite || !encounter.explanations.some(item => item.explanationId === value.explanationId && usableDictionaryExplanation(item))) throw new Error('只可自评仍在收藏且已有可用解释的条目。')
     if (this.document.reviews.length >= this.limits.reviews || this.document.reviews.filter(item => item.encounterId === value.encounterId).length >= this.limits.reviewsPerEncounter) throw new Error('复习记录已满，未增加计数。')
     this.commit({ ...this.document, reviews: [...this.document.reviews, clone(value)] })
   }

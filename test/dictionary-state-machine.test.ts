@@ -339,7 +339,7 @@ describe('explicit recall, reveal, rating and scoped undo', () => {
     expect(text).not.toMatch(/HIDDEN-MEANING|HIDDEN-USAGE|ANSWER-NOTE|contextMeaning|examples|translations/)
     expect(f.store.exportSnapshot().reviews).toEqual([])
     const card = review.cards[0], revealed = f.learning.reveal(1, review.sessionId, card.encounterId, card.explanationId)
-    expect(revealed.explanation.content.contextMeaning).toBe('SYNTHETIC-HIDDEN-MEANING')
+    expect(revealed.explanation.providerKind === 'llm-generated' && revealed.explanation.content.contextMeaning).toBe('SYNTHETIC-HIDDEN-MEANING')
     expect(f.learning.reveal(1, review.sessionId, card.encounterId, card.explanationId).revealId).toBe(revealed.revealId)
     f.learning.skip(1, review.sessionId); f.learning.endReview(1, review.sessionId)
     expect(f.store.exportSnapshot().reviews).toEqual([]); expect(f.provider).toHaveBeenCalledTimes(calls)

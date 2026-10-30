@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "scope": "Small real-data development and held-out functional cases, not vocabulary coverage or linguistic correctness accuracy. Sentences are synthetic public fixtures; dictionary entries are source-derived.",
+  "cases": [
+    {
+      "language": "en",
+      "developmentLemma": "cat",
+      "validationLemma": "book",
+      "selection": "books",
+      "sentence": "These books are useful.",
+      "expectedHeadword": "book",
+      "expectedPath": "form",
+      "nonLexicalForms": []
+    },
+    {
+      "language": "ja",
+      "developmentLemma": "猫",
+      "validationLemma": "食べる",
+      "selection": "食べた",
+      "sentence": "昨日、私は食べた。",
+      "expectedHeadword": "食べる",
+      "expectedPath": "form",
+      "nonLexicalForms": [
+        "no-table-tags"
+      ]
+    },
+    {
+      "language": "ko",
+      "developmentLemma": "고양이",
+      "validationLemma": "먹다",
+      "selection": "먹었어요",
+      "sentence": "저는 밥을 먹었어요.",
+      "expectedHeadword": "먹다",
+      "expectedPath": "form",
+      "nonLexicalForms": [
+        "마리"
+      ]
+    },
+    {
+      "language": "fr",
+      "developmentLemma": "chat",
+      "validationLemma": "manger",
+      "selection": "mangeons",
+      "sentence": "Nous mangeons ensemble.",
+      "expectedHeadword": "manger",
+      "expectedPath": "form",
+      "nonLexicalForms": [
+        "avoir + past participle"
+      ]
+    },
+    {
+      "language": "de",
+      "developmentLemma": "Katze",
+      "validationLemma": "gehen",
+      "selection": "ging",
+      "sentence": "Er ging nach Hause.",
+      "expectedHeadword": "gehen",
+      "expectedPath": "form",
+      "nonLexicalForms": [
+        "sein"
+      ]
+    },
+    {
+      "language": "es",
+      "developmentLemma": "gato",
+      "validationLemma": "hablar",
+      "selection": "hablamos",
+      "sentence": "Hoy hablamos español.",
+      "expectedHeadword": "hablar",
+      "expectedPath": "form",
+      "nonLexicalForms": [
+        "es-conj"
+      ]
+    },
+    {
+      "language": "ru",
+      "developmentLemma": "кошка",
+      "validationLemma": "читать",
+      "selection": "чита́ю",
+      "sentence": "Я чита́ю книгу.",
+      "expectedHeadword": "читать",
+      "expectedPath": "form",
+      "nonLexicalForms": [
+        "ru-conj"
+      ]
+    },
+    {
+      "language": "zh",
+      "developmentLemma": "貓",
+      "validationLemma": "學習",
+      "selection": "学习",
+      "sentence": "我正在学习中文。",
+      "expectedHeadword": "學習",
+      "expectedPath": "form",
+      "nonLexicalForms": []
+    }
+  ]
+}

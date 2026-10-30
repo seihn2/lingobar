@@ -72,7 +72,7 @@ Windows x64 対応は `main` にマージ済みです。それ以前に検証し
 <a id="documentation"></a>
 ## ドキュメント
 
-デスクトップ学習：[明示的なAI文脈解説・独立した履歴・能動的な復習](docs/dictionary-learning.md)（現在のdraft。生成内容は誤り得ます。実辞書のインポートは未提供）。
+デスクトップ学習：[AI文脈解説・独立した履歴・能動的な復習](docs/dictionary-learning.md)、[オフライン辞書と言語パック](docs/offline-dictionaries.md)（現在のdraft。8言語の実データによる小規模サンプルであり、完全版辞書ではありません。AIは別の明示的な操作です）。
 
 | 言語 | 使い方ガイド |
 | --- | --- |
