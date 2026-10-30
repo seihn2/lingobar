@@ -57,6 +57,38 @@ describe('local Kaikki-shaped JSONL language-pack builder', () => {
       expect(db.prepare('SELECT count(*) AS count FROM forms WHERE form=?').get('missing-base-form')?.count).toBe(0)
     } finally { db.close() }
   })
+  it('skips source records without glosses or form links before requiring a usable headword', async () => {
+    const f = input([
+      { word: ' ', lang_code: 'en', pos: 'punct', senses: [{}] },
+      { word: ' ', lang_code: 'en', pos: 'punct', senses: [{ raw_glosses: ['(Internet slang)'], tags: ['empty-gloss', 'no-gloss'] }] },
+      { word: 'authored', lang_code: 'en', senses: [{ glosses: ['An authored usable answer.'] }] }
+    ])
+    const built = await buildDictionaryPack({ input: f.source, output: f.output, manifest: metadata })
+    expect(built.counts).toEqual({ entries: 1, senses: 1, forms: 0 })
+    const report = JSON.parse(readFileSync(join(f.output, 'BUILD-REPORT.json'), 'utf8'))
+    expect(report.records).toMatchObject({ parsed: 3, matchingLanguage: 3, skippedNoLexicalContent: 2, formLinkOnly: 0, withGlosses: 1 })
+    expect(report.input).toMatchObject({ bytes: readFileSync(f.source).byteLength, sha256: createHash('sha256').update(readFileSync(f.source)).digest('hex'), compression: 'none' })
+    const db = new DatabaseSync(join(f.output, 'entries.sqlite'), { readOnly: true })
+    try { expect(db.prepare('SELECT id,headword FROM entries').all()).toEqual([{ id: 'line:3', headword: 'authored' }]) }
+    finally { db.close() }
+    const invalid = input([{ word: ' ', lang_code: 'en', senses: [{ glosses: ['A source answer with an invalid lookup headword.'] }] }])
+    await expect(buildDictionaryPack({ input: invalid.source, output: invalid.output, manifest: metadata })).rejects.toThrow('Invalid headword at source line 1')
+  })
+  it('retains a real spacing punctuation headword and its source alias while refusing control-character punctuation', async () => {
+    const f = input([{ word: ' ', lang_code: 'en', pos: 'punct', forms: [{ form: '] [', tags: ['canonical'] }], senses: [{ glosses: ['An authored spacing-symbol definition.'] }] }])
+    const built = await buildDictionaryPack({ input: f.source, output: f.output, manifest: metadata })
+    expect(built.counts).toEqual({ entries: 1, senses: 1, forms: 1 })
+    const packs = new OfflinePacks(join(f.dir, 'installed'))
+    try {
+      packs.install(join(f.output, 'manifest.json'))
+      const entry = packs.lookup({ text: '] [', language: 'en' }).results[0]
+      expect(entry.entry.headword).toBe(' '); expect(entry.entry.partOfSpeech).toBe('punct')
+      expect(entry.matchPath).toBe('form'); expect(entry.entry.senses[0].glosses).toEqual(['An authored spacing-symbol definition.'])
+      expect(() => packs.lookup({ text: ' ', language: 'en' })).toThrow('有效的连续短语')
+    } finally { packs.close() }
+    const invalid = input([{ word: '\t', lang_code: 'en', pos: 'punct', senses: [{ glosses: ['An authored invalid-control test.'] }] }])
+    await expect(buildDictionaryPack({ input: invalid.source, output: invalid.output, manifest: metadata })).rejects.toThrow('Invalid headword at source line 1')
+  })
   it('does not index counters/table placeholders as forms and retains the kind of actual source aliases', async () => {
     const f = input([{ word: '고양이', lang_code: 'ko', pos: 'noun', forms: [
       { form: '마리', tags: ['counter'] }, { form: 'table metadata', tags: ['table-tags'] },
@@ -112,7 +144,7 @@ describe('local Kaikki-shaped JSONL language-pack builder', () => {
   })
   it.each([
     { name: '501 forms', extra: { forms: Array.from({ length: 501 }, (_, i) => ({ form: `authored-${i}` })) } },
-    { name: '101 senses', extra: { senses: Array.from({ length: 101 }, (_, i) => ({ glosses: [`Authored sense ${i}.`] })) } },
+    { name: '257 senses', extra: { senses: Array.from({ length: 257 }, (_, i) => ({ glosses: [`Authored sense ${i}.`] })) } },
     { name: '101 glosses', extra: { senses: [{ glosses: Array.from({ length: 101 }, (_, i) => `Authored gloss ${i}.`) }] } },
     { name: '21 examples', extra: { senses: [{ glosses: ['Authored gloss.'], examples: Array.from({ length: 21 }, (_, i) => ({ text: `Authored example ${i}.` })) }] } },
     { name: 'overlong gloss', extra: { senses: [{ glosses: ['x'.repeat(16001)] }] } },
@@ -122,12 +154,32 @@ describe('local Kaikki-shaped JSONL language-pack builder', () => {
     await expect(buildDictionaryPack({ input: f.source, output: f.output, manifest: metadata })).rejects.toThrow(/Source line 1.*runtime limit/)
     expect(existsSync(f.output)).toBe(false)
   })
-  it('preserves all senses at the runtime boundary', async () => {
-    const f = input([{ word: 'authored', lang_code: 'en', senses: Array.from({ length: 100 }, (_, i) => ({ glosses: [`Authored sense ${i + 1}.`] })) }])
+  it('preserves all 225 source senses in a v2 package through the last runtime answer', async () => {
+    const f = input([{ word: 'authored', lang_code: 'en', senses: Array.from({ length: 225 }, (_, i) => ({ glosses: [`Authored sense ${i + 1}.`] })) }])
     const built = await buildDictionaryPack({ input: f.source, output: f.output, manifest: metadata })
-    expect(built.counts.senses).toBe(100)
+    expect(built.counts.senses).toBe(225); expect(built.schemaVersion).toBe(2)
+    expect(JSON.parse(readFileSync(join(f.output, 'BUILD-REPORT.json'), 'utf8')).maxSourceSenses).toBe(225)
     const db = new DatabaseSync(join(f.output, 'entries.sqlite'), { readOnly: true })
-    try { expect(db.prepare('SELECT glosses_json FROM senses ORDER BY rowid').all().map(row => JSON.parse(String(row.glosses_json))[0])).toEqual(Array.from({ length: 100 }, (_, i) => `Authored sense ${i + 1}.`)) }
+    try {
+      expect(db.prepare('PRAGMA user_version').get()?.user_version).toBe(1)
+      expect(db.prepare('SELECT glosses_json FROM senses ORDER BY rowid').all().map(row => JSON.parse(String(row.glosses_json))[0])).toEqual(Array.from({ length: 225 }, (_, i) => `Authored sense ${i + 1}.`))
+    }
+    finally { db.close() }
+    const packs = new OfflinePacks(join(f.dir, 'installed'))
+    try {
+      expect(packs.install(join(f.output, 'manifest.json')).manifest.schemaVersion).toBe(2)
+      const result = packs.lookup({ text: 'authored', language: 'en' }).results[0]
+      expect(result.entry.senses).toHaveLength(225)
+      expect(result.entry.senses.at(-1)?.glosses).toEqual(['Authored sense 225.'])
+    } finally { packs.close() }
+  })
+  it.each([{ count: 100, schemaVersion: 1 }, { count: 101, schemaVersion: 2 }])('marks $count actual senses with manifest v$schemaVersion without changing SQLite DDL', async ({ count, schemaVersion }) => {
+    const f = input([{ word: 'authored', lang_code: 'en', senses: Array.from({ length: count }, (_, i) => ({ glosses: [`Authored sense ${i + 1}.`] })) }])
+    const built = await buildDictionaryPack({ input: f.source, output: f.output, manifest: metadata })
+    expect(built.schemaVersion).toBe(schemaVersion)
+    expect(JSON.parse(readFileSync(join(f.output, 'BUILD-REPORT.json'), 'utf8')).maxSourceSenses).toBe(count)
+    const db = new DatabaseSync(join(f.output, 'entries.sqlite'), { readOnly: true })
+    try { expect(db.prepare('PRAGMA user_version').get()?.user_version).toBe(1) }
     finally { db.close() }
   })
 })

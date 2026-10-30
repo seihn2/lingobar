@@ -1,0 +1,1970 @@
+{
+  "schemaVersion": 1,
+  "scope": "Compact derivative of actual production-module reports; per-query warm samples and exported definitions are omitted. Original-byte hashes identify retained source reports. No new tests were executed to prepare this document.",
+  "boundaries": {
+    "semanticAccuracyMeasured": false,
+    "physicalDeviceAcceptance": false,
+    "japaneseBenchmark": "Retained separately in offline-scale-{before,after,comparison,plans}.json, not rerun.",
+    "primaryChineseRun": "zh-sense256 used earlier 256-cap bundle cf963 before final punctuation handling; not falsely relabeled as final ba3 bundle.",
+    "englishControlledFinal": "en-zh-final256 and en-with-en-fallback-final256 use identical final ba3 production bundle and original20 cases.",
+    "sourceDerivedLifecycleAndManySenseSmoke": "Follow-up checks, not additions to primary retrieval denominators."
+  },
+  "runs": [
+    {
+      "schemaVersion": 1,
+      "startedAt": "2026-10-30T19:48:58.514Z",
+      "finishedAt": "2026-10-30T19:48:58.909Z",
+      "runtime": {
+        "node": "24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "linux",
+        "arch": "x64"
+      },
+      "scope": "Actual production OfflinePacks + DictionaryLearning + DictionaryStore + export modules in Node; no Electron/renderer/native hardware measurement.",
+      "cacheBoundary": "Cold means a new production manager/SQLite connection. Copying, hashing and OS filesystem caches are not flushed; this is not a cold-disk benchmark.",
+      "qualityBoundary": "Hits and expected-headword candidates are lexical retrieval observations, not semantic correctness or representative language coverage.",
+      "fixture": {
+        "path": "data/validation-cases/en.json",
+        "sha256": "2466c28e5bfd8b8bcc3ed678fb047776abbf550e115f319b94a617f4dab8cd0e",
+        "description": "Fixed source-independent, self-written public common-word and sentence-selection cases frozen before querying the supplied full packs. Expected headwords are literal retrieval expectations, not expert semantic labels; corpus spelling, accent and source lemma conventions can differ. Not a representative vocabulary sample or semantic accuracy benchmark. No definitions copied from source data.",
+        "count": 20,
+        "rounds": 5
+      },
+      "scriptSha256": "72f21ddb82c0b7c1f3cf9fc85dace092c24492c09db850b23eb26052dfc6863f",
+      "bundledProductionSha256": "cf963ac98fe97fc8c74aeb414f0cd0025abae74c4ba394a5a7a5435962e411d8",
+      "status": "passed",
+      "network": {
+        "attempts": 0,
+        "providerCalls": 0
+      },
+      "installedCoverage": {
+        "entries": 94646,
+        "senses": 124692,
+        "forms": 53363,
+        "chineseEntries": 94646,
+        "chineseSenses": 124692,
+        "entryDenominator": 94646,
+        "senseDenominator": 124692,
+        "chineseEntryShare": 1,
+        "chineseSenseShare": 1,
+        "meaning": "Share of installed source records whose declared gloss language is Chinese. Sources overlap and are not deduplicated or sense-aligned; this is not translation quality or all-Japanese vocabulary coverage."
+      },
+      "connectionColdFirstLookup": {
+        "caseId": "en-public-01",
+        "milliseconds": 4.888623999999993,
+        "scope": "Cold means a new production manager/SQLite connection. Copying, hashing and OS filesystem caches are not flushed; this is not a cold-disk benchmark."
+      },
+      "retrievalSummary": {
+        "cases": 20,
+        "withAnyResult": 17,
+        "withExpectedHeadwordCandidate": 16,
+        "expectedCandidateDenominator": 20,
+        "withChineseResult": 17,
+        "chineseQueryDenominator": 20,
+        "matchPaths": {
+          "exact": 22,
+          "form": 7
+        },
+        "semanticAccuracyMeasured": false
+      },
+      "learningChain": {
+        "sourceCaseId": "en-public-01",
+        "chosenSources": [
+          {
+            "encounterId": "a495e6b2-c1c2-43d0-9ac4-b4f7773bb7d4",
+            "packId": "kaikki-zhwiktionary-en-zh-hans-label",
+            "glossLanguage": "zh",
+            "senseId": "line:366:s1"
+          }
+        ],
+        "exportEntries": 1,
+        "reviewEvents": 1,
+        "snapshotsSurviveUninstall": true
+      },
+      "reportId": "en-zh-sense256",
+      "sourceReceipt": {
+        "originalLogicalPath": "data/validation-reports/en-zh-sense256/report.json",
+        "originalByteSha256": "4725e61e67fafe7937fb2bcbc6f08462bd8e42d4c9eea3baa9046037d8c25efd"
+      },
+      "warmQueries": {
+        "count": 100,
+        "minMs": 0.11398300000001882,
+        "medianMs": 0.29937400000000025,
+        "p95Ms": 1.1947319999999877,
+        "maxMs": 3.42246700000004,
+        "hitsOnly": {
+          "count": 85,
+          "minMs": 0.16209700000001703,
+          "medianMs": 0.30433599999997796,
+          "p95Ms": 1.3194050000000175,
+          "maxMs": 3.42246700000004
+        }
+      },
+      "memory": {
+        "sampledPeakRssBytes": 50647040,
+        "sampledPeakIncreaseFromBeforeInstallBytes": 13418496
+      },
+      "installs": [
+        {
+          "packId": "kaikki-zhwiktionary-en-zh-hant-label",
+          "schemaVersion": 1,
+          "databaseBytes": 25894912,
+          "installMs": 205.19952999999998,
+          "dbSha256": "b538229d71c53271f8d9709722b6fb9813d0d7a64217b24f9d85a3377516777e"
+        },
+        {
+          "packId": "kaikki-zhwiktionary-en-zh-hans-label",
+          "schemaVersion": 1,
+          "databaseBytes": 6189056,
+          "installMs": 25.389141999999993,
+          "dbSha256": "703406520da76919df65a387e78b445c6ffde5c4b14b80049d313be0e2fa44d8"
+        }
+      ],
+      "queryObservations": [
+        {
+          "id": "en-public-05",
+          "text": "teacher",
+          "language": "en",
+          "hitCount": 0,
+          "expectedHeadword": "teacher",
+          "expectedCandidateFound": false,
+          "message": "本地词库未找到该词或已收录词形；没有自动调用 AI。",
+          "candidates": []
+        },
+        {
+          "id": "en-public-16",
+          "text": "went",
+          "language": "en",
+          "hitCount": 0,
+          "expectedHeadword": "go",
+          "expectedCandidateFound": false,
+          "message": "本地词库未找到该词或已收录词形；没有自动调用 AI。",
+          "candidates": []
+        },
+        {
+          "id": "en-public-18",
+          "text": "reading",
+          "language": "en",
+          "hitCount": 0,
+          "expectedHeadword": "read",
+          "expectedCandidateFound": false,
+          "message": "本地词库未找到该词或已收录词形；没有自动调用 AI。",
+          "candidates": []
+        },
+        {
+          "id": "en-public-19",
+          "text": "studies",
+          "language": "en",
+          "hitCount": 2,
+          "expectedHeadword": "study",
+          "expectedCandidateFound": false,
+          "message": "",
+          "candidates": [
+            {
+              "headword": "studie",
+              "packId": "kaikki-zhwiktionary-en-zh-hant-label",
+              "matchPath": "form"
+            },
+            {
+              "headword": "studie",
+              "packId": "kaikki-zhwiktionary-en-zh-hant-label",
+              "matchPath": "form"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "startedAt": "2026-10-30T19:56:53.536Z",
+      "finishedAt": "2026-10-30T19:56:54.106Z",
+      "runtime": {
+        "node": "24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "linux",
+        "arch": "x64"
+      },
+      "scope": "Actual production OfflinePacks + DictionaryLearning + DictionaryStore + export modules in Node; no Electron/renderer/native hardware measurement.",
+      "cacheBoundary": "Cold means a new production manager/SQLite connection. Copying, hashing and OS filesystem caches are not flushed; this is not a cold-disk benchmark.",
+      "qualityBoundary": "Hits and expected-headword candidates are lexical retrieval observations, not semantic correctness or representative language coverage.",
+      "fixture": {
+        "path": "data/validation-cases/en.json",
+        "sha256": "2466c28e5bfd8b8bcc3ed678fb047776abbf550e115f319b94a617f4dab8cd0e",
+        "description": "Fixed source-independent, self-written public common-word and sentence-selection cases frozen before querying the supplied full packs. Expected headwords are literal retrieval expectations, not expert semantic labels; corpus spelling, accent and source lemma conventions can differ. Not a representative vocabulary sample or semantic accuracy benchmark. No definitions copied from source data.",
+        "count": 20,
+        "rounds": 5
+      },
+      "scriptSha256": "72f21ddb82c0b7c1f3cf9fc85dace092c24492c09db850b23eb26052dfc6863f",
+      "bundledProductionSha256": "ba3c62c0c07cedb759314e86c9c92a8ef3aec637894dac3b5771d8f66231225e",
+      "status": "passed",
+      "network": {
+        "attempts": 0,
+        "providerCalls": 0
+      },
+      "installedCoverage": {
+        "entries": 94646,
+        "senses": 124692,
+        "forms": 53363,
+        "chineseEntries": 94646,
+        "chineseSenses": 124692,
+        "entryDenominator": 94646,
+        "senseDenominator": 124692,
+        "chineseEntryShare": 1,
+        "chineseSenseShare": 1,
+        "meaning": "Share of installed source records whose declared gloss language is Chinese. Sources overlap and are not deduplicated or sense-aligned; this is not translation quality or all-Japanese vocabulary coverage."
+      },
+      "connectionColdFirstLookup": {
+        "caseId": "en-public-01",
+        "milliseconds": 10.563915000000009,
+        "scope": "Cold means a new production manager/SQLite connection. Copying, hashing and OS filesystem caches are not flushed; this is not a cold-disk benchmark."
+      },
+      "retrievalSummary": {
+        "cases": 20,
+        "withAnyResult": 17,
+        "withExpectedHeadwordCandidate": 16,
+        "expectedCandidateDenominator": 20,
+        "withChineseResult": 17,
+        "chineseQueryDenominator": 20,
+        "matchPaths": {
+          "exact": 22,
+          "form": 7
+        },
+        "semanticAccuracyMeasured": false
+      },
+      "learningChain": {
+        "sourceCaseId": "en-public-01",
+        "chosenSources": [
+          {
+            "encounterId": "8d09c534-1e70-43a0-ba0e-336e8fb184af",
+            "packId": "kaikki-zhwiktionary-en-zh-hans-label",
+            "glossLanguage": "zh",
+            "senseId": "line:366:s1"
+          }
+        ],
+        "exportEntries": 1,
+        "reviewEvents": 1,
+        "snapshotsSurviveUninstall": true
+      },
+      "reportId": "en-zh-final256",
+      "sourceReceipt": {
+        "originalLogicalPath": "data/validation-reports/en-zh-final256/report.json",
+        "originalByteSha256": "1bfc6197e94c8dd254d0f786e3a9713990afb8f78ecd127b506abe0eae62aff0"
+      },
+      "warmQueries": {
+        "count": 100,
+        "minMs": 0.12295700000004217,
+        "medianMs": 0.7674989999999298,
+        "p95Ms": 5.147943999999995,
+        "maxMs": 12.101405999999997,
+        "hitsOnly": {
+          "count": 85,
+          "minMs": 0.2004540000000361,
+          "medianMs": 0.8222899999999527,
+          "p95Ms": 6.130739999999946,
+          "maxMs": 12.101405999999997
+        }
+      },
+      "memory": {
+        "sampledPeakRssBytes": 50458624,
+        "sampledPeakIncreaseFromBeforeInstallBytes": 13144064
+      },
+      "installs": [
+        {
+          "packId": "kaikki-zhwiktionary-en-zh-hant-label",
+          "schemaVersion": 1,
+          "databaseBytes": 25894912,
+          "installMs": 175.158394,
+          "dbSha256": "b538229d71c53271f8d9709722b6fb9813d0d7a64217b24f9d85a3377516777e"
+        },
+        {
+          "packId": "kaikki-zhwiktionary-en-zh-hans-label",
+          "schemaVersion": 1,
+          "databaseBytes": 6189056,
+          "installMs": 57.39281399999999,
+          "dbSha256": "703406520da76919df65a387e78b445c6ffde5c4b14b80049d313be0e2fa44d8"
+        }
+      ],
+      "queryObservations": [
+        {
+          "id": "en-public-05",
+          "text": "teacher",
+          "language": "en",
+          "hitCount": 0,
+          "expectedHeadword": "teacher",
+          "expectedCandidateFound": false,
+          "message": "本地词库未找到该词或已收录词形；没有自动调用 AI。",
+          "candidates": []
+        },
+        {
+          "id": "en-public-16",
+          "text": "went",
+          "language": "en",
+          "hitCount": 0,
+          "expectedHeadword": "go",
+          "expectedCandidateFound": false,
+          "message": "本地词库未找到该词或已收录词形；没有自动调用 AI。",
+          "candidates": []
+        },
+        {
+          "id": "en-public-18",
+          "text": "reading",
+          "language": "en",
+          "hitCount": 0,
+          "expectedHeadword": "read",
+          "expectedCandidateFound": false,
+          "message": "本地词库未找到该词或已收录词形；没有自动调用 AI。",
+          "candidates": []
+        },
+        {
+          "id": "en-public-19",
+          "text": "studies",
+          "language": "en",
+          "hitCount": 2,
+          "expectedHeadword": "study",
+          "expectedCandidateFound": false,
+          "message": "",
+          "candidates": [
+            {
+              "headword": "studie",
+              "packId": "kaikki-zhwiktionary-en-zh-hant-label",
+              "matchPath": "form"
+            },
+            {
+              "headword": "studie",
+              "packId": "kaikki-zhwiktionary-en-zh-hant-label",
+              "matchPath": "form"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "startedAt": "2026-10-30T19:56:54.188Z",
+      "finishedAt": "2026-10-30T19:56:56.333Z",
+      "runtime": {
+        "node": "24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "linux",
+        "arch": "x64"
+      },
+      "scope": "Actual production OfflinePacks + DictionaryLearning + DictionaryStore + export modules in Node; no Electron/renderer/native hardware measurement.",
+      "cacheBoundary": "Cold means a new production manager/SQLite connection. Copying, hashing and OS filesystem caches are not flushed; this is not a cold-disk benchmark.",
+      "qualityBoundary": "Hits and expected-headword candidates are lexical retrieval observations, not semantic correctness or representative language coverage.",
+      "fixture": {
+        "path": "data/validation-cases/en.json",
+        "sha256": "2466c28e5bfd8b8bcc3ed678fb047776abbf550e115f319b94a617f4dab8cd0e",
+        "description": "Fixed source-independent, self-written public common-word and sentence-selection cases frozen before querying the supplied full packs. Expected headwords are literal retrieval expectations, not expert semantic labels; corpus spelling, accent and source lemma conventions can differ. Not a representative vocabulary sample or semantic accuracy benchmark. No definitions copied from source data.",
+        "count": 20,
+        "rounds": 5
+      },
+      "scriptSha256": "72f21ddb82c0b7c1f3cf9fc85dace092c24492c09db850b23eb26052dfc6863f",
+      "bundledProductionSha256": "ba3c62c0c07cedb759314e86c9c92a8ef3aec637894dac3b5771d8f66231225e",
+      "status": "passed",
+      "network": {
+        "attempts": 0,
+        "providerCalls": 0
+      },
+      "installedCoverage": {
+        "entries": 1592474,
+        "senses": 1918405,
+        "forms": 1739382,
+        "chineseEntries": 94646,
+        "chineseSenses": 124692,
+        "entryDenominator": 1592474,
+        "senseDenominator": 1918405,
+        "chineseEntryShare": 0.05943330942922773,
+        "chineseSenseShare": 0.06499774552297351,
+        "meaning": "Share of installed source records whose declared gloss language is Chinese. Sources overlap and are not deduplicated or sense-aligned; this is not translation quality or all-Japanese vocabulary coverage."
+      },
+      "connectionColdFirstLookup": {
+        "caseId": "en-public-01",
+        "milliseconds": 31.032864000000018,
+        "scope": "Cold means a new production manager/SQLite connection. Copying, hashing and OS filesystem caches are not flushed; this is not a cold-disk benchmark."
+      },
+      "retrievalSummary": {
+        "cases": 20,
+        "withAnyResult": 20,
+        "withExpectedHeadwordCandidate": 20,
+        "expectedCandidateDenominator": 20,
+        "withChineseResult": 17,
+        "chineseQueryDenominator": 20,
+        "matchPaths": {
+          "exact": 77,
+          "form": 45
+        },
+        "semanticAccuracyMeasured": false
+      },
+      "learningChain": {
+        "sourceCaseId": "en-public-01",
+        "chosenSources": [
+          {
+            "encounterId": "39366002-3dfb-4635-b3d7-1dbdbeaeb37e",
+            "packId": "kaikki-zhwiktionary-en-zh-hans-label",
+            "glossLanguage": "zh",
+            "senseId": "line:366:s1"
+          },
+          {
+            "encounterId": "e01b928a-e3aa-450c-a440-de7fbdf379b7",
+            "packId": "kaikki-enwiktionary-en-en",
+            "glossLanguage": "en",
+            "senseId": "line:566883:s1"
+          }
+        ],
+        "exportEntries": 2,
+        "reviewEvents": 1,
+        "snapshotsSurviveUninstall": true
+      },
+      "reportId": "en-with-en-fallback-final256",
+      "sourceReceipt": {
+        "originalLogicalPath": "data/validation-reports/en-with-en-fallback-final256/report.json",
+        "originalByteSha256": "42f968d863024d97ce648c0cb114a5b2da913e9f0d8ea54efc63d39791ef5474"
+      },
+      "warmQueries": {
+        "count": 100,
+        "minMs": 0.2952259999999569,
+        "medianMs": 1.0689080000001923,
+        "p95Ms": 2.767475999999988,
+        "maxMs": 5.08346500000016,
+        "hitsOnly": {
+          "count": 100,
+          "minMs": 0.2952259999999569,
+          "medianMs": 1.0689080000001923,
+          "p95Ms": 2.767475999999988,
+          "maxMs": 5.08346500000016
+        }
+      },
+      "memory": {
+        "sampledPeakRssBytes": 56045568,
+        "sampledPeakIncreaseFromBeforeInstallBytes": 19083264
+      },
+      "installs": [
+        {
+          "packId": "kaikki-zhwiktionary-en-zh-hant-label",
+          "schemaVersion": 1,
+          "databaseBytes": 25894912,
+          "installMs": 55.58140999999999,
+          "dbSha256": "b538229d71c53271f8d9709722b6fb9813d0d7a64217b24f9d85a3377516777e"
+        },
+        {
+          "packId": "kaikki-zhwiktionary-en-zh-hans-label",
+          "schemaVersion": 1,
+          "databaseBytes": 6189056,
+          "installMs": 12.140166999999991,
+          "dbSha256": "703406520da76919df65a387e78b445c6ffde5c4b14b80049d313be0e2fa44d8"
+        },
+        {
+          "packId": "kaikki-enwiktionary-en-en",
+          "schemaVersion": 2,
+          "databaseBytes": 695906304,
+          "installMs": 1734.389705,
+          "dbSha256": "fa070b5d73647091d8559a0443e379a75961b1b68c756967cdf0dbea108684bc"
+        }
+      ],
+      "queryObservations": []
+    },
+    {
+      "schemaVersion": 1,
+      "startedAt": "2026-10-30T19:31:42.432Z",
+      "finishedAt": "2026-10-30T19:31:42.811Z",
+      "runtime": {
+        "node": "24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "linux",
+        "arch": "x64"
+      },
+      "scope": "Actual production OfflinePacks + DictionaryLearning + DictionaryStore + export modules in Node; no Electron/renderer/native hardware measurement.",
+      "cacheBoundary": "Cold means a new production manager/SQLite connection. Copying, hashing and OS filesystem caches are not flushed; this is not a cold-disk benchmark.",
+      "qualityBoundary": "Hits and expected-headword candidates are lexical retrieval observations, not semantic correctness or representative language coverage.",
+      "fixture": {
+        "path": "data/validation-cases/ko.json",
+        "sha256": "5c2a528741a9fb463e062fb4d386c2f4835d77fbefb8e86534bf63298c46c001",
+        "description": "Fixed source-independent, self-written public common-word and sentence-selection cases frozen before querying the supplied full packs. Expected headwords are literal retrieval expectations, not expert semantic labels; corpus spelling, accent and source lemma conventions can differ. Not a representative vocabulary sample or semantic accuracy benchmark. No definitions copied from source data.",
+        "count": 16,
+        "rounds": 5
+      },
+      "scriptSha256": "72f21ddb82c0b7c1f3cf9fc85dace092c24492c09db850b23eb26052dfc6863f",
+      "bundledProductionSha256": "79c065d256753a00ba6dd553128082db34d9bd7315ea403c82fd59945f9b2836",
+      "status": "passed",
+      "network": {
+        "attempts": 0,
+        "providerCalls": 0
+      },
+      "installedCoverage": {
+        "entries": 240101,
+        "senses": 248908,
+        "forms": 21840,
+        "chineseEntries": 240101,
+        "chineseSenses": 248908,
+        "entryDenominator": 240101,
+        "senseDenominator": 248908,
+        "chineseEntryShare": 1,
+        "chineseSenseShare": 1,
+        "meaning": "Share of installed source records whose declared gloss language is Chinese. Sources overlap and are not deduplicated or sense-aligned; this is not translation quality or all-Japanese vocabulary coverage."
+      },
+      "connectionColdFirstLookup": {
+        "caseId": "ko-public-01",
+        "milliseconds": 7.896390999999994,
+        "scope": "Cold means a new production manager/SQLite connection. Copying, hashing and OS filesystem caches are not flushed; this is not a cold-disk benchmark."
+      },
+      "retrievalSummary": {
+        "cases": 16,
+        "withAnyResult": 12,
+        "withExpectedHeadwordCandidate": 12,
+        "expectedCandidateDenominator": 16,
+        "withChineseResult": 12,
+        "chineseQueryDenominator": 16,
+        "matchPaths": {
+          "exact": 15,
+          "form": 3
+        },
+        "semanticAccuracyMeasured": false
+      },
+      "learningChain": {
+        "sourceCaseId": "ko-public-01",
+        "chosenSources": [
+          {
+            "encounterId": "e2f125d6-cbcc-45b5-9849-7f912cacf44d",
+            "packId": "kaikki-zhwiktionary-ko-zh-hant-label",
+            "glossLanguage": "zh",
+            "senseId": "line:27735:s1"
+          }
+        ],
+        "exportEntries": 1,
+        "reviewEvents": 1,
+        "snapshotsSurviveUninstall": true
+      },
+      "reportId": "ko-zh",
+      "sourceReceipt": {
+        "originalLogicalPath": "data/validation-reports/ko-zh/report.json",
+        "originalByteSha256": "7541e38689e60ca42b83b7603a4e0ccff6eb3a8c1468703074556fb05fe2f281"
+      },
+      "warmQueries": {
+        "count": 80,
+        "minMs": 0.12170000000003256,
+        "medianMs": 0.44213600000000497,
+        "p95Ms": 1.2926909999999907,
+        "maxMs": 2.364596000000006,
+        "hitsOnly": {
+          "count": 60,
+          "minMs": 0.17526800000001685,
+          "medianMs": 0.46300999999999704,
+          "p95Ms": 1.2926909999999907,
+          "maxMs": 2.364596000000006
+        }
+      },
+      "memory": {
+        "sampledPeakRssBytes": 50913280,
+        "sampledPeakIncreaseFromBeforeInstallBytes": 13418496
+      },
+      "installs": [
+        {
+          "packId": "kaikki-zhwiktionary-ko-zh-hans-label",
+          "schemaVersion": 1,
+          "databaseBytes": 52793344,
+          "installMs": 131.088135,
+          "dbSha256": "21c70134d829f2080191356b9c75830bb490ae8a104de91e3223bcd760822fd1"
+        },
+        {
+          "packId": "kaikki-zhwiktionary-ko-zh-hant-label",
+          "schemaVersion": 1,
+          "databaseBytes": 13950976,
+          "installMs": 30.784733000000017,
+          "dbSha256": "764432c0f1732ac8ac85db0018551be928bf570d2609c348bafc885982767015"
+        }
+      ],
+      "queryObservations": [
+        {
+          "id": "ko-public-13",
+          "text": "갔다",
+          "language": "ko",
+          "hitCount": 0,
+          "expectedHeadword": "가다",
+          "expectedCandidateFound": false,
+          "message": "本地词库未找到该词或已收录词形；没有自动调用 AI。",
+          "candidates": []
+        },
+        {
+          "id": "ko-public-14",
+          "text": "먹어요",
+          "language": "ko",
+          "hitCount": 0,
+          "expectedHeadword": "먹다",
+          "expectedCandidateFound": false,
+          "message": "本地词库未找到该词或已收录词形；没有自动调用 AI。",
+          "candidates": []
+        },
+        {
+          "id": "ko-public-15",
+          "text": "읽었다",
+          "language": "ko",
+          "hitCount": 0,
+          "expectedHeadword": "읽다",
+          "expectedCandidateFound": false,
+          "message": "本地词库未找到该词或已收录词形；没有自动调用 AI。",
+          "candidates": []
+        },
+        {
+          "id": "ko-public-16",
+          "text": "좋아요",
+          "language": "ko",
+          "hitCount": 0,
+          "expectedHeadword": "좋다",
+          "expectedCandidateFound": false,
+          "message": "本地词库未找到该词或已收录词形；没有自动调用 AI。",
+          "candidates": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "startedAt": "2026-10-30T19:33:16.190Z",
+      "finishedAt": "2026-10-30T19:33:16.446Z",
+      "runtime": {
+        "node": "24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "linux",
+        "arch": "x64"
+      },
+      "scope": "Actual production OfflinePacks + DictionaryLearning + DictionaryStore + export modules in Node; no Electron/renderer/native hardware measurement.",
+      "cacheBoundary": "Cold means a new production manager/SQLite connection. Copying, hashing and OS filesystem caches are not flushed; this is not a cold-disk benchmark.",
+      "qualityBoundary": "Hits and expected-headword candidates are lexical retrieval observations, not semantic correctness or representative language coverage.",
+      "fixture": {
+        "path": "data/validation-cases/fr.json",
+        "sha256": "68ca174f91e52ab3638da81db393a05bb7d628fc79258e1130dc45e2eaab4666",
+        "description": "Fixed source-independent, self-written public common-word and sentence-selection cases frozen before querying the supplied full packs. Expected headwords are literal retrieval expectations, not expert semantic labels; corpus spelling, accent and source lemma conventions can differ. Not a representative vocabulary sample or semantic accuracy benchmark. No definitions copied from source data.",
+        "count": 16,
+        "rounds": 5
+      },
+      "scriptSha256": "72f21ddb82c0b7c1f3cf9fc85dace092c24492c09db850b23eb26052dfc6863f",
+      "bundledProductionSha256": "79c065d256753a00ba6dd553128082db34d9bd7315ea403c82fd59945f9b2836",
+      "status": "passed",
+      "network": {
+        "attempts": 0,
+        "providerCalls": 0
+      },
+      "installedCoverage": {
+        "entries": 158202,
+        "senses": 185621,
+        "forms": 124738,
+        "chineseEntries": 158202,
+        "chineseSenses": 185621,
+        "entryDenominator": 158202,
+        "senseDenominator": 185621,
+        "chineseEntryShare": 1,
+        "chineseSenseShare": 1,
+        "meaning": "Share of installed source records whose declared gloss language is Chinese. Sources overlap and are not deduplicated or sense-aligned; this is not translation quality or all-Japanese vocabulary coverage."
+      },
+      "connectionColdFirstLookup": {
+        "caseId": "fr-public-01",
+        "milliseconds": 5.537912000000006,
+        "scope": "Cold means a new production manager/SQLite connection. Copying, hashing and OS filesystem caches are not flushed; this is not a cold-disk benchmark."
+      },
+      "retrievalSummary": {
+        "cases": 16,
+        "withAnyResult": 16,
+        "withExpectedHeadwordCandidate": 14,
+        "expectedCandidateDenominator": 16,
+        "withChineseResult": 16,
+        "chineseQueryDenominator": 16,
+        "matchPaths": {
+          "exact": 25,
+          "form": 6
+        },
+        "semanticAccuracyMeasured": false
+      },
+      "learningChain": {
+        "sourceCaseId": "fr-public-01",
+        "chosenSources": [
+          {
+            "encounterId": "05ae3497-fc78-4bfc-9e19-bace5d5d88ab",
+            "packId": "kaikki-zhwiktionary-fr-zh-hant-label",
+            "glossLanguage": "zh",
+            "senseId": "line:3405:s1"
+          }
+        ],
+        "exportEntries": 1,
+        "reviewEvents": 1,
+        "snapshotsSurviveUninstall": true
+      },
+      "reportId": "fr-zh",
+      "sourceReceipt": {
+        "originalLogicalPath": "data/validation-reports/fr-zh/report.json",
+        "originalByteSha256": "74c43e269e4bd33afa0260ef1c7f6c81cd0a2c2a51c8b8a4027196dd42a0e81d"
+      },
+      "warmQueries": {
+        "count": 80,
+        "minMs": 0.14912099999997963,
+        "medianMs": 0.2692119999999818,
+        "p95Ms": 0.8278960000000097,
+        "maxMs": 2.269465000000025,
+        "hitsOnly": {
+          "count": 80,
+          "minMs": 0.14912099999997963,
+          "medianMs": 0.2692119999999818,
+          "p95Ms": 0.8278960000000097,
+          "maxMs": 2.269465000000025
+        }
+      },
+      "memory": {
+        "sampledPeakRssBytes": 50360320,
+        "sampledPeakIncreaseFromBeforeInstallBytes": 13516800
+      },
+      "installs": [
+        {
+          "packId": "kaikki-zhwiktionary-fr-zh-hant-label",
+          "schemaVersion": 1,
+          "databaseBytes": 33992704,
+          "installMs": 80.04062599999999,
+          "dbSha256": "38e135a8b93bedfb4d759c6ae112d43d0dd97295757e7e637f788e1e46f103b3"
+        },
+        {
+          "packId": "kaikki-zhwiktionary-fr-zh-hans-label",
+          "schemaVersion": 1,
+          "databaseBytes": 24526848,
+          "installMs": 49.16000299999999,
+          "dbSha256": "708904da1f9a8ac99ac9eaa2755c3ed8742d5c7f58c4331171803dd8e673955d"
+        }
+      ],
+      "queryObservations": [
+        {
+          "id": "fr-public-14",
+          "text": "mangeons",
+          "language": "fr",
+          "hitCount": 1,
+          "expectedHeadword": "manger",
+          "expectedCandidateFound": false,
+          "message": "",
+          "candidates": [
+            {
+              "headword": "mangeons",
+              "packId": "kaikki-zhwiktionary-fr-zh-hans-label",
+              "matchPath": "exact"
+            }
+          ]
+        },
+        {
+          "id": "fr-public-15",
+          "text": "allait",
+          "language": "fr",
+          "hitCount": 1,
+          "expectedHeadword": "aller",
+          "expectedCandidateFound": false,
+          "message": "",
+          "candidates": [
+            {
+              "headword": "allait",
+              "packId": "kaikki-zhwiktionary-fr-zh-hans-label",
+              "matchPath": "exact"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "startedAt": "2026-10-30T19:34:33.162Z",
+      "finishedAt": "2026-10-30T19:34:33.569Z",
+      "runtime": {
+        "node": "24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "linux",
+        "arch": "x64"
+      },
+      "scope": "Actual production OfflinePacks + DictionaryLearning + DictionaryStore + export modules in Node; no Electron/renderer/native hardware measurement.",
+      "cacheBoundary": "Cold means a new production manager/SQLite connection. Copying, hashing and OS filesystem caches are not flushed; this is not a cold-disk benchmark.",
+      "qualityBoundary": "Hits and expected-headword candidates are lexical retrieval observations, not semantic correctness or representative language coverage.",
+      "fixture": {
+        "path": "data/validation-cases/ru.json",
+        "sha256": "15bd44cf25f76b2ab44f30cc9197e212d6f97476224e14324e19144085c1de60",
+        "description": "Fixed source-independent, self-written public common-word and sentence-selection cases frozen before querying the supplied full packs. Expected headwords are literal retrieval expectations, not expert semantic labels; corpus spelling, accent and source lemma conventions can differ. Not a representative vocabulary sample or semantic accuracy benchmark. No definitions copied from source data.",
+        "count": 16,
+        "rounds": 5
+      },
+      "scriptSha256": "72f21ddb82c0b7c1f3cf9fc85dace092c24492c09db850b23eb26052dfc6863f",
+      "bundledProductionSha256": "79c065d256753a00ba6dd553128082db34d9bd7315ea403c82fd59945f9b2836",
+      "status": "passed",
+      "network": {
+        "attempts": 0,
+        "providerCalls": 0
+      },
+      "installedCoverage": {
+        "entries": 164040,
+        "senses": 192430,
+        "forms": 128367,
+        "chineseEntries": 164040,
+        "chineseSenses": 192430,
+        "entryDenominator": 164040,
+        "senseDenominator": 192430,
+        "chineseEntryShare": 1,
+        "chineseSenseShare": 1,
+        "meaning": "Share of installed source records whose declared gloss language is Chinese. Sources overlap and are not deduplicated or sense-aligned; this is not translation quality or all-Japanese vocabulary coverage."
+      },
+      "connectionColdFirstLookup": {
+        "caseId": "ru-public-01",
+        "milliseconds": 10.183010000000024,
+        "scope": "Cold means a new production manager/SQLite connection. Copying, hashing and OS filesystem caches are not flushed; this is not a cold-disk benchmark."
+      },
+      "retrievalSummary": {
+        "cases": 16,
+        "withAnyResult": 14,
+        "withExpectedHeadwordCandidate": 13,
+        "expectedCandidateDenominator": 16,
+        "withChineseResult": 14,
+        "chineseQueryDenominator": 16,
+        "matchPaths": {
+          "exact": 17,
+          "form": 2
+        },
+        "semanticAccuracyMeasured": false
+      },
+      "learningChain": {
+        "sourceCaseId": "ru-public-01",
+        "chosenSources": [
+          {
+            "encounterId": "1b0998dc-2dad-4272-a8a0-89c40400cf36",
+            "packId": "kaikki-zhwiktionary-ru-zh-hant-label",
+            "glossLanguage": "zh",
+            "senseId": "line:58:s1"
+          }
+        ],
+        "exportEntries": 1,
+        "reviewEvents": 1,
+        "snapshotsSurviveUninstall": true
+      },
+      "reportId": "ru-zh",
+      "sourceReceipt": {
+        "originalLogicalPath": "data/validation-reports/ru-zh/report.json",
+        "originalByteSha256": "cdf7f6d893632dfedc7fb8cec90b99d015a786f899534b52ced00edaf8d223d1"
+      },
+      "warmQueries": {
+        "count": 80,
+        "minMs": 0.1254989999999907,
+        "medianMs": 0.4354450000000156,
+        "p95Ms": 1.2239040000000045,
+        "maxMs": 4.901162999999997,
+        "hitsOnly": {
+          "count": 70,
+          "minMs": 0.1932860000000005,
+          "medianMs": 0.4516699999999787,
+          "p95Ms": 1.2239040000000045,
+          "maxMs": 2.745148000000029
+        }
+      },
+      "memory": {
+        "sampledPeakRssBytes": 50655232,
+        "sampledPeakIncreaseFromBeforeInstallBytes": 13819904
+      },
+      "installs": [
+        {
+          "packId": "kaikki-zhwiktionary-ru-zh-hans-label",
+          "schemaVersion": 1,
+          "databaseBytes": 30609408,
+          "installMs": 114.056039,
+          "dbSha256": "5dfd75c39fbbd34bd9b9ad1f5e59f4b7e965202a621f58f7ef0bd752f985e0c6"
+        },
+        {
+          "packId": "kaikki-zhwiktionary-ru-zh-hant-label",
+          "schemaVersion": 1,
+          "databaseBytes": 48549888,
+          "installMs": 108.265717,
+          "dbSha256": "3fabdcf94ab967ef1484d329e2ae8f37b21cfd268f44a23240f756ae33ef2315"
+        }
+      ],
+      "queryObservations": [
+        {
+          "id": "ru-public-13",
+          "text": "книги",
+          "language": "ru",
+          "hitCount": 1,
+          "expectedHeadword": "книга",
+          "expectedCandidateFound": false,
+          "message": "",
+          "candidates": [
+            {
+              "headword": "книги",
+              "packId": "kaikki-zhwiktionary-ru-zh-hant-label",
+              "matchPath": "exact"
+            }
+          ]
+        },
+        {
+          "id": "ru-public-15",
+          "text": "читаю",
+          "language": "ru",
+          "hitCount": 0,
+          "expectedHeadword": "читать",
+          "expectedCandidateFound": false,
+          "message": "本地词库未找到该词或已收录词形；没有自动调用 AI。",
+          "candidates": []
+        },
+        {
+          "id": "ru-public-16",
+          "text": "говорил",
+          "language": "ru",
+          "hitCount": 0,
+          "expectedHeadword": "говорить",
+          "expectedCandidateFound": false,
+          "message": "本地词库未找到该词或已收录词形；没有自动调用 AI。",
+          "candidates": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "startedAt": "2026-10-30T19:36:36.244Z",
+      "finishedAt": "2026-10-30T19:36:36.632Z",
+      "runtime": {
+        "node": "24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "linux",
+        "arch": "x64"
+      },
+      "scope": "Actual production OfflinePacks + DictionaryLearning + DictionaryStore + export modules in Node; no Electron/renderer/native hardware measurement.",
+      "cacheBoundary": "Cold means a new production manager/SQLite connection. Copying, hashing and OS filesystem caches are not flushed; this is not a cold-disk benchmark.",
+      "qualityBoundary": "Hits and expected-headword candidates are lexical retrieval observations, not semantic correctness or representative language coverage.",
+      "fixture": {
+        "path": "data/validation-cases/de.json",
+        "sha256": "40aea0193221f1c54b14d533947b6f1a8a019bfc57cd6ff90754848e429716da",
+        "description": "Fixed source-independent, self-written public common-word and sentence-selection cases frozen before querying the supplied full packs. Expected headwords are literal retrieval expectations, not expert semantic labels; corpus spelling, accent and source lemma conventions can differ. Not a representative vocabulary sample or semantic accuracy benchmark. No definitions copied from source data.",
+        "count": 16,
+        "rounds": 5
+      },
+      "scriptSha256": "72f21ddb82c0b7c1f3cf9fc85dace092c24492c09db850b23eb26052dfc6863f",
+      "bundledProductionSha256": "79c065d256753a00ba6dd553128082db34d9bd7315ea403c82fd59945f9b2836",
+      "status": "passed",
+      "network": {
+        "attempts": 0,
+        "providerCalls": 0
+      },
+      "installedCoverage": {
+        "entries": 174147,
+        "senses": 267321,
+        "forms": 206793,
+        "chineseEntries": 174147,
+        "chineseSenses": 267321,
+        "entryDenominator": 174147,
+        "senseDenominator": 267321,
+        "chineseEntryShare": 1,
+        "chineseSenseShare": 1,
+        "meaning": "Share of installed source records whose declared gloss language is Chinese. Sources overlap and are not deduplicated or sense-aligned; this is not translation quality or all-Japanese vocabulary coverage."
+      },
+      "connectionColdFirstLookup": {
+        "caseId": "de-public-01",
+        "milliseconds": 13.575372000000016,
+        "scope": "Cold means a new production manager/SQLite connection. Copying, hashing and OS filesystem caches are not flushed; this is not a cold-disk benchmark."
+      },
+      "retrievalSummary": {
+        "cases": 16,
+        "withAnyResult": 15,
+        "withExpectedHeadwordCandidate": 14,
+        "expectedCandidateDenominator": 16,
+        "withChineseResult": 15,
+        "chineseQueryDenominator": 16,
+        "matchPaths": {
+          "exact": 20,
+          "form": 4
+        },
+        "semanticAccuracyMeasured": false
+      },
+      "learningChain": {
+        "sourceCaseId": "de-public-01",
+        "chosenSources": [
+          {
+            "encounterId": "2100cf23-0bdf-4ae2-9a7c-923d1cadb0fb",
+            "packId": "kaikki-zhwiktionary-de-zh-hant-label",
+            "glossLanguage": "zh",
+            "senseId": "line:1290:s1"
+          }
+        ],
+        "exportEntries": 1,
+        "reviewEvents": 1,
+        "snapshotsSurviveUninstall": true
+      },
+      "reportId": "de-zh",
+      "sourceReceipt": {
+        "originalLogicalPath": "data/validation-reports/de-zh/report.json",
+        "originalByteSha256": "36c4c78cf0d64006edc04b5669fc2efa5f9778746df8ab41f72142ce67c671d0"
+      },
+      "warmQueries": {
+        "count": 80,
+        "minMs": 0.16048800000004348,
+        "medianMs": 0.3952810000000113,
+        "p95Ms": 1.551934000000017,
+        "maxMs": 3.716152999999963,
+        "hitsOnly": {
+          "count": 75,
+          "minMs": 0.17570499999999356,
+          "medianMs": 0.4153170000000159,
+          "p95Ms": 1.637248999999997,
+          "maxMs": 3.716152999999963
+        }
+      },
+      "memory": {
+        "sampledPeakRssBytes": 50515968,
+        "sampledPeakIncreaseFromBeforeInstallBytes": 13467648
+      },
+      "installs": [
+        {
+          "packId": "kaikki-zhwiktionary-de-zh-hant-label",
+          "schemaVersion": 1,
+          "databaseBytes": 53039104,
+          "installMs": 110.47014000000001,
+          "dbSha256": "8a9c91acb8e0c6653b34831e80c7ea559c17ce9f66554e8dd22245aad0576030"
+        },
+        {
+          "packId": "kaikki-zhwiktionary-de-zh-hans-label",
+          "schemaVersion": 1,
+          "databaseBytes": 31555584,
+          "installMs": 79.82172700000001,
+          "dbSha256": "5d5aa6d4116ab1207d81adab9ccc2c3b79f7a9d66a72850b49460b3d787803af"
+        }
+      ],
+      "queryObservations": [
+        {
+          "id": "de-public-09",
+          "text": "lesen",
+          "language": "de",
+          "hitCount": 0,
+          "expectedHeadword": "lesen",
+          "expectedCandidateFound": false,
+          "message": "本地词库未找到该词或已收录词形；没有自动调用 AI。",
+          "candidates": []
+        },
+        {
+          "id": "de-public-16",
+          "text": "liest",
+          "language": "de",
+          "hitCount": 1,
+          "expectedHeadword": "lesen",
+          "expectedCandidateFound": false,
+          "message": "",
+          "candidates": [
+            {
+              "headword": "liest",
+              "packId": "kaikki-zhwiktionary-de-zh-hans-label",
+              "matchPath": "exact"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "startedAt": "2026-10-30T19:37:25.115Z",
+      "finishedAt": "2026-10-30T19:37:25.643Z",
+      "runtime": {
+        "node": "24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "linux",
+        "arch": "x64"
+      },
+      "scope": "Actual production OfflinePacks + DictionaryLearning + DictionaryStore + export modules in Node; no Electron/renderer/native hardware measurement.",
+      "cacheBoundary": "Cold means a new production manager/SQLite connection. Copying, hashing and OS filesystem caches are not flushed; this is not a cold-disk benchmark.",
+      "qualityBoundary": "Hits and expected-headword candidates are lexical retrieval observations, not semantic correctness or representative language coverage.",
+      "fixture": {
+        "path": "data/validation-cases/es.json",
+        "sha256": "6e30b34d01ce9b7e2e2e5842b148251918fbc4f7608e36c623134223cb4e31c3",
+        "description": "Fixed source-independent, self-written public common-word and sentence-selection cases frozen before querying the supplied full packs. Expected headwords are literal retrieval expectations, not expert semantic labels; corpus spelling, accent and source lemma conventions can differ. Not a representative vocabulary sample or semantic accuracy benchmark. No definitions copied from source data.",
+        "count": 16,
+        "rounds": 5
+      },
+      "scriptSha256": "72f21ddb82c0b7c1f3cf9fc85dace092c24492c09db850b23eb26052dfc6863f",
+      "bundledProductionSha256": "79c065d256753a00ba6dd553128082db34d9bd7315ea403c82fd59945f9b2836",
+      "status": "passed",
+      "network": {
+        "attempts": 0,
+        "providerCalls": 0
+      },
+      "installedCoverage": {
+        "entries": 273771,
+        "senses": 292440,
+        "forms": 189185,
+        "chineseEntries": 273771,
+        "chineseSenses": 292440,
+        "entryDenominator": 273771,
+        "senseDenominator": 292440,
+        "chineseEntryShare": 1,
+        "chineseSenseShare": 1,
+        "meaning": "Share of installed source records whose declared gloss language is Chinese. Sources overlap and are not deduplicated or sense-aligned; this is not translation quality or all-Japanese vocabulary coverage."
+      },
+      "connectionColdFirstLookup": {
+        "caseId": "es-public-01",
+        "milliseconds": 20.26466300000004,
+        "scope": "Cold means a new production manager/SQLite connection. Copying, hashing and OS filesystem caches are not flushed; this is not a cold-disk benchmark."
+      },
+      "retrievalSummary": {
+        "cases": 16,
+        "withAnyResult": 15,
+        "withExpectedHeadwordCandidate": 15,
+        "expectedCandidateDenominator": 16,
+        "withChineseResult": 15,
+        "chineseQueryDenominator": 16,
+        "matchPaths": {
+          "exact": 22,
+          "form": 5
+        },
+        "semanticAccuracyMeasured": false
+      },
+      "learningChain": {
+        "sourceCaseId": "es-public-01",
+        "chosenSources": [
+          {
+            "encounterId": "ea8824bc-a29f-4561-b861-2a5136626413",
+            "packId": "kaikki-zhwiktionary-es-zh-hant-label",
+            "glossLanguage": "zh",
+            "senseId": "line:799:s1"
+          }
+        ],
+        "exportEntries": 1,
+        "reviewEvents": 1,
+        "snapshotsSurviveUninstall": true
+      },
+      "reportId": "es-zh",
+      "sourceReceipt": {
+        "originalLogicalPath": "data/validation-reports/es-zh/report.json",
+        "originalByteSha256": "1a08685457b05ef36062837fa27a2da7e400ac44082ac1396869596fbca39fe4"
+      },
+      "warmQueries": {
+        "count": 80,
+        "minMs": 0.12772500000005493,
+        "medianMs": 0.3472659999999905,
+        "p95Ms": 1.3442770000000337,
+        "maxMs": 3.9129890000000387,
+        "hitsOnly": {
+          "count": 75,
+          "minMs": 0.15862399999991794,
+          "medianMs": 0.3712710000000925,
+          "p95Ms": 1.5462660000000596,
+          "maxMs": 3.9129890000000387
+        }
+      },
+      "memory": {
+        "sampledPeakRssBytes": 51154944,
+        "sampledPeakIncreaseFromBeforeInstallBytes": 14319616
+      },
+      "installs": [
+        {
+          "packId": "kaikki-zhwiktionary-es-zh-hant-label",
+          "schemaVersion": 1,
+          "databaseBytes": 61898752,
+          "installMs": 199.767835,
+          "dbSha256": "a6f93fa8e2f7195f29bebf9442fd3b46c5a174eb8b25d1de5db9406a93e1bad9"
+        },
+        {
+          "packId": "kaikki-zhwiktionary-es-zh-hans-label",
+          "schemaVersion": 1,
+          "databaseBytes": 34537472,
+          "installMs": 117.349448,
+          "dbSha256": "1b0f3e2c55d778c940d6cd54f734cdc8352b751edc8a1067fc36c96f6d3fb3a0"
+        }
+      ],
+      "queryObservations": [
+        {
+          "id": "es-public-16",
+          "text": "comió",
+          "language": "es",
+          "hitCount": 0,
+          "expectedHeadword": "comer",
+          "expectedCandidateFound": false,
+          "message": "本地词库未找到该词或已收录词形；没有自动调用 AI。",
+          "candidates": []
+        }
+      ]
+    },
+    {
+      "schemaVersion": 1,
+      "startedAt": "2026-10-30T19:50:08.488Z",
+      "finishedAt": "2026-10-30T19:50:09.000Z",
+      "runtime": {
+        "node": "24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "linux",
+        "arch": "x64"
+      },
+      "scope": "Actual production OfflinePacks + DictionaryLearning + DictionaryStore + export modules in Node; no Electron/renderer/native hardware measurement.",
+      "cacheBoundary": "Cold means a new production manager/SQLite connection. Copying, hashing and OS filesystem caches are not flushed; this is not a cold-disk benchmark.",
+      "qualityBoundary": "Hits and expected-headword candidates are lexical retrieval observations, not semantic correctness or representative language coverage.",
+      "fixture": {
+        "path": "data/validation-cases/zh.json",
+        "sha256": "624b9fe9912a6e945f5ba4147f4db700ea968e3ef5846ed8ce9ba36fb0900730",
+        "description": "Fixed source-independent, self-written public common-word and sentence-selection cases frozen before querying the supplied full packs. Expected headwords are literal retrieval expectations, not expert semantic labels; corpus spelling, accent and source lemma conventions can differ. Not a representative vocabulary sample or semantic accuracy benchmark. No definitions copied from source data.",
+        "count": 16,
+        "rounds": 5
+      },
+      "scriptSha256": "72f21ddb82c0b7c1f3cf9fc85dace092c24492c09db850b23eb26052dfc6863f",
+      "bundledProductionSha256": "cf963ac98fe97fc8c74aeb414f0cd0025abae74c4ba394a5a7a5435962e411d8",
+      "status": "passed",
+      "network": {
+        "attempts": 0,
+        "providerCalls": 0
+      },
+      "installedCoverage": {
+        "entries": 81243,
+        "senses": 109857,
+        "forms": 58011,
+        "chineseEntries": 81243,
+        "chineseSenses": 109857,
+        "entryDenominator": 81243,
+        "senseDenominator": 109857,
+        "chineseEntryShare": 1,
+        "chineseSenseShare": 1,
+        "meaning": "Share of installed source records whose declared gloss language is Chinese. Sources overlap and are not deduplicated or sense-aligned; this is not translation quality or all-Japanese vocabulary coverage."
+      },
+      "connectionColdFirstLookup": {
+        "caseId": "zh-public-01",
+        "milliseconds": 12.856216000000018,
+        "scope": "Cold means a new production manager/SQLite connection. Copying, hashing and OS filesystem caches are not flushed; this is not a cold-disk benchmark."
+      },
+      "retrievalSummary": {
+        "cases": 16,
+        "withAnyResult": 16,
+        "withExpectedHeadwordCandidate": 13,
+        "expectedCandidateDenominator": 16,
+        "withChineseResult": 16,
+        "chineseQueryDenominator": 16,
+        "matchPaths": {
+          "exact": 22,
+          "form": 4
+        },
+        "semanticAccuracyMeasured": false
+      },
+      "learningChain": {
+        "sourceCaseId": "zh-public-01",
+        "chosenSources": [
+          {
+            "encounterId": "e7abb9d9-ad95-40c6-ad63-84acfecfa2bc",
+            "packId": "kaikki-zhwiktionary-zh-zh-hant-label",
+            "glossLanguage": "zh",
+            "senseId": "line:1098:s1"
+          }
+        ],
+        "exportEntries": 1,
+        "reviewEvents": 1,
+        "snapshotsSurviveUninstall": true
+      },
+      "reportId": "zh-sense256",
+      "sourceReceipt": {
+        "originalLogicalPath": "data/validation-reports/zh-sense256/report.json",
+        "originalByteSha256": "81ac9ca36a7d369cee76f2356d1b240a7b240556d16edcacbff5164aad3d7e08"
+      },
+      "warmQueries": {
+        "count": 80,
+        "minMs": 0.23741600000005292,
+        "medianMs": 0.6008550000000241,
+        "p95Ms": 3.3224050000000034,
+        "maxMs": 7.415279000000055,
+        "hitsOnly": {
+          "count": 80,
+          "minMs": 0.23741600000005292,
+          "medianMs": 0.6008550000000241,
+          "p95Ms": 3.3224050000000034,
+          "maxMs": 7.415279000000055
+        }
+      },
+      "memory": {
+        "sampledPeakRssBytes": 50196480,
+        "sampledPeakIncreaseFromBeforeInstallBytes": 12890112
+      },
+      "installs": [
+        {
+          "packId": "kaikki-zhwiktionary-zh-zh-hans-label",
+          "schemaVersion": 2,
+          "databaseBytes": 1273856,
+          "installMs": 24.782467999999994,
+          "dbSha256": "bec06efe812173f1b6d00b561f7c14623a1c0e3c0de92864f3ddae7e4cfc19d0"
+        },
+        {
+          "packId": "kaikki-zhwiktionary-zh-zh-hant-label",
+          "schemaVersion": 2,
+          "databaseBytes": 40386560,
+          "installMs": 158.94774199999995,
+          "dbSha256": "3e817cb6c5965e8eb63a3aeabf5c51961a60dcbda9b1c53adf1137689931f976"
+        },
+        {
+          "packId": "kaikki-zhwiktionary-zh-zh-zhongwen-label",
+          "schemaVersion": 1,
+          "databaseBytes": 626688,
+          "installMs": 4.694392999999991,
+          "dbSha256": "45db4d1bdb3b2af592c42ddd34489639be5e5bc899bb22f0c251872abb0eaa9a"
+        }
+      ],
+      "queryObservations": [
+        {
+          "id": "zh-public-13",
+          "text": "学校",
+          "language": "zh",
+          "hitCount": 1,
+          "expectedHeadword": "学校",
+          "expectedCandidateFound": false,
+          "message": "",
+          "candidates": [
+            {
+              "headword": "學校",
+              "packId": "kaikki-zhwiktionary-zh-zh-hant-label",
+              "matchPath": "form"
+            }
+          ]
+        },
+        {
+          "id": "zh-public-14",
+          "text": "学习",
+          "language": "zh",
+          "hitCount": 2,
+          "expectedHeadword": "学习",
+          "expectedCandidateFound": false,
+          "message": "",
+          "candidates": [
+            {
+              "headword": "學習",
+              "packId": "kaikki-zhwiktionary-zh-zh-hant-label",
+              "matchPath": "form"
+            },
+            {
+              "headword": "學習",
+              "packId": "kaikki-zhwiktionary-zh-zh-hant-label",
+              "matchPath": "form"
+            }
+          ]
+        },
+        {
+          "id": "zh-public-15",
+          "text": "新闻",
+          "language": "zh",
+          "hitCount": 1,
+          "expectedHeadword": "新闻",
+          "expectedCandidateFound": false,
+          "message": "",
+          "candidates": [
+            {
+              "headword": "新聞",
+              "packId": "kaikki-zhwiktionary-zh-zh-hant-label",
+              "matchPath": "form"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "englishControlledComparison": {
+    "schemaVersion": 1,
+    "completedAt": "2026-10-30T19:57:55.215Z",
+    "scope": "Controlled data-source addition only: identical final production bundle, script and original frozen20cases. No generated aliases/definitions, no altered case selection, no semantic accuracy claim.",
+    "bundledProductionSha256": "ba3c62c0c07cedb759314e86c9c92a8ef3aec637894dac3b5771d8f66231225e",
+    "scriptSha256": "72f21ddb82c0b7c1f3cf9fc85dace092c24492c09db850b23eb26052dfc6863f",
+    "caseSha256": "2466c28e5bfd8b8bcc3ed678fb047776abbf550e115f319b94a617f4dab8cd0e",
+    "originalChineseManifestsUnchanged": true,
+    "before": {
+      "report": "../en-zh-final256/report.json",
+      "retrieval": {
+        "cases": 20,
+        "withAnyResult": 17,
+        "withExpectedHeadwordCandidate": 16,
+        "expectedCandidateDenominator": 20,
+        "withChineseResult": 17,
+        "chineseQueryDenominator": 20,
+        "matchPaths": {
+          "exact": 22,
+          "form": 7
+        },
+        "semanticAccuracyMeasured": false
+      },
+      "installedCoverage": {
+        "entries": 94646,
+        "senses": 124692,
+        "forms": 53363,
+        "chineseEntries": 94646,
+        "chineseSenses": 124692,
+        "entryDenominator": 94646,
+        "senseDenominator": 124692,
+        "chineseEntryShare": 1,
+        "chineseSenseShare": 1,
+        "meaning": "Share of installed source records whose declared gloss language is Chinese. Sources overlap and are not deduplicated or sense-aligned; this is not translation quality or all-Japanese vocabulary coverage."
+      }
+    },
+    "after": {
+      "report": "report.json",
+      "retrieval": {
+        "cases": 20,
+        "withAnyResult": 20,
+        "withExpectedHeadwordCandidate": 20,
+        "expectedCandidateDenominator": 20,
+        "withChineseResult": 17,
+        "chineseQueryDenominator": 20,
+        "matchPaths": {
+          "exact": 77,
+          "form": 45
+        },
+        "semanticAccuracyMeasured": false
+      },
+      "installedCoverage": {
+        "entries": 1592474,
+        "senses": 1918405,
+        "forms": 1739382,
+        "chineseEntries": 94646,
+        "chineseSenses": 124692,
+        "entryDenominator": 1592474,
+        "senseDenominator": 1918405,
+        "chineseEntryShare": 0.05943330942922773,
+        "chineseSenseShare": 0.06499774552297351,
+        "meaning": "Share of installed source records whose declared gloss language is Chinese. Sources overlap and are not deduplicated or sense-aligned; this is not translation quality or all-Japanese vocabulary coverage."
+      }
+    },
+    "changedCaseObservations": [
+      {
+        "id": "en-public-05",
+        "text": "teacher",
+        "beforeHit": 0,
+        "beforeExpectedCandidate": false,
+        "afterHit": 1,
+        "afterExpectedCandidate": true,
+        "englishCandidates": [
+          {
+            "headword": "teacher",
+            "matchPath": "exact",
+            "entryId": "line:23675"
+          }
+        ],
+        "message": "本机已安装词库暂无中文释义，当前显示英语／原语言；具体语言见每个来源。"
+      },
+      {
+        "id": "en-public-16",
+        "text": "went",
+        "beforeHit": 0,
+        "beforeExpectedCandidate": false,
+        "afterHit": 10,
+        "afterExpectedCandidate": true,
+        "englishCandidates": [
+          {
+            "headword": "went",
+            "matchPath": "exact",
+            "entryId": "line:6776"
+          },
+          {
+            "headword": "went",
+            "matchPath": "exact",
+            "entryId": "line:6777"
+          },
+          {
+            "headword": "go",
+            "matchPath": "form",
+            "entryId": "line:6787"
+          },
+          {
+            "headword": "wend",
+            "matchPath": "form",
+            "entryId": "line:53694"
+          },
+          {
+            "headword": "ween",
+            "matchPath": "form",
+            "entryId": "line:58754"
+          },
+          {
+            "headword": "gan",
+            "matchPath": "form",
+            "entryId": "line:76222"
+          },
+          {
+            "headword": "go",
+            "matchPath": "form",
+            "entryId": "line:6788"
+          },
+          {
+            "headword": "go",
+            "matchPath": "form",
+            "entryId": "line:6789"
+          },
+          {
+            "headword": "go",
+            "matchPath": "form",
+            "entryId": "line:6790"
+          },
+          {
+            "headword": "wend",
+            "matchPath": "form",
+            "entryId": "line:53695"
+          }
+        ],
+        "message": "本机已安装词库暂无中文释义，当前显示英语／原语言；具体语言见每个来源。"
+      },
+      {
+        "id": "en-public-18",
+        "text": "reading",
+        "beforeHit": 0,
+        "beforeExpectedCandidate": false,
+        "afterHit": 5,
+        "afterExpectedCandidate": true,
+        "englishCandidates": [
+          {
+            "headword": "reading",
+            "matchPath": "exact",
+            "entryId": "line:6980"
+          },
+          {
+            "headword": "reading",
+            "matchPath": "exact",
+            "entryId": "line:6981"
+          },
+          {
+            "headword": "read",
+            "matchPath": "form",
+            "entryId": "line:5402"
+          },
+          {
+            "headword": "read",
+            "matchPath": "form",
+            "entryId": "line:5403"
+          },
+          {
+            "headword": "read",
+            "matchPath": "form",
+            "entryId": "line:5404"
+          }
+        ],
+        "message": "本机已安装词库暂无中文释义，当前显示英语／原语言；具体语言见每个来源。"
+      },
+      {
+        "id": "en-public-19",
+        "text": "studies",
+        "beforeHit": 2,
+        "beforeExpectedCandidate": false,
+        "afterHit": 9,
+        "afterExpectedCandidate": true,
+        "englishCandidates": [
+          {
+            "headword": "studies",
+            "matchPath": "exact",
+            "entryId": "line:90708"
+          },
+          {
+            "headword": "studies",
+            "matchPath": "exact",
+            "entryId": "line:90709"
+          },
+          {
+            "headword": "studies",
+            "matchPath": "exact",
+            "entryId": "line:90710"
+          },
+          {
+            "headword": "study",
+            "matchPath": "form",
+            "entryId": "line:18426"
+          },
+          {
+            "headword": "study",
+            "matchPath": "form",
+            "entryId": "line:18427"
+          },
+          {
+            "headword": "studie",
+            "matchPath": "form",
+            "entryId": "line:126849"
+          },
+          {
+            "headword": "studie",
+            "matchPath": "form",
+            "entryId": "line:126850"
+          }
+        ],
+        "message": ""
+      }
+    ],
+    "network": {
+      "before": {
+        "attempts": 0,
+        "providerCalls": 0
+      },
+      "after": {
+        "attempts": 0,
+        "providerCalls": 0
+      }
+    }
+  },
+  "posthocRealManySenseFinal": {
+    "schemaVersion": 1,
+    "completedAt": "2026-10-30T19:57:57.945Z",
+    "purpose": "Post-hoc true-record boundary smoke: full sense count and selecting the final real sense. Not a source-independent vocabulary sample; adds zero cases to main coverage denominators.",
+    "runtime": {
+      "node": "24.19.0",
+      "sqlite": "3.53.3"
+    },
+    "bundledProductionSha256": "ba3c62c0c07cedb759314e86c9c92a8ef3aec637894dac3b5771d8f66231225e",
+    "scriptSha256": "81a5d03726e17f81bcee39641a780d9e6b0835154fce27a761e4fe9a3d5dc736",
+    "caseSha256": "ba9b94abc83902ef143932711c3c259bbf4da4539fe3938683270f644064be17",
+    "results": [
+      {
+        "word": "yì",
+        "declaredManifestSchema": 2,
+        "packId": "kaikki-zhwiktionary-zh-zh-hans-label",
+        "dbSha256": "bec06efe812173f1b6d00b561f7c14623a1c0e3c0de92864f3ddae7e4cfc19d0",
+        "entryId": "line:1339",
+        "totalReadableSenses": 225,
+        "selectedLastSenseId": "line:1339:s225",
+        "selectedLastSenseHasGloss": true,
+        "snapshotSaved": true
+      },
+      {
+        "word": "城關",
+        "declaredManifestSchema": 2,
+        "packId": "kaikki-zhwiktionary-zh-zh-hant-label",
+        "dbSha256": "3e817cb6c5965e8eb63a3aeabf5c51961a60dcbda9b1c53adf1137689931f976",
+        "entryId": "line:26311",
+        "totalReadableSenses": 137,
+        "selectedLastSenseId": "line:26311:s137",
+        "selectedLastSenseHasGloss": true,
+        "snapshotSaved": true
+      },
+      {
+        "word": "draw",
+        "declaredManifestSchema": 2,
+        "packId": "kaikki-enwiktionary-en-en",
+        "dbSha256": "fa070b5d73647091d8559a0443e379a75961b1b68c756967cdf0dbea108684bc",
+        "entryId": "line:5410",
+        "totalReadableSenses": 138,
+        "selectedLastSenseId": "line:5410:s138",
+        "selectedLastSenseHasGloss": true,
+        "snapshotSaved": true
+      }
+    ],
+    "versionsPreservedInJsonAndReload": true,
+    "lastSensesRevealedFromSavedSnapshots": true,
+    "snapshotsSurviveUninstall": true,
+    "network": {
+      "attempts": 0,
+      "providerCalls": 0
+    },
+    "hardwareAcceptance": false
+  },
+  "additionalSourceLifecycle": [
+    {
+      "reportId": "en-two-source-lifecycle/report.json",
+      "sourceReceipt": {
+        "originalLogicalPath": "data/validation-reports/en-two-source-lifecycle/report.json",
+        "originalByteSha256": "47eeef59a954734de96f64e21086ef96be051ced946f0748c8dcef0164b18b4d"
+      },
+      "schemaVersion": 1,
+      "startedAt": "2026-10-30T19:30:52.755Z",
+      "finishedAt": "2026-10-30T19:30:52.939Z",
+      "runtime": {
+        "node": "24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "linux",
+        "arch": "x64"
+      },
+      "network": {
+        "attempts": 0,
+        "providerCalls": 0
+      },
+      "fixture": {
+        "path": "data/validation-cases/en-two-source-lifecycle.json",
+        "sha256": "7409557ded9b7dceb929dec4c9689035fcf2cf65d6cbf84ab2b80d5c52ec4250",
+        "description": "Secondary source-separation lifecycle check, selected after the main frozen English retrieval run from a case already in that fixed matrix. This one-case follow-up is not an independent coverage benchmark and must not replace the 17/20 main retrieval result. Both sources have Chinese glosses but their pack/source identities must remain separate.",
+        "count": 1,
+        "rounds": 1
+      },
+      "bundledProductionSha256": "79c065d256753a00ba6dd553128082db34d9bd7315ea403c82fd59945f9b2836",
+      "learningChain": {
+        "sourceCaseId": "en-public-20",
+        "chosenSources": [
+          {
+            "encounterId": "2ac3ab76-8c17-4844-8d91-cf565daf13bb",
+            "packId": "kaikki-zhwiktionary-en-zh-hant-label",
+            "glossLanguage": "zh",
+            "senseId": "line:56005:s1"
+          },
+          {
+            "encounterId": "1e07817c-c545-448a-a837-aa773084a00b",
+            "packId": "kaikki-zhwiktionary-en-zh-hans-label",
+            "glossLanguage": "zh",
+            "senseId": "line:2028:s1"
+          }
+        ],
+        "exportEntries": 2,
+        "reviewEvents": 1,
+        "snapshotsSurviveUninstall": true
+      },
+      "status": "passed"
+    },
+    {
+      "reportId": "ko-two-source-lifecycle/report.json",
+      "sourceReceipt": {
+        "originalLogicalPath": "data/validation-reports/ko-two-source-lifecycle/report.json",
+        "originalByteSha256": "6a7f4fbefba4365c66760bf058d742bc1890d8b33a3f2d1b89b91a690ede5710"
+      },
+      "schemaVersion": 1,
+      "startedAt": "2026-10-30T19:32:38.059Z",
+      "finishedAt": "2026-10-30T19:32:38.358Z",
+      "runtime": {
+        "node": "24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "linux",
+        "arch": "x64"
+      },
+      "network": {
+        "attempts": 0,
+        "providerCalls": 0
+      },
+      "fixture": {
+        "path": "data/validation-cases/ko-two-source-lifecycle.json",
+        "sha256": "08b1c6a3df9fc28da61af0af3a9546601a8f5ab598a172956ee5b51aa63232ec",
+        "description": "Secondary source-separation lifecycle check selected after the main frozen retrieval run from an existing case. Not an independent coverage benchmark; does not replace the original full-case result. Both sources declare Chinese glosses but package/sense/license identities must remain separate.",
+        "count": 1,
+        "rounds": 1
+      },
+      "bundledProductionSha256": "79c065d256753a00ba6dd553128082db34d9bd7315ea403c82fd59945f9b2836",
+      "learningChain": {
+        "sourceCaseId": "ko-public-06",
+        "chosenSources": [
+          {
+            "encounterId": "c3e8d40f-b539-440b-aebd-064e0c3fd9d1",
+            "packId": "kaikki-zhwiktionary-ko-zh-hans-label",
+            "glossLanguage": "zh",
+            "senseId": "line:79187:s1"
+          },
+          {
+            "encounterId": "32f377a3-f04b-4731-a3f7-2eb0b7bb72a3",
+            "packId": "kaikki-zhwiktionary-ko-zh-hant-label",
+            "glossLanguage": "zh",
+            "senseId": "line:36904:s1"
+          }
+        ],
+        "exportEntries": 2,
+        "reviewEvents": 1,
+        "snapshotsSurviveUninstall": true
+      },
+      "status": "passed"
+    },
+    {
+      "reportId": "fr-two-source-lifecycle/report.json",
+      "sourceReceipt": {
+        "originalLogicalPath": "data/validation-reports/fr-two-source-lifecycle/report.json",
+        "originalByteSha256": "6e9069617a5d28872bb44aa3aadcb0aba85100c2005cd012e3e90783e2bfc8b0"
+      },
+      "schemaVersion": 1,
+      "startedAt": "2026-10-30T19:33:53.298Z",
+      "finishedAt": "2026-10-30T19:33:53.481Z",
+      "runtime": {
+        "node": "24.19.0",
+        "sqlite": "3.53.3",
+        "platform": "linux",
+        "arch": "x64"
+      },
+      "network": {
+        "attempts": 0,
+        "providerCalls": 0
+      },
+      "fixture": {
+        "path": "data/validation-cases/fr-two-source-lifecycle.json",
+        "sha256": "c3ba50ab88c46d0b3f63682864a2915ec68a90cba93518b50c73026eecd2d779",
+        "description": "Secondary source-separation lifecycle check selected after the main frozen retrieval run from an existing case. Not an independent coverage benchmark; does not replace the original full-case result. Both sources declare Chinese glosses but package/sense/license identities must remain separate.",
+        "count": 1,
+        "rounds": 1
+      },
+      "bundledProductionSha256": "79c065d256753a00ba6dd553128082db34d9bd7315ea403c82fd59945f9b2836",
+      "learningChain": {
+        "sourceCaseId": "fr-public-04",
+        "chosenSources": [
+          {
+            "encounterId": "13b3f7c8-2931-4652-aa3b-e89541b68f9b",
+            "packId": "kaikki-zhwiktionary-fr-zh-hant-label",
+            "glossLanguage": "zh",
+            "senseId": "line:1292:s1"
+          },
+          {
+            "encounterId": "eaf63afc-f5a3-4d0b-9222-b2af709688ec",
+            "packId": "kaikki-zhwiktionary-fr-zh-hans-label",
+            "glossLanguage": "zh",
+            "senseId": "line:2688:s1"
+          }
+        ],
+        "exportEntries": 2,
+        "reviewEvents": 1,
+        "snapshotsSurviveUninstall": true
+      },
+      "status": "passed"
+    },
+    {
+      "reportId": "de-zh/all-source-snapshots.json",
+      "sourceReceipt": {
+        "originalLogicalPath": "data/validation-reports/de-zh/all-source-snapshots.json",
+        "originalByteSha256": "91ab10f80fa0d732b19401949f3f92107b375c82cd3e98e9162e6a2f4d54401b"
+      },
+      "schemaVersion": 1,
+      "completedAt": "2026-10-30T19:36:53.604Z",
+      "purpose": "Secondary source-separation lifecycle check using existing fixed-matrix hits where available; otherwise an exact source-derived headword for lifecycle-only smoke. Not an independent coverage benchmark; original fixed cases and coverage scores are unchanged, and no aliases or definitions are generated.",
+      "runtime": {
+        "node": "24.19.0",
+        "sqlite": "3.53.3"
+      },
+      "network": {
+        "attempts": 0,
+        "providerCalls": 0
+      },
+      "hardwareAcceptance": false,
+      "selections": [
+        {
+          "sourceCaseId": "de-public-01",
+          "selectionOrigin": "existing frozen retrieval-matrix hit",
+          "text": "Haus",
+          "packId": "kaikki-zhwiktionary-de-zh-hant-label",
+          "encounterId": "5c2831b4-e436-4b16-bca8-0606a013c976",
+          "entryId": "line:1290",
+          "senseId": "line:1290:s1"
+        },
+        {
+          "sourceCaseId": "de-public-04",
+          "selectionOrigin": "existing frozen retrieval-matrix hit",
+          "text": "Freund",
+          "packId": "kaikki-zhwiktionary-de-zh-hans-label",
+          "encounterId": "279c1e0a-4ba9-4f16-a197-cee126a7d6e4",
+          "entryId": "line:217",
+          "senseId": "line:217:s1"
+        }
+      ],
+      "independentSnapshots": 2,
+      "exportedEntries": 2,
+      "explicitReviewEvents": 2,
+      "snapshotsAndReviewSurviveUninstall": true
+    },
+    {
+      "reportId": "es-zh/all-source-snapshots.json",
+      "sourceReceipt": {
+        "originalLogicalPath": "data/validation-reports/es-zh/all-source-snapshots.json",
+        "originalByteSha256": "2b4ce4f94f8fa123fd5bfa08aaf71839047a77983e8b9b16cb7bfd32d4dd434b"
+      },
+      "schemaVersion": 1,
+      "completedAt": "2026-10-30T19:37:26.550Z",
+      "purpose": "Secondary source-separation lifecycle check using existing fixed-matrix hits where available; otherwise an exact source-derived headword for lifecycle-only smoke. Not an independent coverage benchmark; original fixed cases and coverage scores are unchanged, and no aliases or definitions are generated.",
+      "runtime": {
+        "node": "24.19.0",
+        "sqlite": "3.53.3"
+      },
+      "network": {
+        "attempts": 0,
+        "providerCalls": 0
+      },
+      "hardwareAcceptance": false,
+      "selections": [
+        {
+          "sourceCaseId": "es-public-01",
+          "selectionOrigin": "existing frozen retrieval-matrix hit",
+          "text": "casa",
+          "packId": "kaikki-zhwiktionary-es-zh-hant-label",
+          "encounterId": "ad350edb-6964-4fc0-b060-7ac4f7c402f4",
+          "entryId": "line:799",
+          "senseId": "line:799:s1"
+        },
+        {
+          "sourceCaseId": "es-public-02",
+          "selectionOrigin": "existing frozen retrieval-matrix hit",
+          "text": "agua",
+          "packId": "kaikki-zhwiktionary-es-zh-hans-label",
+          "encounterId": "5359d735-891e-4373-bcf0-ee652fedb3db",
+          "entryId": "line:191",
+          "senseId": "line:191:s1"
+        }
+      ],
+      "independentSnapshots": 2,
+      "exportedEntries": 2,
+      "explicitReviewEvents": 2,
+      "snapshotsAndReviewSurviveUninstall": true
+    },
+    {
+      "reportId": "ru-zh/all-source-snapshots.json",
+      "sourceReceipt": {
+        "originalLogicalPath": "data/validation-reports/ru-zh/all-source-snapshots.json",
+        "originalByteSha256": "1ea0bb49e68d91ad3a0543d0895f453d747c7118e65a772fac5377b6908e3497"
+      },
+      "schemaVersion": 1,
+      "completedAt": "2026-10-30T19:36:36.110Z",
+      "purpose": "Secondary source-separation lifecycle check using existing fixed-matrix hits where available; otherwise an exact source-derived headword for lifecycle-only smoke. Not an independent coverage benchmark; original fixed cases and coverage scores are unchanged, and no aliases or definitions are generated.",
+      "runtime": {
+        "node": "24.19.0",
+        "sqlite": "3.53.3"
+      },
+      "network": {
+        "attempts": 0,
+        "providerCalls": 0
+      },
+      "hardwareAcceptance": false,
+      "selections": [
+        {
+          "sourceCaseId": null,
+          "selectionOrigin": "post-hoc exact imported-source headword; not a source-independent case or coverage evidence",
+          "text": "таможне",
+          "packId": "kaikki-zhwiktionary-ru-zh-hans-label",
+          "encounterId": "ee80b5b1-6c17-402b-908f-8d892caa06cb",
+          "entryId": "line:1",
+          "senseId": "line:1:s1"
+        },
+        {
+          "sourceCaseId": "ru-public-01",
+          "selectionOrigin": "existing frozen retrieval-matrix hit",
+          "text": "дом",
+          "packId": "kaikki-zhwiktionary-ru-zh-hant-label",
+          "encounterId": "b3b63d5b-d6d7-4fc7-b216-c9b3ca8e36be",
+          "entryId": "line:58",
+          "senseId": "line:58:s1"
+        }
+      ],
+      "independentSnapshots": 2,
+      "exportedEntries": 2,
+      "explicitReviewEvents": 2,
+      "snapshotsAndReviewSurviveUninstall": true
+    },
+    {
+      "reportId": "zh-sense256/all-source-snapshots.json",
+      "sourceReceipt": {
+        "originalLogicalPath": "data/validation-reports/zh-sense256/all-source-snapshots.json",
+        "originalByteSha256": "5ee21ca0a12697e60586be0ae15afa2df03953668b1815941043e5080103cbf8"
+      },
+      "schemaVersion": 1,
+      "completedAt": "2026-10-30T19:50:27.419Z",
+      "purpose": "Secondary source-separation lifecycle check using existing fixed-matrix hits where available; otherwise an exact source-derived headword for lifecycle-only smoke. Not an independent coverage benchmark; original fixed cases and coverage scores are unchanged, and no aliases or definitions are generated.",
+      "runtime": {
+        "node": "24.19.0",
+        "sqlite": "3.53.3"
+      },
+      "network": {
+        "attempts": 0,
+        "providerCalls": 0
+      },
+      "hardwareAcceptance": false,
+      "selections": [
+        {
+          "sourceCaseId": null,
+          "selectionOrigin": "post-hoc exact imported-source headword; not a source-independent case or coverage evidence",
+          "text": "日本",
+          "packId": "kaikki-zhwiktionary-zh-zh-hans-label",
+          "encounterId": "8da86a31-c2a1-477f-96b6-32319f71a81b",
+          "entryId": "line:1",
+          "senseId": "line:1:s1"
+        },
+        {
+          "sourceCaseId": "zh-public-01",
+          "selectionOrigin": "existing frozen retrieval-matrix hit",
+          "text": "學校",
+          "packId": "kaikki-zhwiktionary-zh-zh-hant-label",
+          "encounterId": "ac6095af-9032-4a0f-8827-513d2371f998",
+          "entryId": "line:1098",
+          "senseId": "line:1098:s1"
+        },
+        {
+          "sourceCaseId": null,
+          "selectionOrigin": "post-hoc exact imported-source headword; not a source-independent case or coverage evidence",
+          "text": "tail",
+          "packId": "kaikki-zhwiktionary-zh-zh-zhongwen-label",
+          "encounterId": "97307a9f-0487-4a63-bfef-5c01daab82ca",
+          "entryId": "line:1",
+          "senseId": "line:1:s1"
+        }
+      ],
+      "independentSnapshots": 3,
+      "exportedEntries": 3,
+      "explicitReviewEvents": 3,
+      "snapshotsAndReviewSurviveUninstall": true
+    }
+  ]
+}

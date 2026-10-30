@@ -33,13 +33,14 @@ syncBuiltinESMExports()
 app.commandLine.appendSwitch('disable-gpu')
 app.commandLine.appendSwitch('disable-background-networking')
 app.commandLine.appendSwitch('disable-component-update')
-const choices = phase === 'fresh' ? [...plan.packs.map(pack => pack.manifest), plan.update, null] : []
+const choices = phase === 'fresh' ? [...plan.packs.map(pack => pack.manifest), plan.large, plan.update, null] : []
 dialog.showOpenDialog = async () => {
   assert.ok(choices.length, 'No unplanned file chooser in offline test')
   const path = choices.shift()
   return { canceled: path === null, filePaths: path ? [path] : [] }
 }
 let saveCounter = 0
+let largeBoundary = null
 dialog.showSaveDialog = async () => ({ canceled: false, filePath: join(directory, `export-${phase}-${++saveCounter}.${saveCounter === 1 ? 'json' : 'md'}`) })
 dialog.showMessageBox = async () => ({ response: 0 })
 const pause = () => new Promise(resolve => setTimeout(resolve, 25))
@@ -107,6 +108,27 @@ async function run() {
       await call('release', opened.handle)
     }
     check((await call('packs.list')).length === 8, 'All eight real sample packages are installed, not just language menu options')
+    const boundaryPack = await call('packs.install')
+    check(boundaryPack.installed && boundaryPack.pack.manifest.schemaVersion === 2, 'Actual trusted IPC installs the explicitly synthetic manifest2 sense-boundary package')
+    const boundaryText = 'synthetic boundary word'
+    const boundaryHandle = await call('openInput', { text: boundaryText, language: 'en' })
+    const boundaryInput = { handle: boundaryHandle.handle, span: { start: 0, end: boundaryText.length, exact: boundaryText }, language: 'en', glossLanguage: 'en' }
+    const boundaryLookup = await call('offlineLookup', boundaryInput)
+    const boundaryHit = boundaryLookup.results.find(hit => hit.pack.packId === boundaryPack.pack.manifest.packId)
+    check(boundaryHit && boundaryHit.entry.senses.length === 225, 'Actual Electron SQLite/preload/main path returns all 225 synthetic senses without truncating at 100')
+    const lastBoundarySense = boundaryHit.entry.senses.at(-1)
+    const boundaryEncounter = await call('saveOffline', { ...boundaryInput, packId: boundaryHit.pack.packId, packVersion: boundaryHit.pack.version, packSha256: boundaryHit.pack.dbSha256, entryId: boundaryHit.entry.id, senseId: lastBoundarySense.id })
+    const boundaryDetail = await call('get', boundaryEncounter.id)
+    check(boundaryDetail.encounter.explanations[0].pack.schemaVersion === 2 && boundaryDetail.encounter.explanations[0].sense.id === lastBoundarySense.id && boundaryDetail.encounter.explanations[0].sense.glosses[0] === 'Self-authored synthetic boundary sense 225', 'Actual history IPC retains manifest2 and the selected 225th synthetic sense')
+    await call('export', 'json')
+    const boundaryExport = JSON.parse(readFileSync(join(directory, 'export-fresh-1.json'), 'utf8')).entries.find(entry => entry.encounterId === boundaryEncounter.id)
+    check(boundaryExport && boundaryExport.explanation.pack.schemaVersion === 2 && boundaryExport.explanation.sense.id === lastBoundarySense.id, 'Actual export IPC preserves manifest2 and the last selected synthetic sense')
+    largeBoundary = { synthetic: true, independentCoverageEvidence: false, readableSenses: 225, selectedSenseId: lastBoundarySense.id, savedManifestSchema: boundaryExport.explanation.pack.schemaVersion, exported: true }
+    await call('remove', boundaryEncounter.id)
+    await call('packs.uninstall', boundaryPack.pack.manifest.packId)
+    await call('release', boundaryHandle.handle)
+    saveCounter = 0
+    check((await call('packs.list')).length === 8 && (await call('list', { pageSize: 50 })).total === 8, 'Removing the synthetic boundary encounter/package restores the original eight-language learning matrix')
     const english = plan.packs[0]
     await call('packs.setEnabled', english.packId, false)
     let handle = await call('openInput', { text: english.word, language: 'en' })
@@ -177,7 +199,7 @@ async function run() {
   }
   check(permissions.policies === 1 && permissions.requests === 0, 'Production permission policy installs, but offline use requests no media or new permission')
   check(network.main === 0 && network.renderer === 0, 'Actual main and renderer paths attempted zero external requests while offline')
-  console.log('LINGOBAR_OFFLINE_RESULT:' + JSON.stringify({ phase, electron: process.versions.electron, node: process.versions.node, sqlite: process.versions.sqlite, chromium: process.versions.chrome, platform: process.platform, arch: process.arch, checks, network, permissions, hardwareAcceptance: false }))
+  console.log('LINGOBAR_OFFLINE_RESULT:' + JSON.stringify({ phase, electron: process.versions.electron, node: process.versions.node, sqlite: process.versions.sqlite, chromium: process.versions.chrome, platform: process.platform, arch: process.arch, checks, network, permissions, syntheticLargeBoundary: largeBoundary, hardwareAcceptance: false }))
   app.quit()
 }
 run().catch(fail)

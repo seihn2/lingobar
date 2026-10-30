@@ -28,9 +28,19 @@ async function main() {
     for (const record of records) for (const sense of record.senses || []) if (sense.glosses?.length) sense.glosses = sense.glosses.map(value => value + ' [synthetic lifecycle update]')
     writeFileSync(input, records.map(record => JSON.stringify(record)).join('\n') + '\n')
     const metadata = JSON.parse(readFileSync(join(root, 'test/fixtures/offline-dictionaries/en.metadata.json'), 'utf8'))
+    const largeInput = join(directory, 'synthetic-many-senses.jsonl')
+    writeFileSync(largeInput, JSON.stringify({ word: 'synthetic boundary word', lang_code: 'en', pos: 'noun', senses: Array.from({ length: 225 }, (_, index) => ({ glosses: [`Self-authored synthetic boundary sense ${index + 1}`] })) }) + '\n')
+    const large = join(directory, 'packs', 'synthetic-many-senses')
+    const largeManifest = await buildDictionaryPack({ input: largeInput, output: large, manifest: {
+      packId: 'synthetic-many-senses-boundary', version: 'boundary-v2', sourceLanguage: 'en', glossLanguage: 'en',
+      sourceName: 'Self-authored synthetic sense-boundary fixture', sourceUrl: 'https://example.invalid/synthetic-boundary',
+      sourceRevision: 'synthetic-boundary-v2', license: 'CC0-1.0 (self-authored synthetic fixture)', licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
+      attribution: 'Self-authored test strings only; no real dictionary coverage or semantic quality claim.'
+    } })
+    assert.equal(largeManifest.schemaVersion, 2)
     const updated = join(directory, 'packs', 'en-updated')
     await buildDictionaryPack({ input, output: updated, manifest: { ...metadata, version: 'lifecycle-v2', sourceRevision: `${metadata.sourceRevision}; synthetic lifecycle test modification` } })
-    writeFileSync(join(directory, 'plan.json'), JSON.stringify({ root, directory, packs, update: join(updated, 'manifest.json') }))
+    writeFileSync(join(directory, 'plan.json'), JSON.stringify({ root, directory, packs, large: join(large, 'manifest.json'), update: join(updated, 'manifest.json') }))
     const results = []
     for (const phase of ['fresh', 'restart']) {
       const env = { ...process.env, LINGOBAR_OFFLINE_FIXTURE_DIR: directory, LINGOBAR_OFFLINE_FIXTURE_PHASE: phase,

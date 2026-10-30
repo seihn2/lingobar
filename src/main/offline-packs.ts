@@ -15,7 +15,7 @@ const clone = <T>(value: T): T => structuredClone(value)
 export function validateOfflineManifest(value: unknown): OfflinePackManifest {
   if (!object(value)) return fail()
   const keys = ['schemaVersion', 'packId', 'version', 'sourceLanguage', 'glossLanguage', 'sourceName', 'sourceUrl', 'sourceRevision', 'license', 'licenseUrl', 'attribution', 'dbSha256', 'counts']
-  if (Object.keys(value).length !== keys.length || keys.some(key => !Object.hasOwn(value, key)) || value.schemaVersion !== 1 || !text(value.packId, 100) || !ID.test(value.packId) || !text(value.version, 100) ||
+  if (Object.keys(value).length !== keys.length || keys.some(key => !Object.hasOwn(value, key)) || (value.schemaVersion !== 1 && value.schemaVersion !== 2) || !text(value.packId, 100) || !ID.test(value.packId) || !text(value.version, 100) ||
     !text(value.sourceLanguage, 40) || !LANGUAGE.test(value.sourceLanguage) || !text(value.glossLanguage, 40) || !LANGUAGE.test(value.glossLanguage) ||
     !text(value.sourceName, 2000) || !text(value.sourceUrl, 2000) || !text(value.sourceRevision, 2000) || !text(value.license, 2000) || !text(value.licenseUrl, 2000) || !text(value.attribution, 16000) ||
     typeof value.dbSha256 !== 'string' || !/^[a-f0-9]{64}$/.test(value.dbSha256) || !object(value.counts) || Object.keys(value.counts).length !== 3) return fail()
@@ -155,7 +155,12 @@ export class OfflinePacks {
       if (results.length >= 30) break
       try {
         const db = this.connect(pack), seen = new Set<string>()
-        const direct = db.prepare('SELECT id,headword,language,readings_json,pos,forms_json FROM entries WHERE language=? AND (headword=? OR headword_nfc=?) LIMIT 30').all(pack.manifest.sourceLanguage, input.text, normalized)
+        // Keep both predicates as complete value-index lookups. Factoring language
+        // outside OR made SQLite scan every entry of that language in real packs.
+        const exact = db.prepare('SELECT rowid AS lookup_order,id,headword,language,readings_json,pos,forms_json FROM entries WHERE language=? AND headword=? ORDER BY rowid LIMIT 30').all(pack.manifest.sourceLanguage, input.text)
+        const canonical = db.prepare('SELECT rowid AS lookup_order,id,headword,language,readings_json,pos,forms_json FROM entries WHERE language=? AND headword_nfc=? ORDER BY rowid LIMIT 30').all(pack.manifest.sourceLanguage, normalized)
+        const direct = [...new Map([...exact, ...canonical].map(row => [String(row.id), row])).values()]
+          .sort((a, b) => Number(a.lookup_order) - Number(b.lookup_order)).slice(0, 30)
         for (const row of direct) {
           const entry = this.entry(db, row)
           if (!entry.senses.length || seen.has(entry.id)) continue
@@ -186,11 +191,16 @@ export class OfflinePacks {
     }
     const strings = (value: unknown, maximum: number): string[] => { const result = array(value, maximum); if (result.some(item => !text(item, 16000))) throw new Error('entry text'); return result as string[] }
     if (!text(raw.id, 200) || !text(raw.headword, 1024) || !text(raw.language, 40) || (raw.pos !== null && !text(raw.pos, 256))) throw new Error('entry')
+    // A source can define a spacing symbol as punctuation. Preserve it literally;
+    // blank ordinary words and control characters are not admitted as that exception.
+    if (!raw.headword.trim() && (raw.pos !== 'punct' || /[\u0000-\u001f\u007f-\u009f]/u.test(raw.headword))) throw new Error('entry headword')
     const forms = array(raw.forms_json, 500).map(item => {
       if (!object(item) || !text(item.form, 1024) || !Array.isArray(item.tags) || item.tags.length > 100 || item.tags.some(tag => !text(tag, 256))) throw new Error('entry forms')
       return { form: item.form, tags: item.tags as string[] }
     })
-    const senses: OfflineSense[] = db.prepare('SELECT id,glosses_json,tags_json,examples_json FROM senses WHERE entry_id=? ORDER BY rowid LIMIT 100').all(raw.id).map(sense => {
+    const senseRows = db.prepare('SELECT id,glosses_json,tags_json,examples_json FROM senses WHERE entry_id=? ORDER BY rowid LIMIT 257').all(raw.id)
+    if (senseRows.length > 256) throw new Error('Entry exceeds the supported 256-sense bound; no senses were truncated.')
+    const senses: OfflineSense[] = senseRows.map(sense => {
       if (!text(sense.id, 200)) throw new Error('sense')
       const examples = array(sense.examples_json, 20).map(item => {
         if (!object(item) || !text(item.text, 16000) || (item.translation !== null && !text(item.translation, 16000))) throw new Error('example')

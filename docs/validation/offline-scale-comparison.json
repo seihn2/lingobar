@@ -1,0 +1,467 @@
+{
+  "schemaVersion": 1,
+  "comparedAt": "2026-10-30T19:20:48.174Z",
+  "baseline": {
+    "coldMs": 394.1116179999999,
+    "warm": {
+      "count": 480,
+      "minMs": 239.0877909999981,
+      "medianMs": 345.53195900001447,
+      "p95Ms": 542.8859909999883,
+      "maxMs": 1266.4606689999928,
+      "hitsOnly": {
+        "count": 480,
+        "minMs": 239.0877909999981,
+        "medianMs": 345.53195900001447,
+        "p95Ms": 542.8859909999883,
+        "maxMs": 1266.4606689999928
+      },
+      "byCase": [
+        {
+          "id": "lemma-dog",
+          "count": 20,
+          "minMs": 248.21994199999608,
+          "medianMs": 348.87196399999084,
+          "p95Ms": 530.544968000002,
+          "maxMs": 649.140310000017
+        },
+        {
+          "id": "lemma-water",
+          "count": 20,
+          "minMs": 265.4150410000002,
+          "medianMs": 367.9713869999996,
+          "p95Ms": 676.8307540000096,
+          "maxMs": 754.7181720000008
+        },
+        {
+          "id": "lemma-school",
+          "count": 20,
+          "minMs": 239.0877909999981,
+          "medianMs": 351.84189100000003,
+          "p95Ms": 661.4124860000011,
+          "maxMs": 876.4713029999984
+        },
+        {
+          "id": "lemma-teacher",
+          "count": 20,
+          "minMs": 260.7406529999862,
+          "medianMs": 338.44412400000147,
+          "p95Ms": 400.5930410000001,
+          "maxMs": 848.8844239999889
+        },
+        {
+          "id": "lemma-japanese",
+          "count": 20,
+          "minMs": 257.18107699998654,
+          "medianMs": 346.4610920000123,
+          "p95Ms": 441.3812990000006,
+          "maxMs": 478.7816720000119
+        },
+        {
+          "id": "lemma-news",
+          "count": 20,
+          "minMs": 253.94959900001413,
+          "medianMs": 335.66954799999075,
+          "p95Ms": 526.8368039999914,
+          "maxMs": 583.9714169999934
+        },
+        {
+          "id": "lemma-game",
+          "count": 20,
+          "minMs": 242.51236100000096,
+          "medianMs": 335.49909700000717,
+          "p95Ms": 444.3687839999984,
+          "maxMs": 497.0382979999995
+        },
+        {
+          "id": "lemma-time",
+          "count": 20,
+          "minMs": 249.0263879999984,
+          "medianMs": 351.2687909999804,
+          "p95Ms": 526.666784999994,
+          "maxMs": 778.6800379999986
+        },
+        {
+          "id": "lemma-word",
+          "count": 20,
+          "minMs": 253.91414899998927,
+          "medianMs": 358.2588390000019,
+          "p95Ms": 559.0096180000037,
+          "maxMs": 656.4567439999955
+        },
+        {
+          "id": "lemma-study",
+          "count": 20,
+          "minMs": 267.85207900000023,
+          "medianMs": 348.9497100000008,
+          "p95Ms": 517.5334049999947,
+          "maxMs": 610.707116000005
+        },
+        {
+          "id": "lemma-eat",
+          "count": 20,
+          "minMs": 249.40979000000516,
+          "medianMs": 338.10399099998176,
+          "p95Ms": 745.4876769999973,
+          "maxMs": 944.773334999998
+        },
+        {
+          "id": "lemma-read",
+          "count": 20,
+          "minMs": 264.2021039999963,
+          "medianMs": 334.46831500000553,
+          "p95Ms": 518.2008710000082,
+          "maxMs": 541.417935999998
+        },
+        {
+          "id": "lemma-go",
+          "count": 20,
+          "minMs": 248.95940600000904,
+          "medianMs": 338.99782400002005,
+          "p95Ms": 444.10968100000173,
+          "maxMs": 863.101370999997
+        },
+        {
+          "id": "lemma-drink",
+          "count": 20,
+          "minMs": 254.96478200002457,
+          "medianMs": 320.5511720000068,
+          "p95Ms": 517.3315020000009,
+          "maxMs": 542.8859909999883
+        },
+        {
+          "id": "lemma-new",
+          "count": 20,
+          "minMs": 242.21676599999773,
+          "medianMs": 315.94938400000683,
+          "p95Ms": 467.88819499999954,
+          "maxMs": 521.9010800000106
+        },
+        {
+          "id": "lemma-thanks",
+          "count": 20,
+          "minMs": 265.1504050000076,
+          "medianMs": 323.7749509999994,
+          "p95Ms": 463.84487600000284,
+          "maxMs": 493.9922060000099
+        },
+        {
+          "id": "selection-newspaper",
+          "count": 20,
+          "minMs": 258.80907899999875,
+          "medianMs": 345.79760200000055,
+          "p95Ms": 489.9565999999759,
+          "maxMs": 779.7746069999994
+        },
+        {
+          "id": "selection-new",
+          "count": 20,
+          "minMs": 252.92053099999612,
+          "medianMs": 330.52245499999844,
+          "p95Ms": 421.0968559999892,
+          "maxMs": 1266.4606689999928
+        },
+        {
+          "id": "selection-language",
+          "count": 20,
+          "minMs": 252.43726000000242,
+          "medianMs": 345.53195900001447,
+          "p95Ms": 484.6885100000036,
+          "maxMs": 553.0705220000091
+        },
+        {
+          "id": "selection-eat-past",
+          "count": 20,
+          "minMs": 262.6745579999988,
+          "medianMs": 350.71990100000403,
+          "p95Ms": 489.5283819999968,
+          "maxMs": 539.3367410000064
+        },
+        {
+          "id": "selection-read-past",
+          "count": 20,
+          "minMs": 271.0330469999899,
+          "medianMs": 335.6736170000004,
+          "p95Ms": 605.0055379999976,
+          "maxMs": 973.4063500000047
+        },
+        {
+          "id": "selection-go-polite",
+          "count": 20,
+          "minMs": 264.755387000012,
+          "medianMs": 353.7723499999993,
+          "p95Ms": 716.7843090000097,
+          "maxMs": 779.9229070000001
+        },
+        {
+          "id": "selection-drink-polite",
+          "count": 20,
+          "minMs": 250.411128000007,
+          "medianMs": 338.46124399999826,
+          "p95Ms": 480.0595670000039,
+          "maxMs": 844.3231289999967
+        },
+        {
+          "id": "selection-teacher",
+          "count": 20,
+          "minMs": 260.49030000000494,
+          "medianMs": 343.0782659999968,
+          "p95Ms": 477.0514739999926,
+          "maxMs": 562.6037099999958
+        }
+      ]
+    },
+    "sampledPeakRssBytes": 58175488,
+    "network": {
+      "attempts": 0,
+      "providerCalls": 0
+    }
+  },
+  "after": {
+    "coldMs": 53.03772200000003,
+    "warm": {
+      "count": 480,
+      "minMs": 0.2353859999998349,
+      "medianMs": 0.6057079999995949,
+      "p95Ms": 1.8995350000000144,
+      "maxMs": 4.5044779999998354,
+      "hitsOnly": {
+        "count": 480,
+        "minMs": 0.2353859999998349,
+        "medianMs": 0.6057079999995949,
+        "p95Ms": 1.8995350000000144,
+        "maxMs": 4.5044779999998354
+      },
+      "byCase": [
+        {
+          "id": "lemma-dog",
+          "count": 20,
+          "minMs": 0.3455380000000332,
+          "medianMs": 0.5155419999996411,
+          "p95Ms": 1.4397280000002866,
+          "maxMs": 2.4464129999996658
+        },
+        {
+          "id": "lemma-water",
+          "count": 20,
+          "minMs": 0.6881189999999151,
+          "medianMs": 0.9925459999999475,
+          "p95Ms": 1.800738999999794,
+          "maxMs": 1.9903449999997065
+        },
+        {
+          "id": "lemma-school",
+          "count": 20,
+          "minMs": 0.2788690000002134,
+          "medianMs": 0.4226939999998649,
+          "p95Ms": 0.892978000000312,
+          "maxMs": 1.1053040000001602
+        },
+        {
+          "id": "lemma-teacher",
+          "count": 20,
+          "minMs": 0.31676400000014837,
+          "medianMs": 0.3774309999998877,
+          "p95Ms": 1.4096709999998893,
+          "maxMs": 1.6466999999997824
+        },
+        {
+          "id": "lemma-japanese",
+          "count": 20,
+          "minMs": 0.25766299999986586,
+          "medianMs": 0.3025790000001507,
+          "p95Ms": 0.6169150000000627,
+          "maxMs": 0.7999159999999392
+        },
+        {
+          "id": "lemma-news",
+          "count": 20,
+          "minMs": 0.2984240000000682,
+          "medianMs": 0.3843160000001262,
+          "p95Ms": 0.9738939999997456,
+          "maxMs": 1.1192360000000008
+        },
+        {
+          "id": "lemma-game",
+          "count": 20,
+          "minMs": 0.2353859999998349,
+          "medianMs": 0.32348599999977523,
+          "p95Ms": 0.725104999999985,
+          "maxMs": 0.8848299999999654
+        },
+        {
+          "id": "lemma-time",
+          "count": 20,
+          "minMs": 0.44878300000027593,
+          "medianMs": 0.7532049999999799,
+          "p95Ms": 1.8856370000003153,
+          "maxMs": 2.484915000000001
+        },
+        {
+          "id": "lemma-word",
+          "count": 20,
+          "minMs": 0.25086200000032477,
+          "medianMs": 0.30406300000004194,
+          "p95Ms": 1.0513670000000275,
+          "maxMs": 1.9567489999999452
+        },
+        {
+          "id": "lemma-study",
+          "count": 20,
+          "minMs": 0.42223399999966205,
+          "medianMs": 0.6939189999998234,
+          "p95Ms": 1.3715659999998024,
+          "maxMs": 1.7656200000001263
+        },
+        {
+          "id": "lemma-eat",
+          "count": 20,
+          "minMs": 0.8366019999998571,
+          "medianMs": 1.0675630000000638,
+          "p95Ms": 1.7846809999996367,
+          "maxMs": 2.860826999999972
+        },
+        {
+          "id": "lemma-read",
+          "count": 20,
+          "minMs": 0.39031699999986813,
+          "medianMs": 0.5994519999999284,
+          "p95Ms": 1.2327330000002803,
+          "maxMs": 3.917424999999639
+        },
+        {
+          "id": "lemma-go",
+          "count": 20,
+          "minMs": 0.9986650000000736,
+          "medianMs": 1.5788539999998648,
+          "p95Ms": 2.8400910000000295,
+          "maxMs": 4.5044779999998354
+        },
+        {
+          "id": "lemma-drink",
+          "count": 20,
+          "minMs": 0.49415499999986423,
+          "medianMs": 0.7887539999996989,
+          "p95Ms": 2.0915399999998954,
+          "maxMs": 2.5843589999999494
+        },
+        {
+          "id": "lemma-new",
+          "count": 20,
+          "minMs": 0.4123290000002271,
+          "medianMs": 0.5745510000001559,
+          "p95Ms": 1.3274400000000242,
+          "maxMs": 2.966985999999906
+        },
+        {
+          "id": "lemma-thanks",
+          "count": 20,
+          "minMs": 0.2565359999998691,
+          "medianMs": 0.41014099999983955,
+          "p95Ms": 1.045140000000174,
+          "maxMs": 1.6204149999998663
+        },
+        {
+          "id": "selection-newspaper",
+          "count": 20,
+          "minMs": 0.2964630000001307,
+          "medianMs": 0.407694999999876,
+          "p95Ms": 1.1838849999999184,
+          "maxMs": 1.27398200000016
+        },
+        {
+          "id": "selection-new",
+          "count": 20,
+          "minMs": 0.37552499999992506,
+          "medianMs": 0.640969000000041,
+          "p95Ms": 1.7709279999999126,
+          "maxMs": 3.089903999999933
+        },
+        {
+          "id": "selection-language",
+          "count": 20,
+          "minMs": 0.2590220000001864,
+          "medianMs": 0.3888050000000476,
+          "p95Ms": 0.8050109999999222,
+          "maxMs": 2.4759830000002694
+        },
+        {
+          "id": "selection-eat-past",
+          "count": 20,
+          "minMs": 0.5885840000000826,
+          "medianMs": 0.8798730000003161,
+          "p95Ms": 2.613076000000092,
+          "maxMs": 2.642072999999982
+        },
+        {
+          "id": "selection-read-past",
+          "count": 20,
+          "minMs": 0.3696669999999358,
+          "medianMs": 0.6292819999998756,
+          "p95Ms": 0.993413000000146,
+          "maxMs": 1.043934999999692
+        },
+        {
+          "id": "selection-go-polite",
+          "count": 20,
+          "minMs": 0.5816099999997277,
+          "medianMs": 0.7388190000001487,
+          "p95Ms": 2.0523229999998875,
+          "maxMs": 2.2956060000001344
+        },
+        {
+          "id": "selection-drink-polite",
+          "count": 20,
+          "minMs": 0.3415460000001076,
+          "medianMs": 0.5373479999998381,
+          "p95Ms": 1.1841640000002371,
+          "maxMs": 1.4695119999996678
+        },
+        {
+          "id": "selection-teacher",
+          "count": 20,
+          "minMs": 0.3510440000000017,
+          "medianMs": 0.5458370000001196,
+          "p95Ms": 1.4877689999998438,
+          "maxMs": 1.7937459999998282
+        }
+      ]
+    },
+    "sampledPeakRssBytes": 60780544,
+    "network": {
+      "attempts": 0,
+      "providerCalls": 0
+    }
+  },
+  "scope": "Same local SQLite files and fixed cases in two cloud Node processes; first connection means new SQLite connections, not flushed OS caches; no semantic or native-hardware accuracy claim.",
+  "sameInputs": true,
+  "sameManifestAndDatabaseHashes": true,
+  "sameOrderedHitArrays": true,
+  "senseIdBoundary": "Captured hit arrays include stable pack/entry identity, match path and sense counts. They do not include individual sense IDs; production sense retrieval SQL and immutable database files were unchanged.",
+  "retrieval": {
+    "cases": 24,
+    "withAnyResult": 24,
+    "withExpectedHeadwordCandidate": 22,
+    "expectedCandidateDenominator": 24,
+    "withChineseResult": 23,
+    "chineseQueryDenominator": 24,
+    "matchPaths": {
+      "exact": 65,
+      "form": 13
+    },
+    "semanticAccuracyMeasured": false
+  },
+  "installedCoverage": {
+    "entries": 266301,
+    "senses": 331066,
+    "forms": 1356961,
+    "chineseEntries": 120753,
+    "chineseSenses": 147561,
+    "entryDenominator": 266301,
+    "senseDenominator": 331066,
+    "chineseEntryShare": 0.4534455371928757,
+    "chineseSenseShare": 0.4457147517413446,
+    "meaning": "Share of installed source records whose declared gloss language is Chinese. Sources overlap and are not deduplicated or sense-aligned; this is not translation quality or all-Japanese vocabulary coverage."
+  },
+  "reportPathNote": "Portable copy of the completed local report; workspace paths made relative. Measurements and observations unchanged."
+}

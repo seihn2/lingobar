@@ -15,7 +15,7 @@ const f = vi.hoisted(() => {
   const storage = { settings: () => ({ ...settings }), key: vi.fn(() => 'synthetic-test-key'), saved: () => [], saveCaptions: vi.fn() }
   const audio = { stop: vi.fn(), start: vi.fn(() => { throw new Error('no audio permitted') }) }
   const app = { setName: vi.fn(), setAppUserModelId: vi.fn(), setPath: vi.fn(), getPath: () => f.directory, getAppPath: () => '/synthetic-app', isPackaged: false, requestSingleInstanceLock: () => true, whenReady: () => Promise.resolve(), on: vi.fn(), quit: vi.fn() }
-  return { handlers, frame, contents, window, settings, queue, storage, audio, app, directory: '', provider: vi.fn(), renameCount: 0, failRename: 0, dialog: { showMessageBox: vi.fn(), showSaveDialog: vi.fn() } }
+  return { handlers, frame, contents, window, settings, queue, storage, audio, app, directory: '', provider: vi.fn(), renameCount: 0, failRename: 0, dialog: { showMessageBox: vi.fn(), showSaveDialog: vi.fn(), showOpenDialog: vi.fn() } }
 })
 vi.mock('node:fs', async original => {
   const actual = await original<typeof import('node:fs')>()
@@ -47,7 +47,7 @@ beforeEach(async () => {
   f.directory = mkdtempSync(join(tmpdir(), 'dictionary-ipc-')); f.queue.captions = [caption()]
   writeFileSync(join(f.directory, 'saved.json'), '[]'); writeFileSync(join(f.directory, 'learning-v1.json'), '{"schema":1,"sessions":[],"records":[]}')
   f.provider.mockReset().mockResolvedValue({ content: { schemaVersion: 1, status: 'ok', reasonCode: null, targetText: 'pick it up', headword: 'pick up', reading: null, partOfSpeech: '动词短语', contextMeaning: '拿起来', usageNote: null, examples: null }, finishReason: 'stop', usage: null, validationWarnings: [], promptVersion: 'dictionary-v1' })
-  f.dialog.showMessageBox.mockResolvedValue({ response: 0 }); f.dialog.showSaveDialog.mockResolvedValue({ canceled: true })
+  f.dialog.showMessageBox.mockResolvedValue({ response: 0 }); f.dialog.showSaveDialog.mockResolvedValue({ canceled: true }); f.dialog.showOpenDialog.mockResolvedValue({ canceled: true, filePaths: [] })
   vi.stubGlobal('fetch', vi.fn(() => { throw new Error('real network is forbidden') })); vi.stubGlobal('WebSocket', class { constructor() { throw new Error('real sockets are forbidden') } })
   vi.stubEnv('ELECTRON_RENDERER_URL', f.frame.url)
   await import('../src/main/index'); await settle()
@@ -57,6 +57,26 @@ afterEach(() => {
   rmSync(f.directory, { recursive: true, force: true }); vi.unstubAllEnvs(); vi.unstubAllGlobals()
 })
 describe('actual installed dictionary IPC and lifecycle', () => {
+  it('requires an explicit audio pause before opening the language-pack chooser', async () => {
+    f.audio.start.mockImplementationOnce(() => new Promise<void>(() => {}) as never)
+    void f.handlers.get('lingo:start')!(trusted())
+    await expect(invoke('packs-install')).rejects.toThrow('请先暂停聆听')
+    expect(f.dialog.showOpenDialog).not.toHaveBeenCalled()
+    expect(f.audio.stop).not.toHaveBeenCalled()
+    expect(readdirSync(f.directory).sort()).toEqual(['learning-v1.json', 'saved.json'])
+  })
+  it('does not install or stop audio started while the native chooser was open', async () => {
+    let choose!: (result: unknown) => void
+    f.dialog.showOpenDialog.mockImplementationOnce(() => new Promise(resolve => { choose = resolve }))
+    const pending = invoke('packs-install')
+    expect(f.dialog.showOpenDialog).toHaveBeenCalledOnce()
+    f.audio.start.mockImplementationOnce(() => new Promise<void>(() => {}) as never)
+    void f.handlers.get('lingo:start')!(trusted())
+    choose({ canceled: false, filePaths: [join(f.directory, 'never-read-manifest.json')] })
+    await expect(pending).rejects.toThrow('请先暂停聆听')
+    expect(f.audio.stop).not.toHaveBeenCalled()
+    expect(readdirSync(f.directory).sort()).toEqual(['learning-v1.json', 'saved.json'])
+  })
   it('trust-gates all narrow channels before data/credentials/provider access', () => {
     const channels = [...f.handlers.keys()].filter(name => name.startsWith('lingo:dictionary-'))
     expect(channels.length).toBeGreaterThan(15)

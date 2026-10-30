@@ -1,0 +1,2485 @@
+{
+  "schemaVersion": 1,
+  "scope": "Actual complete official single-language/label exports projected to lexical text, not all vocabulary coverage. Data independently CC BY-SA4.0; source partitions overlap and must not be deduplicated by these totals.",
+  "sourcePackages": 19,
+  "sqliteDatabaseBytes": 1464791040,
+  "sqliteBytesExclude": "Manifests, source/projection files, notices, archives and application binaries.",
+  "buildCodeBoundary": "buildSource.head records checkout HEAD, which may precede uncommitted tested changes; builderSha256 identifies the actual file. Final source commit and CI must be reported separately.",
+  "sources": [
+    {
+      "sourceDirectory": "data/enwiktionary-en-20261025",
+      "download": {
+        "url": "https://kaikki.org/dictionary/English/kaikki.org-dictionary-English.jsonl",
+        "startedAt": "2026-10-30T19:35:18.411215+00:00",
+        "maximumBytes": 3600000000,
+        "completed": true,
+        "finalUrl": "https://kaikki.org/dictionary/English/kaikki.org-dictionary-English.jsonl",
+        "status": 200,
+        "contentLength": "3430821398",
+        "lastModified": "Sun, 25 Oct 2026 10:36:02 GMT",
+        "etag": "\"6adddb92-cc7e2e16\"",
+        "contentEncoding": null,
+        "bytes": 3430821398,
+        "sha256": "3e73482c69b397338f019d7b4e5ac73bcf670369d0eb46e77fd6f098a79796e6",
+        "elapsedSeconds": 149.455,
+        "file": "data/enwiktionary-en-20261025/source.jsonl",
+        "edition": "enwiktionary",
+        "label": "English",
+        "extractionDate": "2026-10-25",
+        "dumpDate": "2026-10-01",
+        "sourceFacility": "Official single-language postprocessed/deprecated export, not bulk raw dump"
+      },
+      "source": {
+        "url": "https://kaikki.org/dictionary/English/kaikki.org-dictionary-English.jsonl",
+        "edition": "enwiktionary",
+        "label": "English",
+        "revision": "Extracted2026-10-25 from enwiktionary dump2026-10-01; official English single-language export",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "English Wiktionary contributors, extracted/published by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entries and author histories are at https://en.wiktionary.org/wiki/<headword>#English and their page histories. The explicit text projection removes every example/quotation, audio/media, etymology and unrelated field. The dictionary text remains CC BY-SA4.0 and is not relicensed under the application CC BY-NC4.0 license."
+      },
+      "projection": {
+        "schemaVersion": 1,
+        "kind": "kaikki-lexical-text-projection",
+        "source": {
+          "url": "https://kaikki.org/dictionary/English/kaikki.org-dictionary-English.jsonl",
+          "edition": "enwiktionary",
+          "label": "English",
+          "revision": "Extracted2026-10-25 from enwiktionary dump2026-10-01; official English single-language export",
+          "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "attribution": "English Wiktionary contributors, extracted/published by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entries and author histories are at https://en.wiktionary.org/wiki/<headword>#English and their page histories. The explicit text projection removes every example/quotation, audio/media, etymology and unrelated field. The dictionary text remains CC BY-SA4.0 and is not relicensed under the application CC BY-NC4.0 license."
+        },
+        "changes": "Kept word/language/part-of-speech, recorded form text/tags, redirects, written pronunciation fields, and sense glosses/raw_glosses/tags/form_of/alt_of. Removed all examples and quotations, media/audio fields and URLs, etymology, linkages and unrelated fields. No definitions, readings or translations generated; no Unicode normalization.",
+        "rawSha256": "3e73482c69b397338f019d7b4e5ac73bcf670369d0eb46e77fd6f098a79796e6",
+        "projectionSha256": "6abe016a5e0663343903608e49439712fc3d52e35867c084b10e03138448fc69",
+        "inputBytes": 3430821398,
+        "outputBytes": 425468118,
+        "inputRecords": 1499161,
+        "outputRecords": 1499161,
+        "blankLines": 0,
+        "removedExamples": 772117,
+        "recordsWithGlosses": 1497828,
+        "sensesWithGlosses": 1793713,
+        "languageCounts": {
+          "en": 1499161
+        },
+        "maxInputRecordUtf8Bytes": 2086658,
+        "maxOutputRecordUtf8Bytes": 51107
+      },
+      "manifest": {
+        "schemaVersion": 2,
+        "packId": "kaikki-enwiktionary-en-en",
+        "version": "2026-10-25-text-1",
+        "sourceLanguage": "en",
+        "glossLanguage": "en",
+        "sourceName": "English Wiktionary — English, via Kaikki.org",
+        "sourceUrl": "https://kaikki.org/dictionary/English/kaikki.org-dictionary-English.jsonl",
+        "sourceRevision": "Extracted2026-10-25 from enwiktionary dump2026-10-01; official English single-language export",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "English Wiktionary contributors, extracted/published by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entries and author histories are at https://en.wiktionary.org/wiki/<headword>#English and their page histories. The explicit text projection removes every example/quotation, audio/media, etymology and unrelated field. The dictionary text remains CC BY-SA4.0 and is not relicensed under the application CC BY-NC4.0 license.",
+        "dbSha256": "fa070b5d73647091d8559a0443e379a75961b1b68c756967cdf0dbea108684bc",
+        "counts": {
+          "entries": 1497828,
+          "senses": 1793713,
+          "forms": 1686019
+        }
+      },
+      "manifestByteSha256": "9a2cf34c27434bc862f251b9c45350b9c79bb81ad32125dab30dab8c7c418211",
+      "databaseBytes": 695906304,
+      "buildReport": {
+        "schemaVersion": 1,
+        "input": {
+          "file": "text.jsonl",
+          "bytes": 425468118,
+          "sha256": "6abe016a5e0663343903608e49439712fc3d52e35867c084b10e03138448fc69",
+          "compression": "none"
+        },
+        "lines": 1499161,
+        "records": {
+          "parsed": 1499161,
+          "otherLanguage": 0,
+          "matchingLanguage": 1499161,
+          "skippedNoLexicalContent": 1333,
+          "formLinkOnly": 0,
+          "withGlosses": 1497828
+        },
+        "maxSourceSenses": 157,
+        "output": {
+          "packId": "kaikki-enwiktionary-en-en",
+          "version": "2026-10-25-text-1",
+          "dbSha256": "fa070b5d73647091d8559a0443e379a75961b1b68c756967cdf0dbea108684bc",
+          "counts": {
+            "entries": 1497828,
+            "senses": 1793713,
+            "forms": 1686019
+          }
+        },
+        "skippedMeaning": "skippedNoLexicalContent records have neither a usable gloss nor an explicit form_of target; formLinkOnly records add source form links but no fabricated answer."
+      },
+      "build": {
+        "buildSource": {
+          "head": "348fbc3cb76114fab59c1a8f0650e41469d8f554",
+          "builderSha256": "139ede6571276e6c81ba2797796a10f37d14316b2602a9e29dc35c25e827c586"
+        },
+        "elapsedSeconds": 93.83641455899999,
+        "resourceUsage": {
+          "userCPUTime": 67556829,
+          "systemCPUTime": 22818776,
+          "maxRSS": 327316,
+          "sharedMemorySize": 0,
+          "unsharedDataSize": 0,
+          "unsharedStackSize": 0,
+          "minorPageFault": 199713,
+          "majorPageFault": 0,
+          "swappedOut": 0,
+          "fsRead": 0,
+          "fsWrite": 4214376,
+          "ipcSent": 0,
+          "ipcReceived": 0,
+          "signalsCount": 0,
+          "voluntaryContextSwitches": 33986,
+          "involuntaryContextSwitches": 6490
+        },
+        "databaseBytes": 695906304
+      }
+    },
+    {
+      "sourceDirectory": "data/enwiktionary-ja-20261025",
+      "download": {
+        "url": "https://kaikki.org/dictionary/Japanese/kaikki.org-dictionary-Japanese.jsonl",
+        "status": 200,
+        "contentLength": "387568764",
+        "lastModified": "Sun, 25 Oct 2026 10:46:22 GMT",
+        "etag": "\"6addddfe-1719d47c\"",
+        "contentEncoding": null,
+        "startedAt": "2026-10-30T19:02:38Z",
+        "maximumBytes": 536870912,
+        "completed": true,
+        "bytes": 387568764,
+        "sha256": "986dd064355ff3a59721f5d45b396473174707c633b64b8e0eb2afa4bd9fdc89",
+        "elapsedSeconds": 19.212,
+        "file": "data/enwiktionary-ja-20261025/source.jsonl"
+      },
+      "source": {
+        "url": "https://kaikki.org/dictionary/Japanese/kaikki.org-dictionary-Japanese.jsonl",
+        "edition": "enwiktionary",
+        "label": "Japanese",
+        "revision": "Extracted2026-10-25 from enwiktionary dump2026-10-01; Wiktextractf9fe161/wikitextprocessor6f96ddf",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://en.wiktionary.org/wiki/<headword>#Japanese and its page history. The text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+      },
+      "projection": {
+        "schemaVersion": 1,
+        "kind": "kaikki-lexical-text-projection",
+        "source": {
+          "url": "https://kaikki.org/dictionary/Japanese/kaikki.org-dictionary-Japanese.jsonl",
+          "edition": "enwiktionary",
+          "label": "Japanese",
+          "revision": "Extracted2026-10-25 from enwiktionary dump2026-10-01; Wiktextractf9fe161/wikitextprocessor6f96ddf",
+          "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://en.wiktionary.org/wiki/<headword>#Japanese and its page history. The text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+        },
+        "changes": "Kept word/language/part-of-speech, recorded form text/tags, redirects, written pronunciation fields, and sense glosses/raw_glosses/tags/form_of/alt_of. Removed all examples and quotations, media/audio fields and URLs, etymology, linkages and unrelated fields. No definitions, readings or translations generated; no Unicode normalization.",
+        "rawSha256": "986dd064355ff3a59721f5d45b396473174707c633b64b8e0eb2afa4bd9fdc89",
+        "projectionSha256": "01ca74481c202c6fe173fed4dcad15de5925772648c2d9ca3200f993b7e597e6",
+        "inputBytes": 387568764,
+        "outputBytes": 102526354,
+        "inputRecords": 200030,
+        "outputRecords": 200030,
+        "blankLines": 0,
+        "removedExamples": 22436,
+        "recordsWithGlosses": 145548,
+        "sensesWithGlosses": 183505,
+        "languageCounts": {
+          "ja": 200030
+        },
+        "maxInputRecordUtf8Bytes": 87122,
+        "maxOutputRecordUtf8Bytes": 18167
+      },
+      "manifest": {
+        "schemaVersion": 1,
+        "packId": "kaikki-enwiktionary-ja-en",
+        "version": "2026-10-25-text-1",
+        "sourceLanguage": "ja",
+        "glossLanguage": "en",
+        "sourceName": "Wiktionary via Kaikki.org — Japanese, English definitions",
+        "sourceUrl": "https://kaikki.org/dictionary/Japanese/kaikki.org-dictionary-Japanese.jsonl",
+        "sourceRevision": "Extracted2026-10-25 from enwiktionary dump2026-10-01; Wiktextractf9fe161/wikitextprocessor6f96ddf",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://en.wiktionary.org/wiki/<headword>#Japanese and its page history. The text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license.",
+        "dbSha256": "4a3b45b0b5bb984f43b314133cbc852252b81980642fdbdd728fd74b392affdb",
+        "counts": {
+          "entries": 145548,
+          "senses": 183505,
+          "forms": 1168354
+        }
+      },
+      "manifestByteSha256": "7525d4573493662d607e661ff980bbd68cca83e63c890074cd47a2a429e291f7",
+      "databaseBytes": 246419456,
+      "buildReport": {
+        "schemaVersion": 1,
+        "input": {
+          "file": "text.jsonl",
+          "bytes": 102526354,
+          "sha256": "01ca74481c202c6fe173fed4dcad15de5925772648c2d9ca3200f993b7e597e6",
+          "compression": "none"
+        },
+        "lines": 200030,
+        "records": {
+          "parsed": 200030,
+          "otherLanguage": 0,
+          "matchingLanguage": 200030,
+          "skippedNoLexicalContent": 54482,
+          "formLinkOnly": 0,
+          "withGlosses": 145548
+        },
+        "output": {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "version": "2026-10-25-text-1",
+          "dbSha256": "4a3b45b0b5bb984f43b314133cbc852252b81980642fdbdd728fd74b392affdb",
+          "counts": {
+            "entries": 145548,
+            "senses": 183505,
+            "forms": 1168354
+          }
+        },
+        "skippedMeaning": "skippedNoLexicalContent records have neither a usable gloss nor an explicit form_of target; formLinkOnly records add source form links but no fabricated answer."
+      },
+      "build": {
+        "elapsedSeconds": 23.138271767,
+        "resourceUsage": {
+          "userCPUTime": 18260270,
+          "systemCPUTime": 5283082,
+          "maxRSS": 174544,
+          "sharedMemorySize": 0,
+          "unsharedDataSize": 0,
+          "unsharedStackSize": 0,
+          "minorPageFault": 55090,
+          "majorPageFault": 0,
+          "swappedOut": 0,
+          "fsRead": 0,
+          "fsWrite": 1466616,
+          "ipcSent": 0,
+          "ipcReceived": 0,
+          "signalsCount": 0,
+          "voluntaryContextSwitches": 12311,
+          "involuntaryContextSwitches": 1531
+        }
+      }
+    },
+    {
+      "sourceDirectory": "data/zhwiktionary-de-hans-label-20261029",
+      "download": {
+        "url": "https://kaikki.org/zhwiktionary/%E5%BE%B7%E8%AF%AD/kaikki.org-dictionary-%E5%BE%B7%E8%AF%AD.jsonl",
+        "sourceLabel": "德语",
+        "status": 200,
+        "contentLength": 51864427,
+        "etag": "\"6ae3b733-317636b\"",
+        "lastModified": "Thu, 29 Oct 2026 21:14:27 GMT",
+        "retrievedAt": "2026-10-30T19:33:56Z",
+        "completed": true,
+        "bytes": 51864427,
+        "sha256": "09e48d874e83eba8f726d0bd307441e869302555775ca4959766d6999cc75d8d",
+        "elapsedSeconds": 4.177,
+        "file": "data/zhwiktionary-de-hans-label-20261029/source.jsonl"
+      },
+      "source": {
+        "url": "https://kaikki.org/zhwiktionary/%E5%BE%B7%E8%AF%AD/kaikki.org-dictionary-%E5%BE%B7%E8%AF%AD.jsonl",
+        "edition": "zhwiktionary",
+        "label": "德语",
+        "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:27 GMT",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 德语 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+      },
+      "projection": {
+        "schemaVersion": 1,
+        "kind": "kaikki-lexical-text-projection",
+        "source": {
+          "url": "https://kaikki.org/zhwiktionary/%E5%BE%B7%E8%AF%AD/kaikki.org-dictionary-%E5%BE%B7%E8%AF%AD.jsonl",
+          "edition": "zhwiktionary",
+          "label": "德语",
+          "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:27 GMT",
+          "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 德语 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+        },
+        "changes": "Kept word/language/part-of-speech, recorded form text/tags, redirects, written pronunciation fields, and sense glosses/raw_glosses/tags/form_of/alt_of. Removed all examples and quotations, media/audio fields and URLs, etymology, linkages and unrelated fields. No definitions, readings or translations generated; no Unicode normalization.",
+        "rawSha256": "09e48d874e83eba8f726d0bd307441e869302555775ca4959766d6999cc75d8d",
+        "projectionSha256": "989520f5862d9176aadaf1b3c543ef226a76d4051b7b78097da4b427e59b0aba",
+        "inputBytes": 51864427,
+        "outputBytes": 17347618,
+        "inputRecords": 93011,
+        "outputRecords": 93011,
+        "blankLines": 0,
+        "removedExamples": 4623,
+        "recordsWithGlosses": 92884,
+        "sensesWithGlosses": 113101,
+        "languageCounts": {
+          "de": 93011
+        },
+        "maxInputRecordUtf8Bytes": 18871,
+        "maxOutputRecordUtf8Bytes": 2357
+      },
+      "manifest": {
+        "schemaVersion": 1,
+        "packId": "kaikki-zhwiktionary-de-zh-hans-label",
+        "version": "2026-10-29-text-1",
+        "sourceLanguage": "de",
+        "glossLanguage": "zh",
+        "sourceName": "Wiktionary via Kaikki.org — 德语 label partition, Chinese definitions",
+        "sourceUrl": "https://kaikki.org/zhwiktionary/%E5%BE%B7%E8%AF%AD/kaikki.org-dictionary-%E5%BE%B7%E8%AF%AD.jsonl",
+        "sourceRevision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:27 GMT",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 德语 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license.",
+        "dbSha256": "5d5aa6d4116ab1207d81adab9ccc2c3b79f7a9d66a72850b49460b3d787803af",
+        "counts": {
+          "entries": 92884,
+          "senses": 113101,
+          "forms": 45333
+        }
+      },
+      "manifestByteSha256": "8c7658b6b255aa60eecd01164fd13b5ce8d184682d9c4392067353ca7dad2c4b",
+      "databaseBytes": 31555584,
+      "buildReport": {
+        "schemaVersion": 1,
+        "input": {
+          "file": "text.jsonl",
+          "bytes": 17347618,
+          "sha256": "989520f5862d9176aadaf1b3c543ef226a76d4051b7b78097da4b427e59b0aba",
+          "compression": "none"
+        },
+        "lines": 93011,
+        "records": {
+          "parsed": 93011,
+          "otherLanguage": 0,
+          "matchingLanguage": 93011,
+          "skippedNoLexicalContent": 127,
+          "formLinkOnly": 0,
+          "withGlosses": 92884
+        },
+        "output": {
+          "packId": "kaikki-zhwiktionary-de-zh-hans-label",
+          "version": "2026-10-29-text-1",
+          "dbSha256": "5d5aa6d4116ab1207d81adab9ccc2c3b79f7a9d66a72850b49460b3d787803af",
+          "counts": {
+            "entries": 92884,
+            "senses": 113101,
+            "forms": 45333
+          }
+        },
+        "skippedMeaning": "skippedNoLexicalContent records have neither a usable gloss nor an explicit form_of target; formLinkOnly records add source form links but no fabricated answer."
+      },
+      "build": {
+        "buildSource": {
+          "head": "348fbc3cb76114fab59c1a8f0650e41469d8f554",
+          "builderSha256": "8bcac71e72cc3164bbfba87ea09a5850ed2873f653122993e584ba033ec97603"
+        },
+        "elapsedSeconds": 5.359741533999999,
+        "resourceUsage": {
+          "userCPUTime": 4933563,
+          "systemCPUTime": 703951,
+          "maxRSS": 129028,
+          "sharedMemorySize": 0,
+          "unsharedDataSize": 0,
+          "unsharedStackSize": 0,
+          "minorPageFault": 37179,
+          "majorPageFault": 0,
+          "swappedOut": 0,
+          "fsRead": 0,
+          "fsWrite": 190856,
+          "ipcSent": 0,
+          "ipcReceived": 0,
+          "signalsCount": 0,
+          "voluntaryContextSwitches": 2713,
+          "involuntaryContextSwitches": 162
+        },
+        "databaseBytes": 31555584
+      }
+    },
+    {
+      "sourceDirectory": "data/zhwiktionary-de-hant-label-20261029",
+      "download": {
+        "url": "https://kaikki.org/zhwiktionary/%E5%BE%B7%E8%AA%9E/kaikki.org-dictionary-%E5%BE%B7%E8%AA%9E.jsonl",
+        "sourceLabel": "德語",
+        "status": 200,
+        "contentLength": 115527859,
+        "etag": "\"6ae3b735-6e2d0b3\"",
+        "lastModified": "Thu, 29 Oct 2026 21:14:29 GMT",
+        "retrievedAt": "2026-10-30T19:33:41Z",
+        "completed": true,
+        "bytes": 115527859,
+        "sha256": "9afe1697f7927becf193c0a6f60bb54382f012a1268a685fc31f0909d25ef268",
+        "elapsedSeconds": 7.557,
+        "file": "data/zhwiktionary-de-hant-label-20261029/source.jsonl"
+      },
+      "source": {
+        "url": "https://kaikki.org/zhwiktionary/%E5%BE%B7%E8%AA%9E/kaikki.org-dictionary-%E5%BE%B7%E8%AA%9E.jsonl",
+        "edition": "zhwiktionary",
+        "label": "德語",
+        "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:29 GMT",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 德語 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+      },
+      "projection": {
+        "schemaVersion": 1,
+        "kind": "kaikki-lexical-text-projection",
+        "source": {
+          "url": "https://kaikki.org/zhwiktionary/%E5%BE%B7%E8%AA%9E/kaikki.org-dictionary-%E5%BE%B7%E8%AA%9E.jsonl",
+          "edition": "zhwiktionary",
+          "label": "德語",
+          "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:29 GMT",
+          "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 德語 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+        },
+        "changes": "Kept word/language/part-of-speech, recorded form text/tags, redirects, written pronunciation fields, and sense glosses/raw_glosses/tags/form_of/alt_of. Removed all examples and quotations, media/audio fields and URLs, etymology, linkages and unrelated fields. No definitions, readings or translations generated; no Unicode normalization.",
+        "rawSha256": "9afe1697f7927becf193c0a6f60bb54382f012a1268a685fc31f0909d25ef268",
+        "projectionSha256": "e936eed08738866de64a6241381574d020d8a46051fa0038f39a75ebbbdd3c1b",
+        "inputBytes": 115527859,
+        "outputBytes": 31147252,
+        "inputRecords": 81266,
+        "outputRecords": 81266,
+        "blankLines": 0,
+        "removedExamples": 3432,
+        "recordsWithGlosses": 81263,
+        "sensesWithGlosses": 154220,
+        "languageCounts": {
+          "de": 81266
+        },
+        "maxInputRecordUtf8Bytes": 24504,
+        "maxOutputRecordUtf8Bytes": 2812
+      },
+      "manifest": {
+        "schemaVersion": 1,
+        "packId": "kaikki-zhwiktionary-de-zh-hant-label",
+        "version": "2026-10-29-text-1",
+        "sourceLanguage": "de",
+        "glossLanguage": "zh",
+        "sourceName": "Wiktionary via Kaikki.org — 德語 label partition, Chinese definitions",
+        "sourceUrl": "https://kaikki.org/zhwiktionary/%E5%BE%B7%E8%AA%9E/kaikki.org-dictionary-%E5%BE%B7%E8%AA%9E.jsonl",
+        "sourceRevision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:29 GMT",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 德語 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license.",
+        "dbSha256": "8a9c91acb8e0c6653b34831e80c7ea559c17ce9f66554e8dd22245aad0576030",
+        "counts": {
+          "entries": 81263,
+          "senses": 154220,
+          "forms": 161460
+        }
+      },
+      "manifestByteSha256": "ecf2d3f7115a9b8e9bdd76a7ac1f653f703df7deeda24bf1fcf838d8ddace568",
+      "databaseBytes": 53039104,
+      "buildReport": {
+        "schemaVersion": 1,
+        "input": {
+          "file": "text.jsonl",
+          "bytes": 31147252,
+          "sha256": "e936eed08738866de64a6241381574d020d8a46051fa0038f39a75ebbbdd3c1b",
+          "compression": "none"
+        },
+        "lines": 81266,
+        "records": {
+          "parsed": 81266,
+          "otherLanguage": 0,
+          "matchingLanguage": 81266,
+          "skippedNoLexicalContent": 3,
+          "formLinkOnly": 0,
+          "withGlosses": 81263
+        },
+        "output": {
+          "packId": "kaikki-zhwiktionary-de-zh-hant-label",
+          "version": "2026-10-29-text-1",
+          "dbSha256": "8a9c91acb8e0c6653b34831e80c7ea559c17ce9f66554e8dd22245aad0576030",
+          "counts": {
+            "entries": 81263,
+            "senses": 154220,
+            "forms": 161460
+          }
+        },
+        "skippedMeaning": "skippedNoLexicalContent records have neither a usable gloss nor an explicit form_of target; formLinkOnly records add source form links but no fabricated answer."
+      },
+      "build": {
+        "buildSource": {
+          "head": "348fbc3cb76114fab59c1a8f0650e41469d8f554",
+          "builderSha256": "8bcac71e72cc3164bbfba87ea09a5850ed2873f653122993e584ba033ec97603"
+        },
+        "elapsedSeconds": 10.994488146,
+        "resourceUsage": {
+          "userCPUTime": 10133108,
+          "systemCPUTime": 1326243,
+          "maxRSS": 173952,
+          "sharedMemorySize": 0,
+          "unsharedDataSize": 0,
+          "unsharedStackSize": 0,
+          "minorPageFault": 47655,
+          "majorPageFault": 0,
+          "swappedOut": 0,
+          "fsRead": 0,
+          "fsWrite": 329096,
+          "ipcSent": 0,
+          "ipcReceived": 0,
+          "signalsCount": 0,
+          "voluntaryContextSwitches": 3895,
+          "involuntaryContextSwitches": 642
+        },
+        "databaseBytes": 53039104
+      }
+    },
+    {
+      "sourceDirectory": "data/zhwiktionary-en-hans-label-20261029",
+      "download": {
+        "url": "https://kaikki.org/zhwiktionary/%E8%8B%B1%E8%AF%AD/kaikki.org-dictionary-%E8%8B%B1%E8%AF%AD.jsonl",
+        "label": "英语",
+        "status": 200,
+        "contentLength": "21928316",
+        "lastModified": "Thu, 29 Oct 2026 21:14:36 GMT",
+        "etag": "\"6ae3b73c-14e997c\"",
+        "retrievedAt": "2026-10-30T19:23:49Z",
+        "completed": true,
+        "bytes": 21928316,
+        "sha256": "b333986e9030d21b50fe845260c8283948b1e9df3d74fa3ef905adf23d82b60f",
+        "elapsedSeconds": 3.702,
+        "file": "data/zhwiktionary-en-hans-label-20261029/source.jsonl"
+      },
+      "source": {
+        "url": "https://kaikki.org/zhwiktionary/%E8%8B%B1%E8%AF%AD/kaikki.org-dictionary-%E8%8B%B1%E8%AF%AD.jsonl",
+        "edition": "zhwiktionary",
+        "label": "英语",
+        "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; file Last-Modified2026-10-29; Wiktextract19f9a30/wikitextprocessor6f96ddf",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 英语 label partition, not all English entries. The text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+      },
+      "projection": {
+        "schemaVersion": 1,
+        "kind": "kaikki-lexical-text-projection",
+        "source": {
+          "url": "https://kaikki.org/zhwiktionary/%E8%8B%B1%E8%AF%AD/kaikki.org-dictionary-%E8%8B%B1%E8%AF%AD.jsonl",
+          "edition": "zhwiktionary",
+          "label": "英语",
+          "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; file Last-Modified2026-10-29; Wiktextract19f9a30/wikitextprocessor6f96ddf",
+          "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 英语 label partition, not all English entries. The text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+        },
+        "changes": "Kept word/language/part-of-speech, recorded form text/tags, redirects, written pronunciation fields, and sense glosses/raw_glosses/tags/form_of/alt_of. Removed all examples and quotations, media/audio fields and URLs, etymology, linkages and unrelated fields. No definitions, readings or translations generated; no Unicode normalization.",
+        "rawSha256": "b333986e9030d21b50fe845260c8283948b1e9df3d74fa3ef905adf23d82b60f",
+        "projectionSha256": "d4f059dd83045fe6eed8db1f72c9e929c2ccd4d9eef79f1ec343926cb7b4e9f6",
+        "inputBytes": 21928316,
+        "outputBytes": 3743637,
+        "inputRecords": 16680,
+        "outputRecords": 16680,
+        "blankLines": 0,
+        "removedExamples": 9821,
+        "recordsWithGlosses": 15567,
+        "sensesWithGlosses": 21400,
+        "languageCounts": {
+          "en": 16680
+        },
+        "maxInputRecordUtf8Bytes": 30895,
+        "maxOutputRecordUtf8Bytes": 3100
+      },
+      "manifest": {
+        "schemaVersion": 1,
+        "packId": "kaikki-zhwiktionary-en-zh-hans-label",
+        "version": "2026-10-29-text-1",
+        "sourceLanguage": "en",
+        "glossLanguage": "zh",
+        "sourceName": "Wiktionary via Kaikki.org — 英语 label partition, Chinese definitions",
+        "sourceUrl": "https://kaikki.org/zhwiktionary/%E8%8B%B1%E8%AF%AD/kaikki.org-dictionary-%E8%8B%B1%E8%AF%AD.jsonl",
+        "sourceRevision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; file Last-Modified2026-10-29; Wiktextract19f9a30/wikitextprocessor6f96ddf",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 英语 label partition, not all English entries. The text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license.",
+        "dbSha256": "703406520da76919df65a387e78b445c6ffde5c4b14b80049d313be0e2fa44d8",
+        "counts": {
+          "entries": 15567,
+          "senses": 21400,
+          "forms": 13569
+        }
+      },
+      "manifestByteSha256": "afb90e9f80b20c2c9d48d1a81d7c3661e15f8b101576917b0be3015adab569a6",
+      "databaseBytes": 6189056,
+      "buildReport": {
+        "schemaVersion": 1,
+        "input": {
+          "file": "text.jsonl",
+          "bytes": 3743637,
+          "sha256": "d4f059dd83045fe6eed8db1f72c9e929c2ccd4d9eef79f1ec343926cb7b4e9f6",
+          "compression": "none"
+        },
+        "lines": 16680,
+        "records": {
+          "parsed": 16680,
+          "otherLanguage": 0,
+          "matchingLanguage": 16680,
+          "skippedNoLexicalContent": 1113,
+          "formLinkOnly": 0,
+          "withGlosses": 15567
+        },
+        "output": {
+          "packId": "kaikki-zhwiktionary-en-zh-hans-label",
+          "version": "2026-10-29-text-1",
+          "dbSha256": "703406520da76919df65a387e78b445c6ffde5c4b14b80049d313be0e2fa44d8",
+          "counts": {
+            "entries": 15567,
+            "senses": 21400,
+            "forms": 13569
+          }
+        },
+        "skippedMeaning": "skippedNoLexicalContent records have neither a usable gloss nor an explicit form_of target; formLinkOnly records add source form links but no fabricated answer."
+      },
+      "build": {
+        "builderSha256": "8bcac71e72cc3164bbfba87ea09a5850ed2873f653122993e584ba033ec97603",
+        "elapsedSeconds": 0.6563824590000004,
+        "resourceUsage": {
+          "userCPUTime": 3544031,
+          "systemCPUTime": 515760,
+          "maxRSS": 124572,
+          "sharedMemorySize": 0,
+          "unsharedDataSize": 0,
+          "unsharedStackSize": 0,
+          "minorPageFault": 36895,
+          "majorPageFault": 0,
+          "swappedOut": 0,
+          "fsRead": 0,
+          "fsWrite": 193536,
+          "ipcSent": 0,
+          "ipcReceived": 0,
+          "signalsCount": 0,
+          "voluntaryContextSwitches": 2975,
+          "involuntaryContextSwitches": 120
+        }
+      }
+    },
+    {
+      "sourceDirectory": "data/zhwiktionary-en-hant-label-20261029",
+      "download": {
+        "url": "https://kaikki.org/zhwiktionary/%E8%8B%B1%E8%AA%9E/kaikki.org-dictionary-%E8%8B%B1%E8%AA%9E.jsonl",
+        "label": "英語",
+        "status": 200,
+        "contentLength": "63127080",
+        "lastModified": "Thu, 29 Oct 2026 21:14:30 GMT",
+        "etag": "\"6ae3b736-3c33e28\"",
+        "retrievedAt": "2026-10-30T19:23:49Z",
+        "completed": true,
+        "bytes": 63127080,
+        "sha256": "00bc9507853ca24e25b197020ba26f29feef6955bf6adc4f2f8e58d7d09d25b3",
+        "elapsedSeconds": 5.634,
+        "file": "data/zhwiktionary-en-hant-label-20261029/source.jsonl"
+      },
+      "source": {
+        "url": "https://kaikki.org/zhwiktionary/%E8%8B%B1%E8%AA%9E/kaikki.org-dictionary-%E8%8B%B1%E8%AA%9E.jsonl",
+        "edition": "zhwiktionary",
+        "label": "英語",
+        "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; file Last-Modified2026-10-29; Wiktextract19f9a30/wikitextprocessor6f96ddf",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 英語 label partition, not all English entries. The text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+      },
+      "projection": {
+        "schemaVersion": 1,
+        "kind": "kaikki-lexical-text-projection",
+        "source": {
+          "url": "https://kaikki.org/zhwiktionary/%E8%8B%B1%E8%AA%9E/kaikki.org-dictionary-%E8%8B%B1%E8%AA%9E.jsonl",
+          "edition": "zhwiktionary",
+          "label": "英語",
+          "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; file Last-Modified2026-10-29; Wiktextract19f9a30/wikitextprocessor6f96ddf",
+          "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 英語 label partition, not all English entries. The text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+        },
+        "changes": "Kept word/language/part-of-speech, recorded form text/tags, redirects, written pronunciation fields, and sense glosses/raw_glosses/tags/form_of/alt_of. Removed all examples and quotations, media/audio fields and URLs, etymology, linkages and unrelated fields. No definitions, readings or translations generated; no Unicode normalization.",
+        "rawSha256": "00bc9507853ca24e25b197020ba26f29feef6955bf6adc4f2f8e58d7d09d25b3",
+        "projectionSha256": "9ed11afe9d835476a488c1726f5a5ac2a5ed56f051c345240e5ce930f3457272",
+        "inputBytes": 63127080,
+        "outputBytes": 14285522,
+        "inputRecords": 80295,
+        "outputRecords": 80295,
+        "blankLines": 0,
+        "removedExamples": 14786,
+        "recordsWithGlosses": 79079,
+        "sensesWithGlosses": 103292,
+        "languageCounts": {
+          "en": 80295
+        },
+        "maxInputRecordUtf8Bytes": 50932,
+        "maxOutputRecordUtf8Bytes": 5295
+      },
+      "manifest": {
+        "schemaVersion": 1,
+        "packId": "kaikki-zhwiktionary-en-zh-hant-label",
+        "version": "2026-10-29-text-1",
+        "sourceLanguage": "en",
+        "glossLanguage": "zh",
+        "sourceName": "Wiktionary via Kaikki.org — 英語 label partition, Chinese definitions",
+        "sourceUrl": "https://kaikki.org/zhwiktionary/%E8%8B%B1%E8%AA%9E/kaikki.org-dictionary-%E8%8B%B1%E8%AA%9E.jsonl",
+        "sourceRevision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; file Last-Modified2026-10-29; Wiktextract19f9a30/wikitextprocessor6f96ddf",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 英語 label partition, not all English entries. The text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license.",
+        "dbSha256": "b538229d71c53271f8d9709722b6fb9813d0d7a64217b24f9d85a3377516777e",
+        "counts": {
+          "entries": 79079,
+          "senses": 103292,
+          "forms": 39794
+        }
+      },
+      "manifestByteSha256": "0ab270fd7bcf40d360fef646cff238a986e44986dbb26a7978730439c58cead8",
+      "databaseBytes": 25894912,
+      "buildReport": {
+        "schemaVersion": 1,
+        "input": {
+          "file": "text.jsonl",
+          "bytes": 14285522,
+          "sha256": "9ed11afe9d835476a488c1726f5a5ac2a5ed56f051c345240e5ce930f3457272",
+          "compression": "none"
+        },
+        "lines": 80295,
+        "records": {
+          "parsed": 80295,
+          "otherLanguage": 0,
+          "matchingLanguage": 80295,
+          "skippedNoLexicalContent": 1216,
+          "formLinkOnly": 0,
+          "withGlosses": 79079
+        },
+        "output": {
+          "packId": "kaikki-zhwiktionary-en-zh-hant-label",
+          "version": "2026-10-29-text-1",
+          "dbSha256": "b538229d71c53271f8d9709722b6fb9813d0d7a64217b24f9d85a3377516777e",
+          "counts": {
+            "entries": 79079,
+            "senses": 103292,
+            "forms": 39794
+          }
+        },
+        "skippedMeaning": "skippedNoLexicalContent records have neither a usable gloss nor an explicit form_of target; formLinkOnly records add source form links but no fabricated answer."
+      },
+      "build": {
+        "builderSha256": "8bcac71e72cc3164bbfba87ea09a5850ed2873f653122993e584ba033ec97603",
+        "elapsedSeconds": 2.96332838,
+        "resourceUsage": {
+          "userCPUTime": 2955740,
+          "systemCPUTime": 452164,
+          "maxRSS": 123676,
+          "sharedMemorySize": 0,
+          "unsharedDataSize": 0,
+          "unsharedStackSize": 0,
+          "minorPageFault": 34836,
+          "majorPageFault": 0,
+          "swappedOut": 0,
+          "fsRead": 0,
+          "fsWrite": 155936,
+          "ipcSent": 0,
+          "ipcReceived": 0,
+          "signalsCount": 0,
+          "voluntaryContextSwitches": 2400,
+          "involuntaryContextSwitches": 42
+        }
+      }
+    },
+    {
+      "sourceDirectory": "data/zhwiktionary-es-hans-label-20261029",
+      "download": {
+        "url": "https://kaikki.org/zhwiktionary/%E8%A5%BF%E7%8F%AD%E7%89%99%E8%AF%AD/kaikki.org-dictionary-%E8%A5%BF%E7%8F%AD%E7%89%99%E8%AF%AD.jsonl",
+        "sourceLabel": "西班牙语",
+        "status": 200,
+        "contentLength": 74030597,
+        "etag": "\"6ae3b731-4699e05\"",
+        "lastModified": "Thu, 29 Oct 2026 21:14:25 GMT",
+        "retrievedAt": "2026-10-30T19:35:25Z",
+        "completed": true,
+        "bytes": 74030597,
+        "sha256": "e84406be32c16518cfc7cdc567c3da89f8c905a0338a5e8b286a516fa707551a",
+        "elapsedSeconds": 6.73,
+        "file": "data/zhwiktionary-es-hans-label-20261029/source.jsonl"
+      },
+      "source": {
+        "url": "https://kaikki.org/zhwiktionary/%E8%A5%BF%E7%8F%AD%E7%89%99%E8%AF%AD/kaikki.org-dictionary-%E8%A5%BF%E7%8F%AD%E7%89%99%E8%AF%AD.jsonl",
+        "edition": "zhwiktionary",
+        "label": "西班牙语",
+        "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:25 GMT",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 西班牙语 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+      },
+      "projection": {
+        "schemaVersion": 1,
+        "kind": "kaikki-lexical-text-projection",
+        "source": {
+          "url": "https://kaikki.org/zhwiktionary/%E8%A5%BF%E7%8F%AD%E7%89%99%E8%AF%AD/kaikki.org-dictionary-%E8%A5%BF%E7%8F%AD%E7%89%99%E8%AF%AD.jsonl",
+          "edition": "zhwiktionary",
+          "label": "西班牙语",
+          "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:25 GMT",
+          "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 西班牙语 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+        },
+        "changes": "Kept word/language/part-of-speech, recorded form text/tags, redirects, written pronunciation fields, and sense glosses/raw_glosses/tags/form_of/alt_of. Removed all examples and quotations, media/audio fields and URLs, etymology, linkages and unrelated fields. No definitions, readings or translations generated; no Unicode normalization.",
+        "rawSha256": "e84406be32c16518cfc7cdc567c3da89f8c905a0338a5e8b286a516fa707551a",
+        "projectionSha256": "90f5a0351848d0481179eae5a12f30d20fa092d75e9aa3e4d92c8495b5bfeffa",
+        "inputBytes": 74030597,
+        "outputBytes": 23670276,
+        "inputRecords": 114413,
+        "outputRecords": 114413,
+        "blankLines": 0,
+        "removedExamples": 503,
+        "recordsWithGlosses": 114408,
+        "sensesWithGlosses": 120750,
+        "languageCounts": {
+          "es": 114413
+        },
+        "maxInputRecordUtf8Bytes": 14246,
+        "maxOutputRecordUtf8Bytes": 1374
+      },
+      "manifest": {
+        "schemaVersion": 1,
+        "packId": "kaikki-zhwiktionary-es-zh-hans-label",
+        "version": "2026-10-29-text-1",
+        "sourceLanguage": "es",
+        "glossLanguage": "zh",
+        "sourceName": "Wiktionary via Kaikki.org — 西班牙语 label partition, Chinese definitions",
+        "sourceUrl": "https://kaikki.org/zhwiktionary/%E8%A5%BF%E7%8F%AD%E7%89%99%E8%AF%AD/kaikki.org-dictionary-%E8%A5%BF%E7%8F%AD%E7%89%99%E8%AF%AD.jsonl",
+        "sourceRevision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:25 GMT",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 西班牙语 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license.",
+        "dbSha256": "1b0f3e2c55d778c940d6cd54f734cdc8352b751edc8a1067fc36c96f6d3fb3a0",
+        "counts": {
+          "entries": 114408,
+          "senses": 120750,
+          "forms": 32148
+        }
+      },
+      "manifestByteSha256": "e014e0d6f02263b963cd5c0273742425c5945e34270d2441db52b875f5388bb3",
+      "databaseBytes": 34537472,
+      "buildReport": {
+        "schemaVersion": 1,
+        "input": {
+          "file": "text.jsonl",
+          "bytes": 23670276,
+          "sha256": "90f5a0351848d0481179eae5a12f30d20fa092d75e9aa3e4d92c8495b5bfeffa",
+          "compression": "none"
+        },
+        "lines": 114413,
+        "records": {
+          "parsed": 114413,
+          "otherLanguage": 0,
+          "matchingLanguage": 114413,
+          "skippedNoLexicalContent": 5,
+          "formLinkOnly": 0,
+          "withGlosses": 114408
+        },
+        "output": {
+          "packId": "kaikki-zhwiktionary-es-zh-hans-label",
+          "version": "2026-10-29-text-1",
+          "dbSha256": "1b0f3e2c55d778c940d6cd54f734cdc8352b751edc8a1067fc36c96f6d3fb3a0",
+          "counts": {
+            "entries": 114408,
+            "senses": 120750,
+            "forms": 32148
+          }
+        },
+        "skippedMeaning": "skippedNoLexicalContent records have neither a usable gloss nor an explicit form_of target; formLinkOnly records add source form links but no fabricated answer."
+      },
+      "build": {
+        "buildSource": {
+          "head": "348fbc3cb76114fab59c1a8f0650e41469d8f554",
+          "builderSha256": "8bcac71e72cc3164bbfba87ea09a5850ed2873f653122993e584ba033ec97603"
+        },
+        "elapsedSeconds": 7.690503848,
+        "resourceUsage": {
+          "userCPUTime": 7330916,
+          "systemCPUTime": 843548,
+          "maxRSS": 147088,
+          "sharedMemorySize": 0,
+          "unsharedDataSize": 0,
+          "unsharedStackSize": 0,
+          "minorPageFault": 44068,
+          "majorPageFault": 0,
+          "swappedOut": 0,
+          "fsRead": 0,
+          "fsWrite": 215888,
+          "ipcSent": 0,
+          "ipcReceived": 0,
+          "signalsCount": 0,
+          "voluntaryContextSwitches": 3299,
+          "involuntaryContextSwitches": 923
+        },
+        "databaseBytes": 34537472
+      }
+    },
+    {
+      "sourceDirectory": "data/zhwiktionary-es-hant-label-20261029",
+      "download": {
+        "url": "https://kaikki.org/zhwiktionary/%E8%A5%BF%E7%8F%AD%E7%89%99%E8%AA%9E/kaikki.org-dictionary-%E8%A5%BF%E7%8F%AD%E7%89%99%E8%AA%9E.jsonl",
+        "sourceLabel": "西班牙語",
+        "status": 200,
+        "contentLength": 119018435,
+        "etag": "\"6ae3b739-71813c3\"",
+        "lastModified": "Thu, 29 Oct 2026 21:14:33 GMT",
+        "retrievedAt": "2026-10-30T19:35:10Z",
+        "completed": true,
+        "bytes": 119018435,
+        "sha256": "77b27b2e52e6d1e20a4f9fabc84c6988f7262ad822a197e5d7aaed76ccff618e",
+        "elapsedSeconds": 7.527,
+        "file": "data/zhwiktionary-es-hant-label-20261029/source.jsonl"
+      },
+      "source": {
+        "url": "https://kaikki.org/zhwiktionary/%E8%A5%BF%E7%8F%AD%E7%89%99%E8%AA%9E/kaikki.org-dictionary-%E8%A5%BF%E7%8F%AD%E7%89%99%E8%AA%9E.jsonl",
+        "edition": "zhwiktionary",
+        "label": "西班牙語",
+        "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:33 GMT",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 西班牙語 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+      },
+      "projection": {
+        "schemaVersion": 1,
+        "kind": "kaikki-lexical-text-projection",
+        "source": {
+          "url": "https://kaikki.org/zhwiktionary/%E8%A5%BF%E7%8F%AD%E7%89%99%E8%AA%9E/kaikki.org-dictionary-%E8%A5%BF%E7%8F%AD%E7%89%99%E8%AA%9E.jsonl",
+          "edition": "zhwiktionary",
+          "label": "西班牙語",
+          "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:33 GMT",
+          "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 西班牙語 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+        },
+        "changes": "Kept word/language/part-of-speech, recorded form text/tags, redirects, written pronunciation fields, and sense glosses/raw_glosses/tags/form_of/alt_of. Removed all examples and quotations, media/audio fields and URLs, etymology, linkages and unrelated fields. No definitions, readings or translations generated; no Unicode normalization.",
+        "rawSha256": "77b27b2e52e6d1e20a4f9fabc84c6988f7262ad822a197e5d7aaed76ccff618e",
+        "projectionSha256": "cf335c1c0375e4173a3673ba5e43854967dccfd6c19b35bb10924450063ec136",
+        "inputBytes": 119018435,
+        "outputBytes": 36383998,
+        "inputRecords": 159376,
+        "outputRecords": 159376,
+        "blankLines": 0,
+        "removedExamples": 1172,
+        "recordsWithGlosses": 159363,
+        "sensesWithGlosses": 171690,
+        "languageCounts": {
+          "es": 159376
+        },
+        "maxInputRecordUtf8Bytes": 11815,
+        "maxOutputRecordUtf8Bytes": 2049
+      },
+      "manifest": {
+        "schemaVersion": 1,
+        "packId": "kaikki-zhwiktionary-es-zh-hant-label",
+        "version": "2026-10-29-text-1",
+        "sourceLanguage": "es",
+        "glossLanguage": "zh",
+        "sourceName": "Wiktionary via Kaikki.org — 西班牙語 label partition, Chinese definitions",
+        "sourceUrl": "https://kaikki.org/zhwiktionary/%E8%A5%BF%E7%8F%AD%E7%89%99%E8%AA%9E/kaikki.org-dictionary-%E8%A5%BF%E7%8F%AD%E7%89%99%E8%AA%9E.jsonl",
+        "sourceRevision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:33 GMT",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 西班牙語 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license.",
+        "dbSha256": "a6f93fa8e2f7195f29bebf9442fd3b46c5a174eb8b25d1de5db9406a93e1bad9",
+        "counts": {
+          "entries": 159363,
+          "senses": 171690,
+          "forms": 157037
+        }
+      },
+      "manifestByteSha256": "9676a41bf977cc12487aa18b618496ba1562beaf0760104bf5ec6a37c7c67325",
+      "databaseBytes": 61898752,
+      "buildReport": {
+        "schemaVersion": 1,
+        "input": {
+          "file": "text.jsonl",
+          "bytes": 36383998,
+          "sha256": "cf335c1c0375e4173a3673ba5e43854967dccfd6c19b35bb10924450063ec136",
+          "compression": "none"
+        },
+        "lines": 159376,
+        "records": {
+          "parsed": 159376,
+          "otherLanguage": 0,
+          "matchingLanguage": 159376,
+          "skippedNoLexicalContent": 13,
+          "formLinkOnly": 0,
+          "withGlosses": 159363
+        },
+        "output": {
+          "packId": "kaikki-zhwiktionary-es-zh-hant-label",
+          "version": "2026-10-29-text-1",
+          "dbSha256": "a6f93fa8e2f7195f29bebf9442fd3b46c5a174eb8b25d1de5db9406a93e1bad9",
+          "counts": {
+            "entries": 159363,
+            "senses": 171690,
+            "forms": 157037
+          }
+        },
+        "skippedMeaning": "skippedNoLexicalContent records have neither a usable gloss nor an explicit form_of target; formLinkOnly records add source form links but no fabricated answer."
+      },
+      "build": {
+        "buildSource": {
+          "head": "348fbc3cb76114fab59c1a8f0650e41469d8f554",
+          "builderSha256": "8bcac71e72cc3164bbfba87ea09a5850ed2873f653122993e584ba033ec97603"
+        },
+        "elapsedSeconds": 9.449396063,
+        "resourceUsage": {
+          "userCPUTime": 8635615,
+          "systemCPUTime": 1082885,
+          "maxRSS": 169628,
+          "sharedMemorySize": 0,
+          "unsharedDataSize": 0,
+          "unsharedStackSize": 0,
+          "minorPageFault": 48702,
+          "majorPageFault": 0,
+          "swappedOut": 0,
+          "fsRead": 0,
+          "fsWrite": 382784,
+          "ipcSent": 0,
+          "ipcReceived": 0,
+          "signalsCount": 0,
+          "voluntaryContextSwitches": 4739,
+          "involuntaryContextSwitches": 832
+        },
+        "databaseBytes": 61898752
+      }
+    },
+    {
+      "sourceDirectory": "data/zhwiktionary-fr-hans-label-20261029",
+      "download": {
+        "url": "https://kaikki.org/zhwiktionary/%E6%B3%95%E8%AF%AD/kaikki.org-dictionary-%E6%B3%95%E8%AF%AD.jsonl",
+        "sourceLabel": "法语",
+        "status": 200,
+        "contentLength": 58452482,
+        "etag": "\"6ae3b73a-37bea02\"",
+        "lastModified": "Thu, 29 Oct 2026 21:14:34 GMT",
+        "retrievedAt": "2026-10-30T19:31:27Z",
+        "completed": true,
+        "bytes": 58452482,
+        "sha256": "56116ecd63960090c85a4fe22640e3bd8edce1f8cfa7680dc6e57096cf9b2993",
+        "elapsedSeconds": 4.193,
+        "file": "data/zhwiktionary-fr-hans-label-20261029/source.jsonl"
+      },
+      "source": {
+        "url": "https://kaikki.org/zhwiktionary/%E6%B3%95%E8%AF%AD/kaikki.org-dictionary-%E6%B3%95%E8%AF%AD.jsonl",
+        "edition": "zhwiktionary",
+        "label": "法语",
+        "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:34 GMT",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 法语 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+      },
+      "projection": {
+        "schemaVersion": 1,
+        "kind": "kaikki-lexical-text-projection",
+        "source": {
+          "url": "https://kaikki.org/zhwiktionary/%E6%B3%95%E8%AF%AD/kaikki.org-dictionary-%E6%B3%95%E8%AF%AD.jsonl",
+          "edition": "zhwiktionary",
+          "label": "法语",
+          "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:34 GMT",
+          "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 法语 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+        },
+        "changes": "Kept word/language/part-of-speech, recorded form text/tags, redirects, written pronunciation fields, and sense glosses/raw_glosses/tags/form_of/alt_of. Removed all examples and quotations, media/audio fields and URLs, etymology, linkages and unrelated fields. No definitions, readings or translations generated; no Unicode normalization.",
+        "rawSha256": "56116ecd63960090c85a4fe22640e3bd8edce1f8cfa7680dc6e57096cf9b2993",
+        "projectionSha256": "ead9dd07655b58fe518ba75ab770ac030fc22df747f292d50825f7d11d0dce45",
+        "inputBytes": 58452482,
+        "outputBytes": 16609489,
+        "inputRecords": 74394,
+        "outputRecords": 74394,
+        "blankLines": 0,
+        "removedExamples": 2012,
+        "recordsWithGlosses": 74365,
+        "sensesWithGlosses": 87239,
+        "languageCounts": {
+          "fr": 74394
+        },
+        "maxInputRecordUtf8Bytes": 12431,
+        "maxOutputRecordUtf8Bytes": 1518
+      },
+      "manifest": {
+        "schemaVersion": 1,
+        "packId": "kaikki-zhwiktionary-fr-zh-hans-label",
+        "version": "2026-10-29-text-1",
+        "sourceLanguage": "fr",
+        "glossLanguage": "zh",
+        "sourceName": "Wiktionary via Kaikki.org — 法语 label partition, Chinese definitions",
+        "sourceUrl": "https://kaikki.org/zhwiktionary/%E6%B3%95%E8%AF%AD/kaikki.org-dictionary-%E6%B3%95%E8%AF%AD.jsonl",
+        "sourceRevision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:34 GMT",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 法语 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license.",
+        "dbSha256": "708904da1f9a8ac99ac9eaa2755c3ed8742d5c7f58c4331171803dd8e673955d",
+        "counts": {
+          "entries": 74365,
+          "senses": 87239,
+          "forms": 28409
+        }
+      },
+      "manifestByteSha256": "56ebfd3fa40eb161f2d598a425c2d0e5a89c56a17b300f844381634c9fe4ac7e",
+      "databaseBytes": 24526848,
+      "buildReport": {
+        "schemaVersion": 1,
+        "input": {
+          "file": "text.jsonl",
+          "bytes": 16609489,
+          "sha256": "ead9dd07655b58fe518ba75ab770ac030fc22df747f292d50825f7d11d0dce45",
+          "compression": "none"
+        },
+        "lines": 74394,
+        "records": {
+          "parsed": 74394,
+          "otherLanguage": 0,
+          "matchingLanguage": 74394,
+          "skippedNoLexicalContent": 29,
+          "formLinkOnly": 0,
+          "withGlosses": 74365
+        },
+        "output": {
+          "packId": "kaikki-zhwiktionary-fr-zh-hans-label",
+          "version": "2026-10-29-text-1",
+          "dbSha256": "708904da1f9a8ac99ac9eaa2755c3ed8742d5c7f58c4331171803dd8e673955d",
+          "counts": {
+            "entries": 74365,
+            "senses": 87239,
+            "forms": 28409
+          }
+        },
+        "skippedMeaning": "skippedNoLexicalContent records have neither a usable gloss nor an explicit form_of target; formLinkOnly records add source form links but no fabricated answer."
+      },
+      "build": {
+        "buildSource": {
+          "head": "348fbc3cb76114fab59c1a8f0650e41469d8f554",
+          "builderSha256": "8bcac71e72cc3164bbfba87ea09a5850ed2873f653122993e584ba033ec97603"
+        },
+        "elapsedSeconds": 4.363936739000001,
+        "resourceUsage": {
+          "userCPUTime": 4158233,
+          "systemCPUTime": 649243,
+          "maxRSS": 124560,
+          "sharedMemorySize": 0,
+          "unsharedDataSize": 0,
+          "unsharedStackSize": 0,
+          "minorPageFault": 38529,
+          "majorPageFault": 0,
+          "swappedOut": 0,
+          "fsRead": 0,
+          "fsWrite": 152656,
+          "ipcSent": 0,
+          "ipcReceived": 0,
+          "signalsCount": 0,
+          "voluntaryContextSwitches": 2444,
+          "involuntaryContextSwitches": 120
+        },
+        "databaseBytes": 24526848
+      }
+    },
+    {
+      "sourceDirectory": "data/zhwiktionary-fr-hant-label-20261029",
+      "download": {
+        "url": "https://kaikki.org/zhwiktionary/%E6%B3%95%E8%AA%9E/kaikki.org-dictionary-%E6%B3%95%E8%AA%9E.jsonl",
+        "sourceLabel": "法語",
+        "status": 200,
+        "contentLength": 78156855,
+        "etag": "\"6ae3b72e-4a89437\"",
+        "lastModified": "Thu, 29 Oct 2026 21:14:22 GMT",
+        "retrievedAt": "2026-10-30T19:31:17Z",
+        "completed": true,
+        "bytes": 78156855,
+        "sha256": "e441e08636d053cdff44fc97bb46b122d3c6516cb815877648927b54dabf142f",
+        "elapsedSeconds": 5.51,
+        "file": "data/zhwiktionary-fr-hant-label-20261029/source.jsonl"
+      },
+      "source": {
+        "url": "https://kaikki.org/zhwiktionary/%E6%B3%95%E8%AA%9E/kaikki.org-dictionary-%E6%B3%95%E8%AA%9E.jsonl",
+        "edition": "zhwiktionary",
+        "label": "法語",
+        "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:22 GMT",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 法語 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+      },
+      "projection": {
+        "schemaVersion": 1,
+        "kind": "kaikki-lexical-text-projection",
+        "source": {
+          "url": "https://kaikki.org/zhwiktionary/%E6%B3%95%E8%AA%9E/kaikki.org-dictionary-%E6%B3%95%E8%AA%9E.jsonl",
+          "edition": "zhwiktionary",
+          "label": "法語",
+          "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:22 GMT",
+          "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 法語 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+        },
+        "changes": "Kept word/language/part-of-speech, recorded form text/tags, redirects, written pronunciation fields, and sense glosses/raw_glosses/tags/form_of/alt_of. Removed all examples and quotations, media/audio fields and URLs, etymology, linkages and unrelated fields. No definitions, readings or translations generated; no Unicode normalization.",
+        "rawSha256": "e441e08636d053cdff44fc97bb46b122d3c6516cb815877648927b54dabf142f",
+        "projectionSha256": "a1e049fe72c90d5e6b661a519fa6ecc4d194bc798368d76ae60a48e3878c9680",
+        "inputBytes": 78156855,
+        "outputBytes": 18838778,
+        "inputRecords": 83840,
+        "outputRecords": 83840,
+        "blankLines": 0,
+        "removedExamples": 2218,
+        "recordsWithGlosses": 83837,
+        "sensesWithGlosses": 98382,
+        "languageCounts": {
+          "fr": 83840
+        },
+        "maxInputRecordUtf8Bytes": 23105,
+        "maxOutputRecordUtf8Bytes": 2139
+      },
+      "manifest": {
+        "schemaVersion": 1,
+        "packId": "kaikki-zhwiktionary-fr-zh-hant-label",
+        "version": "2026-10-29-text-1",
+        "sourceLanguage": "fr",
+        "glossLanguage": "zh",
+        "sourceName": "Wiktionary via Kaikki.org — 法語 label partition, Chinese definitions",
+        "sourceUrl": "https://kaikki.org/zhwiktionary/%E6%B3%95%E8%AA%9E/kaikki.org-dictionary-%E6%B3%95%E8%AA%9E.jsonl",
+        "sourceRevision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:22 GMT",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 法語 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license.",
+        "dbSha256": "38e135a8b93bedfb4d759c6ae112d43d0dd97295757e7e637f788e1e46f103b3",
+        "counts": {
+          "entries": 83837,
+          "senses": 98382,
+          "forms": 96329
+        }
+      },
+      "manifestByteSha256": "f209402d70358eb8501dce9573978b618f275756efe4a01c3a9984ecc801894b",
+      "databaseBytes": 33992704,
+      "buildReport": {
+        "schemaVersion": 1,
+        "input": {
+          "file": "text.jsonl",
+          "bytes": 18838778,
+          "sha256": "a1e049fe72c90d5e6b661a519fa6ecc4d194bc798368d76ae60a48e3878c9680",
+          "compression": "none"
+        },
+        "lines": 83840,
+        "records": {
+          "parsed": 83840,
+          "otherLanguage": 0,
+          "matchingLanguage": 83840,
+          "skippedNoLexicalContent": 3,
+          "formLinkOnly": 0,
+          "withGlosses": 83837
+        },
+        "output": {
+          "packId": "kaikki-zhwiktionary-fr-zh-hant-label",
+          "version": "2026-10-29-text-1",
+          "dbSha256": "38e135a8b93bedfb4d759c6ae112d43d0dd97295757e7e637f788e1e46f103b3",
+          "counts": {
+            "entries": 83837,
+            "senses": 98382,
+            "forms": 96329
+          }
+        },
+        "skippedMeaning": "skippedNoLexicalContent records have neither a usable gloss nor an explicit form_of target; formLinkOnly records add source form links but no fabricated answer."
+      },
+      "build": {
+        "buildSource": {
+          "head": "348fbc3cb76114fab59c1a8f0650e41469d8f554",
+          "builderSha256": "8bcac71e72cc3164bbfba87ea09a5850ed2873f653122993e584ba033ec97603"
+        },
+        "elapsedSeconds": 7.874580259,
+        "resourceUsage": {
+          "userCPUTime": 7365916,
+          "systemCPUTime": 997626,
+          "maxRSS": 143848,
+          "sharedMemorySize": 0,
+          "unsharedDataSize": 0,
+          "unsharedStackSize": 0,
+          "minorPageFault": 41332,
+          "majorPageFault": 0,
+          "swappedOut": 0,
+          "fsRead": 0,
+          "fsWrite": 209928,
+          "ipcSent": 0,
+          "ipcReceived": 0,
+          "signalsCount": 0,
+          "voluntaryContextSwitches": 2973,
+          "involuntaryContextSwitches": 543
+        },
+        "databaseBytes": 33992704
+      }
+    },
+    {
+      "sourceDirectory": "data/zhwiktionary-ja-hans-label-20261029",
+      "download": {
+        "url": "https://kaikki.org/zhwiktionary/%E6%97%A5%E8%AF%AD/kaikki.org-dictionary-%E6%97%A5%E8%AF%AD.jsonl",
+        "label": "日语",
+        "status": 200,
+        "contentLength": "36218438",
+        "lastModified": "Thu, 29 Oct 2026 21:14:35 GMT",
+        "etag": "\"6ae3b73b-228a646\"",
+        "completed": true,
+        "bytes": 36218438,
+        "sha256": "2a8e26dd80268c7144f9365d3d7860b70b0c8c86b9e06d5b1fc956b107680398",
+        "elapsedSeconds": 3.889,
+        "file": "data/zhwiktionary-ja-hans-label-20261029/source.jsonl"
+      },
+      "source": {
+        "url": "https://kaikki.org/zhwiktionary/%E6%97%A5%E8%AF%AD/kaikki.org-dictionary-%E6%97%A5%E8%AF%AD.jsonl",
+        "edition": "zhwiktionary",
+        "label": "日语",
+        "revision": "Source page extraction 2026-10-27; zhwiktionary dump 2026-10-01; file Last-Modified 2026-10-29; Wiktextract19f9a30/wikitextprocessor6f96ddf",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 日语 label partition, not all Japanese entries. The text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+      },
+      "projection": {
+        "schemaVersion": 1,
+        "kind": "kaikki-lexical-text-projection",
+        "source": {
+          "url": "https://kaikki.org/zhwiktionary/%E6%97%A5%E8%AF%AD/kaikki.org-dictionary-%E6%97%A5%E8%AF%AD.jsonl",
+          "edition": "zhwiktionary",
+          "label": "日语",
+          "revision": "Source page extraction 2026-10-27; zhwiktionary dump 2026-10-01; file Last-Modified 2026-10-29; Wiktextract19f9a30/wikitextprocessor6f96ddf",
+          "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 日语 label partition, not all Japanese entries. The text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+        },
+        "changes": "Kept word/language/part-of-speech, recorded form text/tags, redirects, written pronunciation fields, and sense glosses/raw_glosses/tags/form_of/alt_of. Removed all examples and quotations, media/audio fields and URLs, etymology, linkages and unrelated fields. No definitions, readings or translations generated; no Unicode normalization.",
+        "rawSha256": "2a8e26dd80268c7144f9365d3d7860b70b0c8c86b9e06d5b1fc956b107680398",
+        "projectionSha256": "e30fda7a1d948949cc1496288a6cc5ed17c79ecef0d32d3798adbd901b47574a",
+        "inputBytes": 36218438,
+        "outputBytes": 14473881,
+        "inputRecords": 79467,
+        "outputRecords": 79467,
+        "blankLines": 0,
+        "removedExamples": 3365,
+        "recordsWithGlosses": 77728,
+        "sensesWithGlosses": 91637,
+        "languageCounts": {
+          "ja": 79467
+        },
+        "maxInputRecordUtf8Bytes": 33963,
+        "maxOutputRecordUtf8Bytes": 3961
+      },
+      "manifest": {
+        "schemaVersion": 1,
+        "packId": "kaikki-zhwiktionary-ja-zh-hans-label",
+        "version": "2026-10-29-text-1",
+        "sourceLanguage": "ja",
+        "glossLanguage": "zh",
+        "sourceName": "Wiktionary via Kaikki.org — 日语 label partition, Chinese definitions",
+        "sourceUrl": "https://kaikki.org/zhwiktionary/%E6%97%A5%E8%AF%AD/kaikki.org-dictionary-%E6%97%A5%E8%AF%AD.jsonl",
+        "sourceRevision": "Source page extraction 2026-10-27; zhwiktionary dump 2026-10-01; file Last-Modified 2026-10-29; Wiktextract19f9a30/wikitextprocessor6f96ddf",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 日语 label partition, not all Japanese entries. The text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license.",
+        "dbSha256": "63937e85805032552ab12431d0670c1f65356109d01c342d6d8798843a0de0d3",
+        "counts": {
+          "entries": 77728,
+          "senses": 91637,
+          "forms": 35461
+        }
+      },
+      "manifestByteSha256": "657cec46ffffd3da344ab0572ebc2114b61276fd481b723d731b9ebd669683a7",
+      "databaseBytes": 27901952,
+      "buildReport": {
+        "schemaVersion": 1,
+        "input": {
+          "file": "text.jsonl",
+          "bytes": 14473881,
+          "sha256": "e30fda7a1d948949cc1496288a6cc5ed17c79ecef0d32d3798adbd901b47574a",
+          "compression": "none"
+        },
+        "lines": 79467,
+        "records": {
+          "parsed": 79467,
+          "otherLanguage": 0,
+          "matchingLanguage": 79467,
+          "skippedNoLexicalContent": 1739,
+          "formLinkOnly": 0,
+          "withGlosses": 77728
+        },
+        "output": {
+          "packId": "kaikki-zhwiktionary-ja-zh-hans-label",
+          "version": "2026-10-29-text-1",
+          "dbSha256": "63937e85805032552ab12431d0670c1f65356109d01c342d6d8798843a0de0d3",
+          "counts": {
+            "entries": 77728,
+            "senses": 91637,
+            "forms": 35461
+          }
+        },
+        "skippedMeaning": "skippedNoLexicalContent records have neither a usable gloss nor an explicit form_of target; formLinkOnly records add source form links but no fabricated answer."
+      },
+      "build": {
+        "elapsedSeconds": 3.8347774360000004,
+        "resourceUsage": {
+          "userCPUTime": 21651475,
+          "systemCPUTime": 5830468,
+          "maxRSS": 179448,
+          "sharedMemorySize": 0,
+          "unsharedDataSize": 0,
+          "unsharedStackSize": 0,
+          "minorPageFault": 57101,
+          "majorPageFault": 0,
+          "swappedOut": 0,
+          "fsRead": 0,
+          "fsWrite": 1633616,
+          "ipcSent": 0,
+          "ipcReceived": 0,
+          "signalsCount": 0,
+          "voluntaryContextSwitches": 13746,
+          "involuntaryContextSwitches": 1662
+        }
+      }
+    },
+    {
+      "sourceDirectory": "data/zhwiktionary-ja-hant-label-20261029",
+      "download": {
+        "url": "https://kaikki.org/zhwiktionary/%E6%97%A5%E8%AA%9E/kaikki.org-dictionary-%E6%97%A5%E8%AA%9E.jsonl",
+        "label": "日語",
+        "status": 200,
+        "contentLength": "89915554",
+        "lastModified": "Thu, 29 Oct 2026 21:14:25 GMT",
+        "etag": "\"6ae3b731-55c00a2\"",
+        "completed": true,
+        "bytes": 89915554,
+        "sha256": "13a4f8e2d562ddb17702553033096efd5262e8d65c1299f8567f7e093b61dc2d",
+        "elapsedSeconds": 6.473,
+        "file": "data/zhwiktionary-ja-hant-label-20261029/source.jsonl"
+      },
+      "source": {
+        "url": "https://kaikki.org/zhwiktionary/%E6%97%A5%E8%AA%9E/kaikki.org-dictionary-%E6%97%A5%E8%AA%9E.jsonl",
+        "edition": "zhwiktionary",
+        "label": "日語",
+        "revision": "Source page extraction 2026-10-27; zhwiktionary dump 2026-10-01; file Last-Modified 2026-10-29; Wiktextract19f9a30/wikitextprocessor6f96ddf",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 日語 label partition, not all Japanese entries. The text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+      },
+      "projection": {
+        "schemaVersion": 1,
+        "kind": "kaikki-lexical-text-projection",
+        "source": {
+          "url": "https://kaikki.org/zhwiktionary/%E6%97%A5%E8%AA%9E/kaikki.org-dictionary-%E6%97%A5%E8%AA%9E.jsonl",
+          "edition": "zhwiktionary",
+          "label": "日語",
+          "revision": "Source page extraction 2026-10-27; zhwiktionary dump 2026-10-01; file Last-Modified 2026-10-29; Wiktextract19f9a30/wikitextprocessor6f96ddf",
+          "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 日語 label partition, not all Japanese entries. The text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+        },
+        "changes": "Kept word/language/part-of-speech, recorded form text/tags, redirects, written pronunciation fields, and sense glosses/raw_glosses/tags/form_of/alt_of. Removed all examples and quotations, media/audio fields and URLs, etymology, linkages and unrelated fields. No definitions, readings or translations generated; no Unicode normalization.",
+        "rawSha256": "13a4f8e2d562ddb17702553033096efd5262e8d65c1299f8567f7e093b61dc2d",
+        "projectionSha256": "37e5313030ff31182d49b2549690f97460bfc6c95251f4af906e5fef55e3e338",
+        "inputBytes": 89915554,
+        "outputBytes": 17371526,
+        "inputRecords": 58060,
+        "outputRecords": 58060,
+        "blankLines": 0,
+        "removedExamples": 9157,
+        "recordsWithGlosses": 43025,
+        "sensesWithGlosses": 55924,
+        "languageCounts": {
+          "ja": 58060
+        },
+        "maxInputRecordUtf8Bytes": 34234,
+        "maxOutputRecordUtf8Bytes": 3253
+      },
+      "manifest": {
+        "schemaVersion": 1,
+        "packId": "kaikki-zhwiktionary-ja-zh-hant-label",
+        "version": "2026-10-29-text-1",
+        "sourceLanguage": "ja",
+        "glossLanguage": "zh",
+        "sourceName": "Wiktionary via Kaikki.org — 日語 label partition, Chinese definitions",
+        "sourceUrl": "https://kaikki.org/zhwiktionary/%E6%97%A5%E8%AA%9E/kaikki.org-dictionary-%E6%97%A5%E8%AA%9E.jsonl",
+        "sourceRevision": "Source page extraction 2026-10-27; zhwiktionary dump 2026-10-01; file Last-Modified 2026-10-29; Wiktextract19f9a30/wikitextprocessor6f96ddf",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 日語 label partition, not all Japanese entries. The text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license.",
+        "dbSha256": "5faf05465573d21451ca8fc12ea2235e832ff36161e92a7b8b6d533b721b7cd8",
+        "counts": {
+          "entries": 43025,
+          "senses": 55924,
+          "forms": 153146
+        }
+      },
+      "manifestByteSha256": "4dcc7ed1c621f5e1081d77feabf4173ccc791504a001130eba5fc0da378893c6",
+      "databaseBytes": 34738176,
+      "buildReport": {
+        "schemaVersion": 1,
+        "input": {
+          "file": "text.jsonl",
+          "bytes": 17371526,
+          "sha256": "37e5313030ff31182d49b2549690f97460bfc6c95251f4af906e5fef55e3e338",
+          "compression": "none"
+        },
+        "lines": 58060,
+        "records": {
+          "parsed": 58060,
+          "otherLanguage": 0,
+          "matchingLanguage": 58060,
+          "skippedNoLexicalContent": 15035,
+          "formLinkOnly": 0,
+          "withGlosses": 43025
+        },
+        "output": {
+          "packId": "kaikki-zhwiktionary-ja-zh-hant-label",
+          "version": "2026-10-29-text-1",
+          "dbSha256": "5faf05465573d21451ca8fc12ea2235e832ff36161e92a7b8b6d533b721b7cd8",
+          "counts": {
+            "entries": 43025,
+            "senses": 55924,
+            "forms": 153146
+          }
+        },
+        "skippedMeaning": "skippedNoLexicalContent records have neither a usable gloss nor an explicit form_of target; formLinkOnly records add source form links but no fabricated answer."
+      },
+      "build": {
+        "elapsedSeconds": 5.523975171000002,
+        "resourceUsage": {
+          "userCPUTime": 26442944,
+          "systemCPUTime": 6664891,
+          "maxRSS": 179448,
+          "sharedMemorySize": 0,
+          "unsharedDataSize": 0,
+          "unsharedStackSize": 0,
+          "minorPageFault": 61863,
+          "majorPageFault": 0,
+          "swappedOut": 0,
+          "fsRead": 0,
+          "fsWrite": 1841488,
+          "ipcSent": 0,
+          "ipcReceived": 0,
+          "signalsCount": 0,
+          "voluntaryContextSwitches": 15635,
+          "involuntaryContextSwitches": 2066
+        }
+      }
+    },
+    {
+      "sourceDirectory": "data/zhwiktionary-ko-hans-label-20261029",
+      "download": {
+        "url": "https://kaikki.org/zhwiktionary/%E6%9C%9D%E9%B2%9C%E8%AF%AD/kaikki.org-dictionary-%E6%9C%9D%E9%B2%9C%E8%AF%AD.jsonl",
+        "sourceLabel": "朝鲜语",
+        "status": 200,
+        "contentLength": 59605170,
+        "etag": "\"6ae3b741-38d80b2\"",
+        "lastModified": "Thu, 29 Oct 2026 21:14:41 GMT",
+        "retrievedAt": "2026-10-30T19:30:10Z",
+        "completed": true,
+        "bytes": 59605170,
+        "sha256": "22a71151ef6e21cbb91be5fc79256d8ac6a341e31b613ae117d6a76afc393a13",
+        "elapsedSeconds": 5.097,
+        "file": "data/zhwiktionary-ko-hans-label-20261029/source.jsonl"
+      },
+      "source": {
+        "url": "https://kaikki.org/zhwiktionary/%E6%9C%9D%E9%B2%9C%E8%AF%AD/kaikki.org-dictionary-%E6%9C%9D%E9%B2%9C%E8%AF%AD.jsonl",
+        "edition": "zhwiktionary",
+        "label": "朝鲜语",
+        "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:41 GMT",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 朝鲜语 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+      },
+      "projection": {
+        "schemaVersion": 1,
+        "kind": "kaikki-lexical-text-projection",
+        "source": {
+          "url": "https://kaikki.org/zhwiktionary/%E6%9C%9D%E9%B2%9C%E8%AF%AD/kaikki.org-dictionary-%E6%9C%9D%E9%B2%9C%E8%AF%AD.jsonl",
+          "edition": "zhwiktionary",
+          "label": "朝鲜语",
+          "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:41 GMT",
+          "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 朝鲜语 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+        },
+        "changes": "Kept word/language/part-of-speech, recorded form text/tags, redirects, written pronunciation fields, and sense glosses/raw_glosses/tags/form_of/alt_of. Removed all examples and quotations, media/audio fields and URLs, etymology, linkages and unrelated fields. No definitions, readings or translations generated; no Unicode normalization.",
+        "rawSha256": "22a71151ef6e21cbb91be5fc79256d8ac6a341e31b613ae117d6a76afc393a13",
+        "projectionSha256": "e26332cea69690c416d7944ab6ea331d94edaaf464ce05ab8f0fee5b1a391c8c",
+        "inputBytes": 59605170,
+        "outputBytes": 31557980,
+        "inputRecords": 195305,
+        "outputRecords": 195305,
+        "blankLines": 0,
+        "removedExamples": 4386,
+        "recordsWithGlosses": 195236,
+        "sensesWithGlosses": 199768,
+        "languageCounts": {
+          "ko": 195305
+        },
+        "maxInputRecordUtf8Bytes": 6274,
+        "maxOutputRecordUtf8Bytes": 1423
+      },
+      "manifest": {
+        "schemaVersion": 1,
+        "packId": "kaikki-zhwiktionary-ko-zh-hans-label",
+        "version": "2026-10-29-text-1",
+        "sourceLanguage": "ko",
+        "glossLanguage": "zh",
+        "sourceName": "Wiktionary via Kaikki.org — 朝鲜语 label partition, Chinese definitions",
+        "sourceUrl": "https://kaikki.org/zhwiktionary/%E6%9C%9D%E9%B2%9C%E8%AF%AD/kaikki.org-dictionary-%E6%9C%9D%E9%B2%9C%E8%AF%AD.jsonl",
+        "sourceRevision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:41 GMT",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 朝鲜语 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license.",
+        "dbSha256": "21c70134d829f2080191356b9c75830bb490ae8a104de91e3223bcd760822fd1",
+        "counts": {
+          "entries": 195236,
+          "senses": 199768,
+          "forms": 995
+        }
+      },
+      "manifestByteSha256": "63124c00dfafb5847b33c938065b7c55a1f313c52e97aa63f32230beaa8f0197",
+      "databaseBytes": 52793344,
+      "buildReport": {
+        "schemaVersion": 1,
+        "input": {
+          "file": "text.jsonl",
+          "bytes": 31557980,
+          "sha256": "e26332cea69690c416d7944ab6ea331d94edaaf464ce05ab8f0fee5b1a391c8c",
+          "compression": "none"
+        },
+        "lines": 195305,
+        "records": {
+          "parsed": 195305,
+          "otherLanguage": 0,
+          "matchingLanguage": 195305,
+          "skippedNoLexicalContent": 69,
+          "formLinkOnly": 0,
+          "withGlosses": 195236
+        },
+        "output": {
+          "packId": "kaikki-zhwiktionary-ko-zh-hans-label",
+          "version": "2026-10-29-text-1",
+          "dbSha256": "21c70134d829f2080191356b9c75830bb490ae8a104de91e3223bcd760822fd1",
+          "counts": {
+            "entries": 195236,
+            "senses": 199768,
+            "forms": 995
+          }
+        },
+        "skippedMeaning": "skippedNoLexicalContent records have neither a usable gloss nor an explicit form_of target; formLinkOnly records add source form links but no fabricated answer."
+      },
+      "build": {
+        "buildSource": {
+          "head": "348fbc3cb76114fab59c1a8f0650e41469d8f554",
+          "builderSha256": "8bcac71e72cc3164bbfba87ea09a5850ed2873f653122993e584ba033ec97603"
+        },
+        "elapsedSeconds": 4.713844099,
+        "resourceUsage": {
+          "userCPUTime": 4505112,
+          "systemCPUTime": 534798,
+          "maxRSS": 147204,
+          "sharedMemorySize": 0,
+          "unsharedDataSize": 0,
+          "unsharedStackSize": 0,
+          "minorPageFault": 43096,
+          "majorPageFault": 0,
+          "swappedOut": 0,
+          "fsRead": 0,
+          "fsWrite": 314880,
+          "ipcSent": 0,
+          "ipcReceived": 0,
+          "signalsCount": 0,
+          "voluntaryContextSwitches": 3949,
+          "involuntaryContextSwitches": 556
+        },
+        "databaseBytes": 52793344
+      }
+    },
+    {
+      "sourceDirectory": "data/zhwiktionary-ko-hant-label-20261029",
+      "download": {
+        "url": "https://kaikki.org/zhwiktionary/%E6%9C%9D%E9%AE%AE%E8%AA%9E/kaikki.org-dictionary-%E6%9C%9D%E9%AE%AE%E8%AA%9E.jsonl",
+        "sourceLabel": "朝鮮語",
+        "status": 200,
+        "contentLength": 31343071,
+        "etag": "\"6ae3b73b-1de41df\"",
+        "lastModified": "Thu, 29 Oct 2026 21:14:35 GMT",
+        "retrievedAt": "2026-10-30T19:30:22Z",
+        "completed": true,
+        "bytes": 31343071,
+        "sha256": "efd1ca7a0b98407e71f02f81ea12479eb5465c76ce144b3557f2425af5ab195f",
+        "elapsedSeconds": 3.776,
+        "file": "data/zhwiktionary-ko-hant-label-20261029/source.jsonl"
+      },
+      "source": {
+        "url": "https://kaikki.org/zhwiktionary/%E6%9C%9D%E9%AE%AE%E8%AA%9E/kaikki.org-dictionary-%E6%9C%9D%E9%AE%AE%E8%AA%9E.jsonl",
+        "edition": "zhwiktionary",
+        "label": "朝鮮語",
+        "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:35 GMT",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 朝鮮語 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+      },
+      "projection": {
+        "schemaVersion": 1,
+        "kind": "kaikki-lexical-text-projection",
+        "source": {
+          "url": "https://kaikki.org/zhwiktionary/%E6%9C%9D%E9%AE%AE%E8%AA%9E/kaikki.org-dictionary-%E6%9C%9D%E9%AE%AE%E8%AA%9E.jsonl",
+          "edition": "zhwiktionary",
+          "label": "朝鮮語",
+          "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:35 GMT",
+          "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 朝鮮語 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+        },
+        "changes": "Kept word/language/part-of-speech, recorded form text/tags, redirects, written pronunciation fields, and sense glosses/raw_glosses/tags/form_of/alt_of. Removed all examples and quotations, media/audio fields and URLs, etymology, linkages and unrelated fields. No definitions, readings or translations generated; no Unicode normalization.",
+        "rawSha256": "efd1ca7a0b98407e71f02f81ea12479eb5465c76ce144b3557f2425af5ab195f",
+        "projectionSha256": "a57b704dd10a96ffab9953e4291836c631ba79637a4b9f6fe1cc8bdfc211a6c6",
+        "inputBytes": 31343071,
+        "outputBytes": 10469063,
+        "inputRecords": 46830,
+        "outputRecords": 46830,
+        "blankLines": 0,
+        "removedExamples": 4115,
+        "recordsWithGlosses": 44865,
+        "sensesWithGlosses": 49140,
+        "languageCounts": {
+          "ko": 46830
+        },
+        "maxInputRecordUtf8Bytes": 32424,
+        "maxOutputRecordUtf8Bytes": 4134
+      },
+      "manifest": {
+        "schemaVersion": 1,
+        "packId": "kaikki-zhwiktionary-ko-zh-hant-label",
+        "version": "2026-10-29-text-1",
+        "sourceLanguage": "ko",
+        "glossLanguage": "zh",
+        "sourceName": "Wiktionary via Kaikki.org — 朝鮮語 label partition, Chinese definitions",
+        "sourceUrl": "https://kaikki.org/zhwiktionary/%E6%9C%9D%E9%AE%AE%E8%AA%9E/kaikki.org-dictionary-%E6%9C%9D%E9%AE%AE%E8%AA%9E.jsonl",
+        "sourceRevision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:35 GMT",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 朝鮮語 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license.",
+        "dbSha256": "764432c0f1732ac8ac85db0018551be928bf570d2609c348bafc885982767015",
+        "counts": {
+          "entries": 44865,
+          "senses": 49140,
+          "forms": 20845
+        }
+      },
+      "manifestByteSha256": "a251d6e5cfc61451cfe7edd5e50db896d83a2a6e2ff8c401ffb2f3a547d046a9",
+      "databaseBytes": 13950976,
+      "buildReport": {
+        "schemaVersion": 1,
+        "input": {
+          "file": "text.jsonl",
+          "bytes": 10469063,
+          "sha256": "a57b704dd10a96ffab9953e4291836c631ba79637a4b9f6fe1cc8bdfc211a6c6",
+          "compression": "none"
+        },
+        "lines": 46830,
+        "records": {
+          "parsed": 46830,
+          "otherLanguage": 0,
+          "matchingLanguage": 46830,
+          "skippedNoLexicalContent": 1965,
+          "formLinkOnly": 0,
+          "withGlosses": 44865
+        },
+        "output": {
+          "packId": "kaikki-zhwiktionary-ko-zh-hant-label",
+          "version": "2026-10-29-text-1",
+          "dbSha256": "764432c0f1732ac8ac85db0018551be928bf570d2609c348bafc885982767015",
+          "counts": {
+            "entries": 44865,
+            "senses": 49140,
+            "forms": 20845
+          }
+        },
+        "skippedMeaning": "skippedNoLexicalContent records have neither a usable gloss nor an explicit form_of target; formLinkOnly records add source form links but no fabricated answer."
+      },
+      "build": {
+        "buildSource": {
+          "head": "348fbc3cb76114fab59c1a8f0650e41469d8f554",
+          "builderSha256": "8bcac71e72cc3164bbfba87ea09a5850ed2873f653122993e584ba033ec97603"
+        },
+        "elapsedSeconds": 2.893108233,
+        "resourceUsage": {
+          "userCPUTime": 2859754,
+          "systemCPUTime": 357784,
+          "maxRSS": 91144,
+          "sharedMemorySize": 0,
+          "unsharedDataSize": 0,
+          "unsharedStackSize": 0,
+          "minorPageFault": 27159,
+          "majorPageFault": 0,
+          "swappedOut": 0,
+          "fsRead": 0,
+          "fsWrite": 84184,
+          "ipcSent": 0,
+          "ipcReceived": 0,
+          "signalsCount": 0,
+          "voluntaryContextSwitches": 1619,
+          "involuntaryContextSwitches": 56
+        },
+        "databaseBytes": 13950976
+      }
+    },
+    {
+      "sourceDirectory": "data/zhwiktionary-ru-hans-label-20261029",
+      "download": {
+        "url": "https://kaikki.org/zhwiktionary/%E4%BF%84%E8%AF%AD/kaikki.org-dictionary-%E4%BF%84%E8%AF%AD.jsonl",
+        "sourceLabel": "俄语",
+        "status": 200,
+        "contentLength": 38019033,
+        "etag": "\"6ae3b72c-2441fd9\"",
+        "lastModified": "Thu, 29 Oct 2026 21:14:20 GMT",
+        "retrievedAt": "2026-10-30T19:32:32Z",
+        "completed": true,
+        "bytes": 38019033,
+        "sha256": "9100551739b9fb467361689a7efcd91058bfff1ded677b40396512b922f9fa5d",
+        "elapsedSeconds": 3.804,
+        "file": "data/zhwiktionary-ru-hans-label-20261029/source.jsonl"
+      },
+      "source": {
+        "url": "https://kaikki.org/zhwiktionary/%E4%BF%84%E8%AF%AD/kaikki.org-dictionary-%E4%BF%84%E8%AF%AD.jsonl",
+        "edition": "zhwiktionary",
+        "label": "俄语",
+        "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:20 GMT",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 俄语 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+      },
+      "projection": {
+        "schemaVersion": 1,
+        "kind": "kaikki-lexical-text-projection",
+        "source": {
+          "url": "https://kaikki.org/zhwiktionary/%E4%BF%84%E8%AF%AD/kaikki.org-dictionary-%E4%BF%84%E8%AF%AD.jsonl",
+          "edition": "zhwiktionary",
+          "label": "俄语",
+          "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:20 GMT",
+          "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 俄语 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+        },
+        "changes": "Kept word/language/part-of-speech, recorded form text/tags, redirects, written pronunciation fields, and sense glosses/raw_glosses/tags/form_of/alt_of. Removed all examples and quotations, media/audio fields and URLs, etymology, linkages and unrelated fields. No definitions, readings or translations generated; no Unicode normalization.",
+        "rawSha256": "9100551739b9fb467361689a7efcd91058bfff1ded677b40396512b922f9fa5d",
+        "projectionSha256": "e2cea64974cbf5618da38e40a3f647c606c3fe2ac4f89aa310751bfb61d477c2",
+        "inputBytes": 38019033,
+        "outputBytes": 16741312,
+        "inputRecords": 88159,
+        "outputRecords": 88159,
+        "blankLines": 0,
+        "removedExamples": 11863,
+        "recordsWithGlosses": 88108,
+        "sensesWithGlosses": 98137,
+        "languageCounts": {
+          "ru": 88159
+        },
+        "maxInputRecordUtf8Bytes": 8737,
+        "maxOutputRecordUtf8Bytes": 2031
+      },
+      "manifest": {
+        "schemaVersion": 1,
+        "packId": "kaikki-zhwiktionary-ru-zh-hans-label",
+        "version": "2026-10-29-text-1",
+        "sourceLanguage": "ru",
+        "glossLanguage": "zh",
+        "sourceName": "Wiktionary via Kaikki.org — 俄语 label partition, Chinese definitions",
+        "sourceUrl": "https://kaikki.org/zhwiktionary/%E4%BF%84%E8%AF%AD/kaikki.org-dictionary-%E4%BF%84%E8%AF%AD.jsonl",
+        "sourceRevision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:20 GMT",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 俄语 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license.",
+        "dbSha256": "5dfd75c39fbbd34bd9b9ad1f5e59f4b7e965202a621f58f7ef0bd752f985e0c6",
+        "counts": {
+          "entries": 88108,
+          "senses": 98137,
+          "forms": 12587
+        }
+      },
+      "manifestByteSha256": "039316dd3f64d96fff47158dc61ae881cde0b1d76cfb3a51e41b3d8e634b63f7",
+      "databaseBytes": 30609408,
+      "buildReport": {
+        "schemaVersion": 1,
+        "input": {
+          "file": "text.jsonl",
+          "bytes": 16741312,
+          "sha256": "e2cea64974cbf5618da38e40a3f647c606c3fe2ac4f89aa310751bfb61d477c2",
+          "compression": "none"
+        },
+        "lines": 88159,
+        "records": {
+          "parsed": 88159,
+          "otherLanguage": 0,
+          "matchingLanguage": 88159,
+          "skippedNoLexicalContent": 51,
+          "formLinkOnly": 0,
+          "withGlosses": 88108
+        },
+        "output": {
+          "packId": "kaikki-zhwiktionary-ru-zh-hans-label",
+          "version": "2026-10-29-text-1",
+          "dbSha256": "5dfd75c39fbbd34bd9b9ad1f5e59f4b7e965202a621f58f7ef0bd752f985e0c6",
+          "counts": {
+            "entries": 88108,
+            "senses": 98137,
+            "forms": 12587
+          }
+        },
+        "skippedMeaning": "skippedNoLexicalContent records have neither a usable gloss nor an explicit form_of target; formLinkOnly records add source form links but no fabricated answer."
+      },
+      "build": {
+        "buildSource": {
+          "head": "348fbc3cb76114fab59c1a8f0650e41469d8f554",
+          "builderSha256": "8bcac71e72cc3164bbfba87ea09a5850ed2873f653122993e584ba033ec97603"
+        },
+        "elapsedSeconds": 6.110567553000001,
+        "resourceUsage": {
+          "userCPUTime": 6050744,
+          "systemCPUTime": 763186,
+          "maxRSS": 126628,
+          "sharedMemorySize": 0,
+          "unsharedDataSize": 0,
+          "unsharedStackSize": 0,
+          "minorPageFault": 37478,
+          "majorPageFault": 0,
+          "swappedOut": 0,
+          "fsRead": 0,
+          "fsWrite": 183736,
+          "ipcSent": 0,
+          "ipcReceived": 0,
+          "signalsCount": 0,
+          "voluntaryContextSwitches": 2413,
+          "involuntaryContextSwitches": 99
+        },
+        "databaseBytes": 30609408
+      }
+    },
+    {
+      "sourceDirectory": "data/zhwiktionary-ru-hant-label-20261029",
+      "download": {
+        "url": "https://kaikki.org/zhwiktionary/%E4%BF%84%E8%AA%9E/kaikki.org-dictionary-%E4%BF%84%E8%AA%9E.jsonl",
+        "sourceLabel": "俄語",
+        "status": 200,
+        "contentLength": 97197834,
+        "etag": "\"6ae3b73a-5cb1f0a\"",
+        "lastModified": "Thu, 29 Oct 2026 21:14:34 GMT",
+        "retrievedAt": "2026-10-30T19:32:38Z",
+        "completed": true,
+        "bytes": 97197834,
+        "sha256": "ebbda89022770a93505361b4c486b2da74657f8db77cc7f0cedb1babde3dcffb",
+        "elapsedSeconds": 5.781,
+        "file": "data/zhwiktionary-ru-hant-label-20261029/source.jsonl"
+      },
+      "source": {
+        "url": "https://kaikki.org/zhwiktionary/%E4%BF%84%E8%AA%9E/kaikki.org-dictionary-%E4%BF%84%E8%AA%9E.jsonl",
+        "edition": "zhwiktionary",
+        "label": "俄語",
+        "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:34 GMT",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 俄語 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+      },
+      "projection": {
+        "schemaVersion": 1,
+        "kind": "kaikki-lexical-text-projection",
+        "source": {
+          "url": "https://kaikki.org/zhwiktionary/%E4%BF%84%E8%AA%9E/kaikki.org-dictionary-%E4%BF%84%E8%AA%9E.jsonl",
+          "edition": "zhwiktionary",
+          "label": "俄語",
+          "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:34 GMT",
+          "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 俄語 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+        },
+        "changes": "Kept word/language/part-of-speech, recorded form text/tags, redirects, written pronunciation fields, and sense glosses/raw_glosses/tags/form_of/alt_of. Removed all examples and quotations, media/audio fields and URLs, etymology, linkages and unrelated fields. No definitions, readings or translations generated; no Unicode normalization.",
+        "rawSha256": "ebbda89022770a93505361b4c486b2da74657f8db77cc7f0cedb1babde3dcffb",
+        "projectionSha256": "81730e51d223c4c480b11cf297ae73f6dc8ff8eed5042ffd696a3e151e422e24",
+        "inputBytes": 97197834,
+        "outputBytes": 27292722,
+        "inputRecords": 76042,
+        "outputRecords": 76042,
+        "blankLines": 0,
+        "removedExamples": 12866,
+        "recordsWithGlosses": 75932,
+        "sensesWithGlosses": 94293,
+        "languageCounts": {
+          "ru": 76042
+        },
+        "maxInputRecordUtf8Bytes": 18083,
+        "maxOutputRecordUtf8Bytes": 1986
+      },
+      "manifest": {
+        "schemaVersion": 1,
+        "packId": "kaikki-zhwiktionary-ru-zh-hant-label",
+        "version": "2026-10-29-text-1",
+        "sourceLanguage": "ru",
+        "glossLanguage": "zh",
+        "sourceName": "Wiktionary via Kaikki.org — 俄語 label partition, Chinese definitions",
+        "sourceUrl": "https://kaikki.org/zhwiktionary/%E4%BF%84%E8%AA%9E/kaikki.org-dictionary-%E4%BF%84%E8%AA%9E.jsonl",
+        "sourceRevision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:34 GMT",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 俄語 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license.",
+        "dbSha256": "3fabdcf94ab967ef1484d329e2ae8f37b21cfd268f44a23240f756ae33ef2315",
+        "counts": {
+          "entries": 75932,
+          "senses": 94293,
+          "forms": 115780
+        }
+      },
+      "manifestByteSha256": "6b344c91ed10ade3c45927457be2cb75e23c0888e591323c9dd08c21c8afd46c",
+      "databaseBytes": 48549888,
+      "buildReport": {
+        "schemaVersion": 1,
+        "input": {
+          "file": "text.jsonl",
+          "bytes": 27292722,
+          "sha256": "81730e51d223c4c480b11cf297ae73f6dc8ff8eed5042ffd696a3e151e422e24",
+          "compression": "none"
+        },
+        "lines": 76042,
+        "records": {
+          "parsed": 76042,
+          "otherLanguage": 0,
+          "matchingLanguage": 76042,
+          "skippedNoLexicalContent": 110,
+          "formLinkOnly": 0,
+          "withGlosses": 75932
+        },
+        "output": {
+          "packId": "kaikki-zhwiktionary-ru-zh-hant-label",
+          "version": "2026-10-29-text-1",
+          "dbSha256": "3fabdcf94ab967ef1484d329e2ae8f37b21cfd268f44a23240f756ae33ef2315",
+          "counts": {
+            "entries": 75932,
+            "senses": 94293,
+            "forms": 115780
+          }
+        },
+        "skippedMeaning": "skippedNoLexicalContent records have neither a usable gloss nor an explicit form_of target; formLinkOnly records add source form links but no fabricated answer."
+      },
+      "build": {
+        "buildSource": {
+          "head": "348fbc3cb76114fab59c1a8f0650e41469d8f554",
+          "builderSha256": "8bcac71e72cc3164bbfba87ea09a5850ed2873f653122993e584ba033ec97603"
+        },
+        "elapsedSeconds": 6.808916395,
+        "resourceUsage": {
+          "userCPUTime": 6345288,
+          "systemCPUTime": 1047271,
+          "maxRSS": 155128,
+          "sharedMemorySize": 0,
+          "unsharedDataSize": 0,
+          "unsharedStackSize": 0,
+          "minorPageFault": 44044,
+          "majorPageFault": 0,
+          "swappedOut": 0,
+          "fsRead": 0,
+          "fsWrite": 297008,
+          "ipcSent": 0,
+          "ipcReceived": 0,
+          "signalsCount": 0,
+          "voluntaryContextSwitches": 3494,
+          "involuntaryContextSwitches": 313
+        },
+        "databaseBytes": 48549888
+      }
+    },
+    {
+      "sourceDirectory": "data/zhwiktionary-zh-hans-label-20261029",
+      "download": {
+        "url": "https://kaikki.org/zhwiktionary/%E6%B1%89%E8%AF%AD/kaikki.org-dictionary-%E6%B1%89%E8%AF%AD.jsonl",
+        "sourceLabel": "汉语",
+        "status": 200,
+        "contentLength": 21786772,
+        "etag": "\"6ae3b72d-14c7094\"",
+        "lastModified": "Thu, 29 Oct 2026 21:14:21 GMT",
+        "retrievedAt": "2026-10-30T19:37:52Z",
+        "completed": true,
+        "bytes": 21786772,
+        "sha256": "5111a255668451fa9d1469910d6fda76adf44eac5847ac70144c9a3e7d98c049",
+        "elapsedSeconds": 2.964,
+        "file": "data/zhwiktionary-zh-hans-label-20261029/source.jsonl"
+      },
+      "source": {
+        "url": "https://kaikki.org/zhwiktionary/%E6%B1%89%E8%AF%AD/kaikki.org-dictionary-%E6%B1%89%E8%AF%AD.jsonl",
+        "edition": "zhwiktionary",
+        "label": "汉语",
+        "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:21 GMT",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 汉语 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+      },
+      "projection": {
+        "schemaVersion": 1,
+        "kind": "kaikki-lexical-text-projection",
+        "source": {
+          "url": "https://kaikki.org/zhwiktionary/%E6%B1%89%E8%AF%AD/kaikki.org-dictionary-%E6%B1%89%E8%AF%AD.jsonl",
+          "edition": "zhwiktionary",
+          "label": "汉语",
+          "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:21 GMT",
+          "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 汉语 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+        },
+        "changes": "Kept word/language/part-of-speech, recorded form text/tags, redirects, written pronunciation fields, and sense glosses/raw_glosses/tags/form_of/alt_of. Removed all examples and quotations, media/audio fields and URLs, etymology, linkages and unrelated fields. No definitions, readings or translations generated; no Unicode normalization.",
+        "rawSha256": "5111a255668451fa9d1469910d6fda76adf44eac5847ac70144c9a3e7d98c049",
+        "projectionSha256": "5cd771a46e3f31e6ecb6484f09a829a02c67b504393911c5357efe9e2189f98f",
+        "inputBytes": 21786772,
+        "outputBytes": 4144501,
+        "inputRecords": 2906,
+        "outputRecords": 2906,
+        "blankLines": 0,
+        "removedExamples": 1526,
+        "recordsWithGlosses": 2235,
+        "sensesWithGlosses": 3566,
+        "languageCounts": {
+          "zh": 2906
+        },
+        "maxInputRecordUtf8Bytes": 166957,
+        "maxOutputRecordUtf8Bytes": 12256
+      },
+      "manifest": {
+        "schemaVersion": 2,
+        "packId": "kaikki-zhwiktionary-zh-zh-hans-label",
+        "version": "2026-10-29-text-1",
+        "sourceLanguage": "zh",
+        "glossLanguage": "zh",
+        "sourceName": "Wiktionary via Kaikki.org — 汉语 label partition, Chinese definitions",
+        "sourceUrl": "https://kaikki.org/zhwiktionary/%E6%B1%89%E8%AF%AD/kaikki.org-dictionary-%E6%B1%89%E8%AF%AD.jsonl",
+        "sourceRevision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:21 GMT",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 汉语 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license.",
+        "dbSha256": "bec06efe812173f1b6d00b561f7c14623a1c0e3c0de92864f3ddae7e4cfc19d0",
+        "counts": {
+          "entries": 2235,
+          "senses": 3566,
+          "forms": 2022
+        }
+      },
+      "manifestByteSha256": "d128369b4fb5cf28a81d0c9c31e0df758c7691700318b7fd10bd03af369fe7c9",
+      "databaseBytes": 1273856,
+      "buildReport": {
+        "schemaVersion": 1,
+        "input": {
+          "file": "text.jsonl",
+          "bytes": 4144501,
+          "sha256": "5cd771a46e3f31e6ecb6484f09a829a02c67b504393911c5357efe9e2189f98f",
+          "compression": "none"
+        },
+        "lines": 2906,
+        "records": {
+          "parsed": 2906,
+          "otherLanguage": 0,
+          "matchingLanguage": 2906,
+          "skippedNoLexicalContent": 671,
+          "formLinkOnly": 0,
+          "withGlosses": 2235
+        },
+        "maxSourceSenses": 225,
+        "output": {
+          "packId": "kaikki-zhwiktionary-zh-zh-hans-label",
+          "version": "2026-10-29-text-1",
+          "dbSha256": "bec06efe812173f1b6d00b561f7c14623a1c0e3c0de92864f3ddae7e4cfc19d0",
+          "counts": {
+            "entries": 2235,
+            "senses": 3566,
+            "forms": 2022
+          }
+        },
+        "skippedMeaning": "skippedNoLexicalContent records have neither a usable gloss nor an explicit form_of target; formLinkOnly records add source form links but no fabricated answer."
+      },
+      "build": {
+        "buildSource": {
+          "head": "348fbc3cb76114fab59c1a8f0650e41469d8f554",
+          "builderSha256": "85e3a47db41541840f5fb01ec8c5d7da644a436a5c024cedf1155f16d6514ea7"
+        },
+        "elapsedSeconds": 0.44402939100000005,
+        "resourceUsage": {
+          "userCPUTime": 468099,
+          "systemCPUTime": 105686,
+          "maxRSS": 57084,
+          "sharedMemorySize": 0,
+          "unsharedDataSize": 0,
+          "unsharedStackSize": 0,
+          "minorPageFault": 15653,
+          "majorPageFault": 0,
+          "swappedOut": 0,
+          "fsRead": 0,
+          "fsWrite": 8120,
+          "ipcSent": 0,
+          "ipcReceived": 0,
+          "signalsCount": 0,
+          "voluntaryContextSwitches": 622,
+          "involuntaryContextSwitches": 2
+        },
+        "databaseBytes": 1273856
+      }
+    },
+    {
+      "sourceDirectory": "data/zhwiktionary-zh-hant-label-20261029",
+      "download": {
+        "url": "https://kaikki.org/zhwiktionary/%E6%BC%A2%E8%AA%9E/kaikki.org-dictionary-%E6%BC%A2%E8%AA%9E.jsonl",
+        "sourceLabel": "漢語",
+        "status": 200,
+        "contentLength": 796331489,
+        "etag": "\"6ae3b769-2f770de1\"",
+        "lastModified": "Thu, 29 Oct 2026 21:15:21 GMT",
+        "retrievedAt": "2026-10-30T19:36:17Z",
+        "completed": true,
+        "bytes": 796331489,
+        "sha256": "b4ffef1dbc4c1e5858efc5b26c29d4d5d5b443bd614398ba33cce922ca2859b0",
+        "elapsedSeconds": 36.562,
+        "file": "data/zhwiktionary-zh-hant-label-20261029/source.jsonl"
+      },
+      "source": {
+        "url": "https://kaikki.org/zhwiktionary/%E6%BC%A2%E8%AA%9E/kaikki.org-dictionary-%E6%BC%A2%E8%AA%9E.jsonl",
+        "edition": "zhwiktionary",
+        "label": "漢語",
+        "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:15:21 GMT",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 漢語 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+      },
+      "projection": {
+        "schemaVersion": 1,
+        "kind": "kaikki-lexical-text-projection",
+        "source": {
+          "url": "https://kaikki.org/zhwiktionary/%E6%BC%A2%E8%AA%9E/kaikki.org-dictionary-%E6%BC%A2%E8%AA%9E.jsonl",
+          "edition": "zhwiktionary",
+          "label": "漢語",
+          "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:15:21 GMT",
+          "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 漢語 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+        },
+        "changes": "Kept word/language/part-of-speech, recorded form text/tags, redirects, written pronunciation fields, and sense glosses/raw_glosses/tags/form_of/alt_of. Removed all examples and quotations, media/audio fields and URLs, etymology, linkages and unrelated fields. No definitions, readings or translations generated; no Unicode normalization.",
+        "rawSha256": "b4ffef1dbc4c1e5858efc5b26c29d4d5d5b443bd614398ba33cce922ca2859b0",
+        "projectionSha256": "eb2c27761bb55976178fefb54e003794c746b3c4c81437333cd3b978605d7bad",
+        "inputBytes": 796331489,
+        "outputBytes": 290013676,
+        "inputRecords": 284257,
+        "outputRecords": 284257,
+        "blankLines": 0,
+        "removedExamples": 54239,
+        "recordsWithGlosses": 77066,
+        "sensesWithGlosses": 104328,
+        "languageCounts": {
+          "zh": 284257
+        },
+        "maxInputRecordUtf8Bytes": 260646,
+        "maxOutputRecordUtf8Bytes": 17465
+      },
+      "manifest": {
+        "schemaVersion": 2,
+        "packId": "kaikki-zhwiktionary-zh-zh-hant-label",
+        "version": "2026-10-29-text-1",
+        "sourceLanguage": "zh",
+        "glossLanguage": "zh",
+        "sourceName": "Wiktionary via Kaikki.org — 漢語 label partition, Chinese definitions",
+        "sourceUrl": "https://kaikki.org/zhwiktionary/%E6%BC%A2%E8%AA%9E/kaikki.org-dictionary-%E6%BC%A2%E8%AA%9E.jsonl",
+        "sourceRevision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:15:21 GMT",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 漢語 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license.",
+        "dbSha256": "3e817cb6c5965e8eb63a3aeabf5c51961a60dcbda9b1c53adf1137689931f976",
+        "counts": {
+          "entries": 77066,
+          "senses": 104328,
+          "forms": 55989
+        }
+      },
+      "manifestByteSha256": "a31934b94b3ed57db064bd9d4f721cba1cb4421d92c2b4edd84d5e9e8a7c202b",
+      "databaseBytes": 40386560,
+      "buildReport": {
+        "schemaVersion": 1,
+        "input": {
+          "file": "text.jsonl",
+          "bytes": 290013676,
+          "sha256": "eb2c27761bb55976178fefb54e003794c746b3c4c81437333cd3b978605d7bad",
+          "compression": "none"
+        },
+        "lines": 284257,
+        "records": {
+          "parsed": 284257,
+          "otherLanguage": 0,
+          "matchingLanguage": 284257,
+          "skippedNoLexicalContent": 207191,
+          "formLinkOnly": 0,
+          "withGlosses": 77066
+        },
+        "maxSourceSenses": 137,
+        "output": {
+          "packId": "kaikki-zhwiktionary-zh-zh-hant-label",
+          "version": "2026-10-29-text-1",
+          "dbSha256": "3e817cb6c5965e8eb63a3aeabf5c51961a60dcbda9b1c53adf1137689931f976",
+          "counts": {
+            "entries": 77066,
+            "senses": 104328,
+            "forms": 55989
+          }
+        },
+        "skippedMeaning": "skippedNoLexicalContent records have neither a usable gloss nor an explicit form_of target; formLinkOnly records add source form links but no fabricated answer."
+      },
+      "build": {
+        "buildSource": {
+          "head": "348fbc3cb76114fab59c1a8f0650e41469d8f554",
+          "builderSha256": "85e3a47db41541840f5fb01ec8c5d7da644a436a5c024cedf1155f16d6514ea7"
+        },
+        "elapsedSeconds": 17.575325257999996,
+        "resourceUsage": {
+          "userCPUTime": 16474979,
+          "systemCPUTime": 1842703,
+          "maxRSS": 177012,
+          "sharedMemorySize": 0,
+          "unsharedDataSize": 0,
+          "unsharedStackSize": 0,
+          "minorPageFault": 50455,
+          "majorPageFault": 0,
+          "swappedOut": 0,
+          "fsRead": 0,
+          "fsWrite": 240216,
+          "ipcSent": 0,
+          "ipcReceived": 0,
+          "signalsCount": 0,
+          "voluntaryContextSwitches": 13129,
+          "involuntaryContextSwitches": 786
+        },
+        "databaseBytes": 40386560
+      }
+    },
+    {
+      "sourceDirectory": "data/zhwiktionary-zh-zhongwen-label-20261029",
+      "download": {
+        "url": "https://kaikki.org/zhwiktionary/%E4%B8%AD%E6%96%87/kaikki.org-dictionary-%E4%B8%AD%E6%96%87.jsonl",
+        "sourceLabel": "中文",
+        "status": 200,
+        "contentLength": 803873,
+        "etag": "\"6ae3b73d-c4421\"",
+        "lastModified": "Thu, 29 Oct 2026 21:14:37 GMT",
+        "retrievedAt": "2026-10-30T19:37:57Z",
+        "completed": true,
+        "bytes": 803873,
+        "sha256": "ba84d3f5fe9d2b1bfa444931de813a328004cf2adfc8624fac6ef215299003e6",
+        "elapsedSeconds": 2.109,
+        "file": "data/zhwiktionary-zh-zhongwen-label-20261029/source.jsonl"
+      },
+      "source": {
+        "url": "https://kaikki.org/zhwiktionary/%E4%B8%AD%E6%96%87/kaikki.org-dictionary-%E4%B8%AD%E6%96%87.jsonl",
+        "edition": "zhwiktionary",
+        "label": "中文",
+        "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:37 GMT",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 中文 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+      },
+      "projection": {
+        "schemaVersion": 1,
+        "kind": "kaikki-lexical-text-projection",
+        "source": {
+          "url": "https://kaikki.org/zhwiktionary/%E4%B8%AD%E6%96%87/kaikki.org-dictionary-%E4%B8%AD%E6%96%87.jsonl",
+          "edition": "zhwiktionary",
+          "label": "中文",
+          "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:37 GMT",
+          "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+          "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+          "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 中文 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+        },
+        "changes": "Kept word/language/part-of-speech, recorded form text/tags, redirects, written pronunciation fields, and sense glosses/raw_glosses/tags/form_of/alt_of. Removed all examples and quotations, media/audio fields and URLs, etymology, linkages and unrelated fields. No definitions, readings or translations generated; no Unicode normalization.",
+        "rawSha256": "ba84d3f5fe9d2b1bfa444931de813a328004cf2adfc8624fac6ef215299003e6",
+        "projectionSha256": "34816b63c9086e43c4d9fc88e7afbe422cceff93ab06d7b7226f06dabe8c4e86",
+        "inputBytes": 803873,
+        "outputBytes": 360867,
+        "inputRecords": 1951,
+        "outputRecords": 1951,
+        "blankLines": 0,
+        "removedExamples": 0,
+        "recordsWithGlosses": 1942,
+        "sensesWithGlosses": 1963,
+        "languageCounts": {
+          "zh": 1951
+        },
+        "maxInputRecordUtf8Bytes": 2063,
+        "maxOutputRecordUtf8Bytes": 592
+      },
+      "manifest": {
+        "schemaVersion": 1,
+        "packId": "kaikki-zhwiktionary-zh-zh-zhongwen-label",
+        "version": "2026-10-29-text-1",
+        "sourceLanguage": "zh",
+        "glossLanguage": "zh",
+        "sourceName": "Wiktionary via Kaikki.org — 中文 label partition, Chinese definitions",
+        "sourceUrl": "https://kaikki.org/zhwiktionary/%E4%B8%AD%E6%96%87/kaikki.org-dictionary-%E4%B8%AD%E6%96%87.jsonl",
+        "sourceRevision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:37 GMT",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 中文 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license.",
+        "dbSha256": "45db4d1bdb3b2af592c42ddd34489639be5e5bc899bb22f0c251872abb0eaa9a",
+        "counts": {
+          "entries": 1942,
+          "senses": 1963,
+          "forms": 0
+        }
+      },
+      "manifestByteSha256": "8c7c2266ea8fa24c7e27ef5b3c0e142d1c82d9bba2dca26469c297ea5cf01ee9",
+      "databaseBytes": 626688,
+      "buildReport": {
+        "schemaVersion": 1,
+        "input": {
+          "file": "text.jsonl",
+          "bytes": 360867,
+          "sha256": "34816b63c9086e43c4d9fc88e7afbe422cceff93ab06d7b7226f06dabe8c4e86",
+          "compression": "none"
+        },
+        "lines": 1951,
+        "records": {
+          "parsed": 1951,
+          "otherLanguage": 0,
+          "matchingLanguage": 1951,
+          "skippedNoLexicalContent": 9,
+          "formLinkOnly": 0,
+          "withGlosses": 1942
+        },
+        "output": {
+          "packId": "kaikki-zhwiktionary-zh-zh-zhongwen-label",
+          "version": "2026-10-29-text-1",
+          "dbSha256": "45db4d1bdb3b2af592c42ddd34489639be5e5bc899bb22f0c251872abb0eaa9a",
+          "counts": {
+            "entries": 1942,
+            "senses": 1963,
+            "forms": 0
+          }
+        },
+        "skippedMeaning": "skippedNoLexicalContent records have neither a usable gloss nor an explicit form_of target; formLinkOnly records add source form links but no fabricated answer."
+      },
+      "build": {
+        "buildSource": {
+          "head": "348fbc3cb76114fab59c1a8f0650e41469d8f554",
+          "builderSha256": "8bcac71e72cc3164bbfba87ea09a5850ed2873f653122993e584ba033ec97603"
+        },
+        "elapsedSeconds": 0.127764835,
+        "resourceUsage": {
+          "userCPUTime": 144354,
+          "systemCPUTime": 55308,
+          "maxRSS": 43512,
+          "sharedMemorySize": 0,
+          "unsharedDataSize": 0,
+          "unsharedStackSize": 0,
+          "minorPageFault": 11692,
+          "majorPageFault": 0,
+          "swappedOut": 0,
+          "fsRead": 0,
+          "fsWrite": 4280,
+          "ipcSent": 0,
+          "ipcReceived": 0,
+          "signalsCount": 0,
+          "voluntaryContextSwitches": 301,
+          "involuntaryContextSwitches": 5
+        },
+        "databaseBytes": 626688
+      }
+    }
+  ]
+}

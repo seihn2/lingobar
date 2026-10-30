@@ -164,8 +164,11 @@ function wireDictionaryIPC(): void {
   ownedHandle('lingo:dictionary-offline-save', (owner, input) => dictionary.saveOffline(owner, input))
   ownedHandle('lingo:dictionary-packs-list', () => offlinePacks.list())
   ownedHandle('lingo:dictionary-packs-install', async () => {
+    if (['starting', 'listening'].includes(state)) throw new Error('请先暂停聆听，再安装或更新语言包。')
     const result = await dialog.showOpenDialog(window!, { title: '安装或更新离线语言包', properties: ['openFile'], filters: [{ name: '语言包 manifest.json', extensions: ['json'] }] })
     if (result.canceled || result.filePaths.length !== 1) return { installed: false, pack: null }
+    // Capture may have been started from the tray while the native chooser was open.
+    if (['starting', 'listening'].includes(state)) throw new Error('请先暂停聆听，再安装或更新语言包。')
     const pack = offlinePacks.install(result.filePaths[0])
     window?.webContents.send('lingo:dictionary-changed')
     return { installed: true, pack }
