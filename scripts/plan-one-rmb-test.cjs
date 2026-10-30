@@ -9,7 +9,8 @@ const PRICE_CHECKED_ON = '2026-10-28'
 const STEPS = Object.freeze({
   asr: Object.freeze({ reservationMicroCny: null }), // Selected3.1 is not priced by PCM duration; reservation is refused.
   translation: Object.freeze({ reservationMicroCny: 20_000 }),
-  ruby: Object.freeze({ reservationMicroCny: 20_000 })
+  ruby: Object.freeze({ reservationMicroCny: 20_000 }),
+  ...Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`web-text-${i + 1}`, Object.freeze({ reservationMicroCny: null })]))
 })
 const failure = () => { throw new Error('Test budget unavailable; no provider call permitted') }
 const whole = (n, max) => Number.isSafeInteger(n) && n > 0 && n <= max
@@ -122,11 +123,12 @@ function readLedger(dir) {
 function validateLedger(v) {
   if (!exactKeys(v, EXACT_LEDGER_KEYS) || v.version !== 1 || v.batchId !== BATCH || v.currency !== 'CNY' || v.limitMicroCny !== LIMIT_MICRO_CNY ||
       !Number.isSafeInteger(v.reservedMicroCny) || v.reservedMicroCny < 0 || v.reservedMicroCny > LIMIT_MICRO_CNY ||
-      !Array.isArray(v.attempts) || v.attempts.length > 2) failure()
+      !Array.isArray(v.attempts) || v.attempts.length > 22) failure()
   const ids = new Set()
   for (const item of v.attempts) {
-    if (!exactKeys(item, ['step', 'reservedMicroCny'], ['outcome']) || !['translation', 'ruby'].includes(item.step) || ids.has(item.step) ||
-        !whole(item.reservedMicroCny, LIMIT_MICRO_CNY) || item.reservedMicroCny !== STEPS[item.step].reservationMicroCny) failure()
+    if (!exactKeys(item, ['step', 'reservedMicroCny'], ['outcome']) || typeof item.step !== 'string' || !Object.hasOwn(STEPS, item.step) || item.step === 'asr' || ids.has(item.step) ||
+        !whole(item.reservedMicroCny, LIMIT_MICRO_CNY) ||
+        (item.step.startsWith('web-text-') ? item.reservedMicroCny > 100_000 : item.reservedMicroCny !== STEPS[item.step].reservationMicroCny)) failure()
     ids.add(item.step)
     if (Object.hasOwn(item, 'outcome')) {
       const o = item.outcome
@@ -187,13 +189,21 @@ class OneRmbTestLedger {
     finally { if (fd !== undefined) fs.closeSync(fd) }
   }
   get reservedMicroCny() { return this.value.reservedMicroCny }
-  reserve(step) {
-    if (this.closed || this.failed || !Object.hasOwn(STEPS, step) || this.value.attempts.some(item => item.step === step)) failure()
-    const amount = STEPS[step].reservationMicroCny
-    if (!whole(amount, LIMIT_MICRO_CNY) || this.value.reservedMicroCny + amount > LIMIT_MICRO_CNY) failure()
+  reserve(step, requestedAmount) {
+    if (this.closed || this.failed || typeof step !== 'string' || !Object.hasOwn(STEPS, step) || this.value.attempts.some(item => item.step === step)) failure()
+    const web = step.startsWith('web-text-')
+    if (!web && requestedAmount !== undefined) failure()
+    const amount = web ? requestedAmount : STEPS[step].reservationMicroCny
+    if (!whole(amount, web ? 81_920 : LIMIT_MICRO_CNY) || this.value.reservedMicroCny + amount > LIMIT_MICRO_CNY) failure()
     this.#persist({ ...this.value, reservedMicroCny: this.value.reservedMicroCny + amount,
       attempts: [...this.value.attempts, { step, reservedMicroCny: amount }] })
     return { reservedMicroCny: this.value.reservedMicroCny, limitMicroCny: LIMIT_MICRO_CNY }
+  }
+  reserveWebText(amount) {
+    const step = Array.from({ length: 20 }, (_, i) => `web-text-${i + 1}`)
+      .find(id => !this.value.attempts.some(item => item.step === id))
+    if (!step) failure()
+    return { step, ...this.reserve(step, amount) }
   }
   recordOutcome(step, status, requestSha256, errorCategory = null, anomaly = false) {
     if (this.closed || this.failed) failure()

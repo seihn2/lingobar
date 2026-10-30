@@ -18,11 +18,61 @@ function captionText(caption: Caption, settings: Settings): string {
   return lines.join('\n')
 }
 
+function TranslationKeySettings({ session }: { session: BrowserSession }) {
+  const [apiKey, setApiKey] = useState('')
+  const [pending, setPending] = useState(false)
+  const [status, setStatus] = useState('')
+  const input = useRef<HTMLInputElement>(null)
+  const generation = useRef(0)
+  const submitting = useRef(false)
+  const composing = useRef(false)
+  useLayoutEffect(() => {
+    const field = input.current
+    return () => {
+      generation.current++; submitting.current = false
+      if (field) field.value = ''
+    }
+  }, [])
+  const saveKey = async () => {
+    if (submitting.current || !apiKey.trim()) return
+    const current = ++generation.current
+    submitting.current = true; setPending(true); setStatus('')
+    try {
+      await session.configureTranslationKey(apiKey)
+      if (current !== generation.current) return
+      setApiKey(''); if (input.current) input.current.value = ''
+      setStatus('已保存')
+    } catch {
+      if (current === generation.current) setStatus('密钥保存未完成。')
+    } finally {
+      if (current === generation.current) { submitting.current = false; setPending(false) }
+    }
+  }
+  return <fieldset className="web-key-settings">
+    <legend>翻译服务</legend>
+    <label htmlFor="web-translation-key">DeepSeek API Key</label>
+    <input ref={input} id="web-translation-key" type="password" value={apiKey} onChange={event => setApiKey(event.target.value)} disabled={pending} maxLength={4096} autoComplete="new-password" autoCapitalize="none" autoCorrect="off" spellCheck={false} aria-describedby="web-key-status"
+      onCompositionStart={() => { composing.current = true }} onCompositionEnd={() => { composing.current = false }}
+      onKeyDown={event => {
+        if (event.key === 'Enter' && !event.nativeEvent.isComposing && !composing.current && event.keyCode !== 229) {
+          event.preventDefault(); void saveKey()
+        }
+      }} />
+    <button type="button" onClick={() => void saveKey()} disabled={pending || !apiKey.trim()}>{pending ? '正在保存…' : '保存密钥'}</button>
+    <p id="web-key-status" role="status">{status || (session.textConfigured ? '已配置' : '')}</p>
+  </fieldset>
+}
+
 export default function WebApp({ session }: { session: BrowserSession }) {
   const [snapshot, setSnapshot] = useState(() => session.snapshot())
-  const [panel, setPanel] = useState<'settings' | 'history' | null>(null)
+  const [panel, setPanel] = useState<'settings' | 'history' | 'text' | null>(null)
   const [draft, setDraft] = useState(snapshot.settings)
   const [notice, setNotice] = useState('')
+  const [textInput, setTextInput] = useState('')
+  const [textPending, setTextPending] = useState(false)
+  const textAction = useRef(0)
+  const textInFlight = useRef(false)
+  const textBytes = new TextEncoder().encode(textInput).byteLength
   const [compact, setCompact] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [focusVersion, setFocusVersion] = useState(0)
@@ -52,11 +102,15 @@ export default function WebApp({ session }: { session: BrowserSession }) {
       }
       capturing.current = nextActive; setSnapshot(next)
     })
-    const suspend = () => { action.current++; session.stop() }
+    const suspend = () => {
+      action.current++; textAction.current++; textInFlight.current = false
+      setTextPending(false); session.stop()
+    }
     const visibility = () => { if (document.hidden) suspend() }
     document.addEventListener('visibilitychange', visibility)
     window.addEventListener('pagehide', suspend)
     return () => {
+      textAction.current++; textInFlight.current = false
       off(); session.stop()
       document.removeEventListener('visibilitychange', visibility)
       window.removeEventListener('pagehide', suspend)
@@ -74,11 +128,33 @@ export default function WebApp({ session }: { session: BrowserSession }) {
     try { await session.start() }
     catch (error) { if (current === action.current && !(error instanceof Error && error.name === 'AbortError')) setNotice(error instanceof Error ? error.message : '无法开始录音。') }
   }
-  const open = (next: 'settings' | 'history') => {
+  const cancelText = () => {
+    textAction.current++; textInFlight.current = false
+    session.cancelText(); setTextPending(false)
+  }
+  const open = (next: 'settings' | 'history' | 'text') => {
+    if (textInFlight.current) cancelText()
     returnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
     setDraft(snapshot.settings); setNotice(''); setPanel(next)
   }
-  const close = () => { setPanel(null); setNotice(''); requestAnimationFrame(() => returnFocus.current?.focus()) }
+  const close = () => {
+    cancelText(); setPanel(null); setNotice('')
+    requestAnimationFrame(() => returnFocus.current?.focus())
+  }
+  const submitText = async () => {
+    if (textInFlight.current || !textInput.trim() || textBytes > 2000) return
+    const current = ++textAction.current
+    textInFlight.current = true; setTextPending(true); setNotice('')
+    try {
+      await session.translateText(textInput)
+      if (current !== textAction.current) return
+      textInFlight.current = false; setTextPending(false); close()
+    } catch (error) {
+      if (current === textAction.current && !(error instanceof Error && error.name === 'AbortError')) setNotice(error instanceof Error ? error.message : '文字翻译未完成。')
+    } finally {
+      if (current === textAction.current) { textInFlight.current = false; setTextPending(false) }
+    }
+  }
   const copy = (caption: Caption) => void run(async () => {
     await navigator.clipboard.writeText(captionText(caption, snapshot.settings))
     setCopiedId(caption.id)
@@ -119,14 +195,21 @@ export default function WebApp({ session }: { session: BrowserSession }) {
         : <CaptionStream allowRemoveSaved key={`expanded:${readingEpoch}`} captions={snapshot.captions} settings={snapshot.settings} readingSession={reading.current} preview={false} focusId={selectedId} focusVersion={focusVersion} copiedId={copiedId} onCopy={copy} onSave={save} onRetry={retry} onRetryAnnotation={retryAnnotation} onReturnLive={() => setSelectedId(null)} />
         : <p className="web-empty">暂无字幕</p>}
     </div>
-    {panel && <section className={`web-panel panel-${panel}`} aria-label={panel === 'settings' ? '字幕设置' : '历史与收藏'}>
-      <div className="web-panel-heading"><h1 ref={panelHeading} tabIndex={-1}>{panel === 'settings' ? '字幕设置' : '历史与收藏'}</h1><button type="button" onClick={close}>返回字幕</button></div>
+    {panel && <section className={`web-panel panel-${panel}`} aria-label={panel === 'settings' ? '字幕设置' : panel === 'text' ? '文字翻译' : '历史与收藏'}>
+      <div className="web-panel-heading"><h1 ref={panelHeading} tabIndex={-1}>{panel === 'settings' ? '字幕设置' : panel === 'text' ? '文字翻译' : '历史与收藏'}</h1><button type="button" onClick={close}>返回字幕</button></div>
       {panel === 'settings' ? <form className="settings-content" onSubmit={event => { event.preventDefault(); void run(() => { session.saveSettings({ targetLanguages: draft.targetLanguages, showOriginal: draft.showOriginal, showFurigana: draft.showFurigana, fontSize: draft.fontSize }); close() }) }}>
         <LanguageSettings draft={draft} onChange={next => setDraft(previous => ({ ...previous, ...next }))} />
         <label className="web-font" htmlFor="web-font">字号 {draft.fontSize}px<input id="web-font" type="range" min="14" max="24" value={draft.fontSize} onChange={event => setDraft(previous => ({ ...previous, fontSize: Number(event.target.value) }))} /></label>
+        {session.credentialsAvailable && <TranslationKeySettings session={session} />}
         <button type="submit" className="primary-button">保存设置</button>
+      </form> : panel === 'text' ? <form className="web-text-form" onSubmit={event => { event.preventDefault(); void submitText() }}>
+        <label htmlFor="web-text-input">原文</label>
+        <textarea id="web-text-input" value={textInput} onChange={event => setTextInput(event.target.value)} disabled={textPending} maxLength={2000} aria-describedby="web-text-limit" placeholder="粘贴需要翻译的文字" />
+        <p id="web-text-limit" className={textBytes > 2000 ? 'web-text-over-limit' : ''}>{textBytes} / 2000 UTF-8 字节</p>
+        {!session.textConfigured && <p role="status">文字服务未配置</p>}
+        <div className="web-text-actions"><button type="submit" className="primary-button" disabled={!session.textConfigured || textPending || !textInput.trim() || textBytes > 2000}>{textPending ? '正在翻译…' : '翻译文字'}</button>{textPending && <button type="button" onClick={cancelText}>取消翻译</button>}</div>
       </form> : <HistoryPanel allowRemoveSaved captions={snapshot.captions} settings={snapshot.settings} filter={filter} focusVersion={focusVersion} onFilter={setFilter} onSelect={caption => { setSelectedId(caption.id); setFocusVersion(value => value + 1); setCompact(false); close() }} onSave={save} onExport={exportSaved} exporting={false} exportResult={exportResult} />}
     </section>}
-    <footer className="web-footer"><button type="button" aria-expanded={panel === 'settings'} onClick={() => panel === 'settings' ? close() : open('settings')}>字幕设置</button><button type="button" aria-expanded={panel === 'history'} onClick={() => panel === 'history' ? close() : open('history')}>历史与收藏</button></footer>
+    <footer className="web-footer"><button type="button" aria-expanded={panel === 'settings'} onClick={() => panel === 'settings' ? close() : open('settings')}>字幕设置</button><button type="button" aria-expanded={panel === 'text'} onClick={() => panel === 'text' ? close() : open('text')}>文字翻译</button><button type="button" aria-expanded={panel === 'history'} onClick={() => panel === 'history' ? close() : open('history')}>历史与收藏</button></footer>
   </main>
 }

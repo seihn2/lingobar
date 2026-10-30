@@ -1,5 +1,9 @@
 # Private Web gateway — deployment preparation
 
+For the current text-only rollout, use [the short deployment guide](web-text-deployment.md).
+It keeps audio off and shares the existing cumulative1CNY ledger; the older audio-mode
+configuration below is not the enable command for this rollout.
+
 This is a **disabled-by-default** Node.js 22 gateway, stacked on
 PR13 `2b0af19186c4953f55dc6f4f4aa6b4a43671f249`. It reuses the existing Worker
 ASR/translation/annotation/session code and the unchanged browser contract.
@@ -65,8 +69,9 @@ shortcuts. Pagehide, errors and stop release the existing browser recording.
 | Operator action | Install the verified gateway bundle using an already available Node22 Linux runtime; supply a private environment outside the Web root and a private writable state directory; route the fixed paths below through the existing private origin. This task does not change VM/proxy/Tunnel/Access settings. |
 
 Do not enter keys into chat, Git, a browser config, an uploaded artifact, a URL,
-or a shell command that prints them. The executable reads only its deliberately
-provided process environment, not Electron settings, .env files or user keychains.
+or a shell command that prints them. The executable reads its deliberately provided process environment and, when explicitly
+selected with TRANSLATION_API_KEY_FILE, that existing private JSON credential file.
+It does not read Electron settings, discover .env files or consult user keychains.
 Use a dedicated unprivileged service account with access only to its configuration
 and state. Outgoing destinations are the two fixed providers and the pinned
 Access team's public certificate endpoint. No provider administration credentials
