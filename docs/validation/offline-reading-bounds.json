@@ -1,0 +1,1259 @@
+{
+  "schemaVersion": 1,
+  "kind": "read-only-full-raw-source-reading-bounds",
+  "generatedAt": "2026-10-30T20:34:13.998Z",
+  "elapsedSeconds": 24.521,
+  "node": "v24.19.0",
+  "method": "Replicated current builder readingsFor: legacy ipa/enpr/roman/other unchanged; hangeul/zh_pron source label plus JSON.stringify string-only original tags/raw_tags; unique entire resulting strings; lengths are JavaScript UTF-16 units. Eligibility uses usable gloss/raw_gloss except no-gloss/empty-gloss, or explicit usable form_of. allMatching also records pre-skip bounds. All source rows streamed from retained RAW files, not the earlier projection missing raw_tags.",
+  "builderSha256AtStart": "49c89a1f5d29d0310b2ea9ee893d5af104de13ffe16233a03e94d392d86b7457",
+  "scriptSha256": "71f55db6b8a2fc3972b135df12ebaa10ff2cb6b713745eb5ceef7b56c8447ad9",
+  "wholeSourceHashBoundary": "Whole-source hashes copied from retained download reports; no extra hash pass. This scan parses every source line but does not recompute a file hash.",
+  "networkCalls": 0,
+  "fullPacksBuilt": 0,
+  "sourceFilesModified": false,
+  "reports": [
+    {
+      "sourceDirectoryLabel": "zhwiktionary-ko-hans-label-20261029",
+      "language": "ko",
+      "sourceUrl": "https://kaikki.org/zhwiktionary/%E6%9C%9D%E9%B2%9C%E8%AF%AD/kaikki.org-dictionary-%E6%9C%9D%E9%B2%9C%E8%AF%AD.jsonl",
+      "recordedWholeSourceBytes": 59605170,
+      "recordedWholeSourceSha256": "22a71151ef6e21cbb91be5fc79256d8ac6a341e31b613ae117d6a76afc393a13",
+      "allMatching": {
+        "rows": 195305,
+        "maxDistinctReadings": 12,
+        "maxReadingUtf16": 42,
+        "maxNewReadingUtf16": 42,
+        "over100": 0,
+        "over200": 0,
+        "over256": 0,
+        "newFormattedOver1000": 0,
+        "newFormattedInvalidText": 0,
+        "topCases": [
+          {
+            "line": 7158,
+            "word": "내외국",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 12
+          },
+          {
+            "line": 176696,
+            "word": "폐결핵",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 12
+          },
+          {
+            "line": 193362,
+            "word": "탯줄",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 12
+          },
+          {
+            "line": 58160,
+            "word": "사우스셰틀랜드 제도",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 11
+          },
+          {
+            "line": 71301,
+            "word": "셰틀랜드 제도",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 11
+          },
+          {
+            "line": 145347,
+            "word": "진행되다",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 11
+          },
+          {
+            "line": 102133,
+            "word": "외계",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 10
+          },
+          {
+            "line": 102134,
+            "word": "외계",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 10
+          }
+        ],
+        "longestNew": {
+          "line": 18050,
+          "word": "도미니카 공화국",
+          "gloss": true,
+          "formLink": false,
+          "utf16": 42,
+          "value": "来源韩文记音（hangeul；标签：[\"phonetic\"]）：도미니카공(ː)화국"
+        }
+      },
+      "eligible": {
+        "rows": 195236,
+        "maxDistinctReadings": 12,
+        "maxReadingUtf16": 42,
+        "maxNewReadingUtf16": 42,
+        "over100": 0,
+        "over200": 0,
+        "over256": 0,
+        "newFormattedOver1000": 0,
+        "newFormattedInvalidText": 0,
+        "topCases": [
+          {
+            "line": 7158,
+            "word": "내외국",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 12
+          },
+          {
+            "line": 176696,
+            "word": "폐결핵",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 12
+          },
+          {
+            "line": 193362,
+            "word": "탯줄",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 12
+          },
+          {
+            "line": 58160,
+            "word": "사우스셰틀랜드 제도",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 11
+          },
+          {
+            "line": 71301,
+            "word": "셰틀랜드 제도",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 11
+          },
+          {
+            "line": 145347,
+            "word": "진행되다",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 11
+          },
+          {
+            "line": 102133,
+            "word": "외계",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 10
+          },
+          {
+            "line": 102134,
+            "word": "외계",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 10
+          }
+        ],
+        "longestNew": {
+          "line": 18050,
+          "word": "도미니카 공화국",
+          "gloss": true,
+          "formLink": false,
+          "utf16": 42,
+          "value": "来源韩文记音（hangeul；标签：[\"phonetic\"]）：도미니카공(ː)화국"
+        }
+      },
+      "withGloss": {
+        "rows": 195236,
+        "maxDistinctReadings": 12,
+        "maxReadingUtf16": 42,
+        "maxNewReadingUtf16": 42,
+        "over100": 0,
+        "over200": 0,
+        "over256": 0,
+        "newFormattedOver1000": 0,
+        "newFormattedInvalidText": 0,
+        "topCases": [
+          {
+            "line": 7158,
+            "word": "내외국",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 12
+          },
+          {
+            "line": 176696,
+            "word": "폐결핵",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 12
+          },
+          {
+            "line": 193362,
+            "word": "탯줄",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 12
+          },
+          {
+            "line": 58160,
+            "word": "사우스셰틀랜드 제도",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 11
+          },
+          {
+            "line": 71301,
+            "word": "셰틀랜드 제도",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 11
+          },
+          {
+            "line": 145347,
+            "word": "진행되다",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 11
+          },
+          {
+            "line": 102133,
+            "word": "외계",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 10
+          },
+          {
+            "line": 102134,
+            "word": "외계",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 10
+          }
+        ],
+        "longestNew": {
+          "line": 18050,
+          "word": "도미니카 공화국",
+          "gloss": true,
+          "formLink": false,
+          "utf16": 42,
+          "value": "来源韩文记音（hangeul；标签：[\"phonetic\"]）：도미니카공(ː)화국"
+        }
+      },
+      "formLinkOnly": {
+        "rows": 0,
+        "maxDistinctReadings": 0,
+        "maxReadingUtf16": 0,
+        "maxNewReadingUtf16": 0,
+        "over100": 0,
+        "over200": 0,
+        "over256": 0,
+        "newFormattedOver1000": 0,
+        "newFormattedInvalidText": 0,
+        "topCases": [],
+        "longestNew": null
+      },
+      "scannedLines": 195305
+    },
+    {
+      "sourceDirectoryLabel": "zhwiktionary-ko-hant-label-20261029",
+      "language": "ko",
+      "sourceUrl": "https://kaikki.org/zhwiktionary/%E6%9C%9D%E9%AE%AE%E8%AA%9E/kaikki.org-dictionary-%E6%9C%9D%E9%AE%AE%E8%AA%9E.jsonl",
+      "recordedWholeSourceBytes": 31343071,
+      "recordedWholeSourceSha256": "efd1ca7a0b98407e71f02f81ea12479eb5465c76ce144b3557f2425af5ab195f",
+      "allMatching": {
+        "rows": 46830,
+        "maxDistinctReadings": 20,
+        "maxReadingUtf16": 56,
+        "maxNewReadingUtf16": 48,
+        "over100": 0,
+        "over200": 0,
+        "over256": 0,
+        "newFormattedOver1000": 0,
+        "newFormattedInvalidText": 0,
+        "topCases": [
+          {
+            "line": 45386,
+            "word": "대뇌변연계",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 20
+          },
+          {
+            "line": 2769,
+            "word": "계획",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 12
+          },
+          {
+            "line": 7976,
+            "word": "개회식",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 12
+          },
+          {
+            "line": 12306,
+            "word": "계급투쟁",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 12
+          },
+          {
+            "line": 28904,
+            "word": "외국계",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 12
+          },
+          {
+            "line": 29270,
+            "word": "일벌백계",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 12
+          },
+          {
+            "line": 30179,
+            "word": "폐회식",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 12
+          },
+          {
+            "line": 30211,
+            "word": "폭행죄",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 12
+          }
+        ],
+        "longestNew": {
+          "line": 44440,
+          "word": "소비에트 사회주의 공화국 연방",
+          "gloss": true,
+          "formLink": false,
+          "utf16": 48,
+          "value": "来源韩文记音（hangeul；标签：[\"phonetic\"]）：소비에트사훼주의공(ː)화국연방"
+        }
+      },
+      "eligible": {
+        "rows": 44865,
+        "maxDistinctReadings": 20,
+        "maxReadingUtf16": 56,
+        "maxNewReadingUtf16": 48,
+        "over100": 0,
+        "over200": 0,
+        "over256": 0,
+        "newFormattedOver1000": 0,
+        "newFormattedInvalidText": 0,
+        "topCases": [
+          {
+            "line": 45386,
+            "word": "대뇌변연계",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 20
+          },
+          {
+            "line": 2769,
+            "word": "계획",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 12
+          },
+          {
+            "line": 7976,
+            "word": "개회식",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 12
+          },
+          {
+            "line": 12306,
+            "word": "계급투쟁",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 12
+          },
+          {
+            "line": 28904,
+            "word": "외국계",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 12
+          },
+          {
+            "line": 29270,
+            "word": "일벌백계",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 12
+          },
+          {
+            "line": 30179,
+            "word": "폐회식",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 12
+          },
+          {
+            "line": 30211,
+            "word": "폭행죄",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 12
+          }
+        ],
+        "longestNew": {
+          "line": 44440,
+          "word": "소비에트 사회주의 공화국 연방",
+          "gloss": true,
+          "formLink": false,
+          "utf16": 48,
+          "value": "来源韩文记音（hangeul；标签：[\"phonetic\"]）：소비에트사훼주의공(ː)화국연방"
+        }
+      },
+      "withGloss": {
+        "rows": 44865,
+        "maxDistinctReadings": 20,
+        "maxReadingUtf16": 56,
+        "maxNewReadingUtf16": 48,
+        "over100": 0,
+        "over200": 0,
+        "over256": 0,
+        "newFormattedOver1000": 0,
+        "newFormattedInvalidText": 0,
+        "topCases": [
+          {
+            "line": 45386,
+            "word": "대뇌변연계",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 20
+          },
+          {
+            "line": 2769,
+            "word": "계획",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 12
+          },
+          {
+            "line": 7976,
+            "word": "개회식",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 12
+          },
+          {
+            "line": 12306,
+            "word": "계급투쟁",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 12
+          },
+          {
+            "line": 28904,
+            "word": "외국계",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 12
+          },
+          {
+            "line": 29270,
+            "word": "일벌백계",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 12
+          },
+          {
+            "line": 30179,
+            "word": "폐회식",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 12
+          },
+          {
+            "line": 30211,
+            "word": "폭행죄",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 12
+          }
+        ],
+        "longestNew": {
+          "line": 44440,
+          "word": "소비에트 사회주의 공화국 연방",
+          "gloss": true,
+          "formLink": false,
+          "utf16": 48,
+          "value": "来源韩文记音（hangeul；标签：[\"phonetic\"]）：소비에트사훼주의공(ː)화국연방"
+        }
+      },
+      "formLinkOnly": {
+        "rows": 0,
+        "maxDistinctReadings": 0,
+        "maxReadingUtf16": 0,
+        "maxNewReadingUtf16": 0,
+        "over100": 0,
+        "over200": 0,
+        "over256": 0,
+        "newFormattedOver1000": 0,
+        "newFormattedInvalidText": 0,
+        "topCases": [],
+        "longestNew": null
+      },
+      "scannedLines": 46830
+    },
+    {
+      "sourceDirectoryLabel": "zhwiktionary-zh-hans-label-20261029",
+      "language": "zh",
+      "sourceUrl": "https://kaikki.org/zhwiktionary/%E6%B1%89%E8%AF%AD/kaikki.org-dictionary-%E6%B1%89%E8%AF%AD.jsonl",
+      "recordedWholeSourceBytes": 21786772,
+      "recordedWholeSourceSha256": "5111a255668451fa9d1469910d6fda76adf44eac5847ac70144c9a3e7d98c049",
+      "allMatching": {
+        "rows": 2906,
+        "maxDistinctReadings": 159,
+        "maxReadingUtf16": 214,
+        "maxNewReadingUtf16": 214,
+        "over100": 10,
+        "over200": 0,
+        "over256": 0,
+        "newFormattedOver1000": 0,
+        "newFormattedInvalidText": 0,
+        "topCases": [
+          {
+            "line": 1167,
+            "word": "門",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 159
+          },
+          {
+            "line": 1094,
+            "word": "光",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 142
+          },
+          {
+            "line": 1148,
+            "word": "淡",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 139
+          },
+          {
+            "line": 220,
+            "word": "香",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 136
+          },
+          {
+            "line": 1086,
+            "word": "也",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 135
+          },
+          {
+            "line": 138,
+            "word": "拉",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 124
+          },
+          {
+            "line": 159,
+            "word": "殿",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 122
+          },
+          {
+            "line": 1124,
+            "word": "娘",
+            "gloss": true,
+            "formLink": true,
+            "distinctReadings": 110
+          }
+        ],
+        "longestNew": {
+          "line": 1803,
+          "word": "喙齒",
+          "gloss": true,
+          "formLink": false,
+          "utf16": 214,
+          "value": "来源中文记音（zh_pron；标签：[\"Min-Nan\",\"Hokkien\",\"Quanzhou\",\"Zhangzhou\",\"Xiamen\",\"Taibei\",\"Kaohsiung\",\"Penang\",\"Singapore\",\"Phofsit-Daibuun\"]；原标签：[\"晉江\",\"安溪\",\"惠安\",\"同安\",\"詔安\",\"宜蘭\",\"鹿港\",\"梧棲\",\"臺南\",\"臺東\",\"新竹\",\"馬公\",\"菲律賓\"]）：zhuie'qie"
+        }
+      },
+      "eligible": {
+        "rows": 2235,
+        "maxDistinctReadings": 159,
+        "maxReadingUtf16": 214,
+        "maxNewReadingUtf16": 214,
+        "over100": 10,
+        "over200": 0,
+        "over256": 0,
+        "newFormattedOver1000": 0,
+        "newFormattedInvalidText": 0,
+        "topCases": [
+          {
+            "line": 1167,
+            "word": "門",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 159
+          },
+          {
+            "line": 1094,
+            "word": "光",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 142
+          },
+          {
+            "line": 1148,
+            "word": "淡",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 139
+          },
+          {
+            "line": 220,
+            "word": "香",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 136
+          },
+          {
+            "line": 1086,
+            "word": "也",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 135
+          },
+          {
+            "line": 138,
+            "word": "拉",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 124
+          },
+          {
+            "line": 159,
+            "word": "殿",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 122
+          },
+          {
+            "line": 1124,
+            "word": "娘",
+            "gloss": true,
+            "formLink": true,
+            "distinctReadings": 110
+          }
+        ],
+        "longestNew": {
+          "line": 1803,
+          "word": "喙齒",
+          "gloss": true,
+          "formLink": false,
+          "utf16": 214,
+          "value": "来源中文记音（zh_pron；标签：[\"Min-Nan\",\"Hokkien\",\"Quanzhou\",\"Zhangzhou\",\"Xiamen\",\"Taibei\",\"Kaohsiung\",\"Penang\",\"Singapore\",\"Phofsit-Daibuun\"]；原标签：[\"晉江\",\"安溪\",\"惠安\",\"同安\",\"詔安\",\"宜蘭\",\"鹿港\",\"梧棲\",\"臺南\",\"臺東\",\"新竹\",\"馬公\",\"菲律賓\"]）：zhuie'qie"
+        }
+      },
+      "withGloss": {
+        "rows": 2235,
+        "maxDistinctReadings": 159,
+        "maxReadingUtf16": 214,
+        "maxNewReadingUtf16": 214,
+        "over100": 10,
+        "over200": 0,
+        "over256": 0,
+        "newFormattedOver1000": 0,
+        "newFormattedInvalidText": 0,
+        "topCases": [
+          {
+            "line": 1167,
+            "word": "門",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 159
+          },
+          {
+            "line": 1094,
+            "word": "光",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 142
+          },
+          {
+            "line": 1148,
+            "word": "淡",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 139
+          },
+          {
+            "line": 220,
+            "word": "香",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 136
+          },
+          {
+            "line": 1086,
+            "word": "也",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 135
+          },
+          {
+            "line": 138,
+            "word": "拉",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 124
+          },
+          {
+            "line": 159,
+            "word": "殿",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 122
+          },
+          {
+            "line": 1124,
+            "word": "娘",
+            "gloss": true,
+            "formLink": true,
+            "distinctReadings": 110
+          }
+        ],
+        "longestNew": {
+          "line": 1803,
+          "word": "喙齒",
+          "gloss": true,
+          "formLink": false,
+          "utf16": 214,
+          "value": "来源中文记音（zh_pron；标签：[\"Min-Nan\",\"Hokkien\",\"Quanzhou\",\"Zhangzhou\",\"Xiamen\",\"Taibei\",\"Kaohsiung\",\"Penang\",\"Singapore\",\"Phofsit-Daibuun\"]；原标签：[\"晉江\",\"安溪\",\"惠安\",\"同安\",\"詔安\",\"宜蘭\",\"鹿港\",\"梧棲\",\"臺南\",\"臺東\",\"新竹\",\"馬公\",\"菲律賓\"]）：zhuie'qie"
+        }
+      },
+      "formLinkOnly": {
+        "rows": 0,
+        "maxDistinctReadings": 0,
+        "maxReadingUtf16": 0,
+        "maxNewReadingUtf16": 0,
+        "over100": 0,
+        "over200": 0,
+        "over256": 0,
+        "newFormattedOver1000": 0,
+        "newFormattedInvalidText": 0,
+        "topCases": [],
+        "longestNew": null
+      },
+      "scannedLines": 2906
+    },
+    {
+      "sourceDirectoryLabel": "zhwiktionary-zh-hant-label-20261029",
+      "language": "zh",
+      "sourceUrl": "https://kaikki.org/zhwiktionary/%E6%BC%A2%E8%AA%9E/kaikki.org-dictionary-%E6%BC%A2%E8%AA%9E.jsonl",
+      "recordedWholeSourceBytes": 796331489,
+      "recordedWholeSourceSha256": "b4ffef1dbc4c1e5858efc5b26c29d4d5d5b443bd614398ba33cce922ca2859b0",
+      "allMatching": {
+        "rows": 284257,
+        "maxDistinctReadings": 254,
+        "maxReadingUtf16": 204,
+        "maxNewReadingUtf16": 204,
+        "over100": 196,
+        "over200": 2,
+        "over256": 0,
+        "newFormattedOver1000": 0,
+        "newFormattedInvalidText": 0,
+        "topCases": [
+          {
+            "line": 209757,
+            "word": "在",
+            "gloss": true,
+            "formLink": true,
+            "distinctReadings": 254
+          },
+          {
+            "line": 501,
+            "word": "二",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 215
+          },
+          {
+            "line": 213639,
+            "word": "月",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 198
+          },
+          {
+            "line": 208354,
+            "word": "前",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 191
+          },
+          {
+            "line": 7037,
+            "word": "後",
+            "gloss": false,
+            "formLink": false,
+            "distinctReadings": 190
+          },
+          {
+            "line": 213606,
+            "word": "星",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 187
+          },
+          {
+            "line": 1435,
+            "word": "青",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 181
+          },
+          {
+            "line": 214499,
+            "word": "無",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 181
+          }
+        ],
+        "longestNew": {
+          "line": 7024,
+          "word": "影",
+          "gloss": false,
+          "formLink": false,
+          "utf16": 204,
+          "value": "来源中文记音（zh_pron；标签：[\"Min-Nan\",\"Hokkien\",\"Xiamen\",\"Quanzhou\",\"Zhangzhou\",\"Taibei\",\"Kaohsiung\",\"Singapore\",\"Phofsit-Daibuun\"]；原标签：[\"晉江\",\"南安\",\"惠安\",\"漳浦\",\"長泰\",\"鹿港\",\"萬華\",\"新竹\",\"梧棲\",\"馬公\",\"宜蘭\",\"台中\",\"臺南\",\"臺東\"]）：viar"
+        }
+      },
+      "eligible": {
+        "rows": 77066,
+        "maxDistinctReadings": 254,
+        "maxReadingUtf16": 204,
+        "maxNewReadingUtf16": 203,
+        "over100": 167,
+        "over200": 2,
+        "over256": 0,
+        "newFormattedOver1000": 0,
+        "newFormattedInvalidText": 0,
+        "topCases": [
+          {
+            "line": 209757,
+            "word": "在",
+            "gloss": true,
+            "formLink": true,
+            "distinctReadings": 254
+          },
+          {
+            "line": 501,
+            "word": "二",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 215
+          },
+          {
+            "line": 213639,
+            "word": "月",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 198
+          },
+          {
+            "line": 208354,
+            "word": "前",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 191
+          },
+          {
+            "line": 213606,
+            "word": "星",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 187
+          },
+          {
+            "line": 1435,
+            "word": "青",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 181
+          },
+          {
+            "line": 214499,
+            "word": "無",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 181
+          },
+          {
+            "line": 210449,
+            "word": "大",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 173
+          }
+        ],
+        "longestNew": {
+          "line": 260542,
+          "word": "眠床",
+          "gloss": true,
+          "formLink": false,
+          "utf16": 203,
+          "value": "来源中文记音（zh_pron；标签：[\"Min-Nan\",\"Hokkien\",\"Xiamen\",\"Quanzhou\",\"Zhangzhou\",\"Taibei\",\"Kaohsiung\",\"Penang\",\"Singapore\",\"Phofsit-Daibuun\"]；原标签：[\"晉江\",\"同安\",\"鹿港\",\"三峽\",\"宜蘭\",\"臺南\",\"金門\",\"馬公\",\"新竹\",\"台中\",\"菲律賓\"]）：binzhngg"
+        }
+      },
+      "withGloss": {
+        "rows": 77066,
+        "maxDistinctReadings": 254,
+        "maxReadingUtf16": 204,
+        "maxNewReadingUtf16": 203,
+        "over100": 167,
+        "over200": 2,
+        "over256": 0,
+        "newFormattedOver1000": 0,
+        "newFormattedInvalidText": 0,
+        "topCases": [
+          {
+            "line": 209757,
+            "word": "在",
+            "gloss": true,
+            "formLink": true,
+            "distinctReadings": 254
+          },
+          {
+            "line": 501,
+            "word": "二",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 215
+          },
+          {
+            "line": 213639,
+            "word": "月",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 198
+          },
+          {
+            "line": 208354,
+            "word": "前",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 191
+          },
+          {
+            "line": 213606,
+            "word": "星",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 187
+          },
+          {
+            "line": 1435,
+            "word": "青",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 181
+          },
+          {
+            "line": 214499,
+            "word": "無",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 181
+          },
+          {
+            "line": 210449,
+            "word": "大",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 173
+          }
+        ],
+        "longestNew": {
+          "line": 260542,
+          "word": "眠床",
+          "gloss": true,
+          "formLink": false,
+          "utf16": 203,
+          "value": "来源中文记音（zh_pron；标签：[\"Min-Nan\",\"Hokkien\",\"Xiamen\",\"Quanzhou\",\"Zhangzhou\",\"Taibei\",\"Kaohsiung\",\"Penang\",\"Singapore\",\"Phofsit-Daibuun\"]；原标签：[\"晉江\",\"同安\",\"鹿港\",\"三峽\",\"宜蘭\",\"臺南\",\"金門\",\"馬公\",\"新竹\",\"台中\",\"菲律賓\"]）：binzhngg"
+        }
+      },
+      "formLinkOnly": {
+        "rows": 0,
+        "maxDistinctReadings": 0,
+        "maxReadingUtf16": 0,
+        "maxNewReadingUtf16": 0,
+        "over100": 0,
+        "over200": 0,
+        "over256": 0,
+        "newFormattedOver1000": 0,
+        "newFormattedInvalidText": 0,
+        "topCases": [],
+        "longestNew": null
+      },
+      "scannedLines": 284257
+    },
+    {
+      "sourceDirectoryLabel": "zhwiktionary-zh-zhongwen-label-20261029",
+      "language": "zh",
+      "sourceUrl": "https://kaikki.org/zhwiktionary/%E4%B8%AD%E6%96%87/kaikki.org-dictionary-%E4%B8%AD%E6%96%87.jsonl",
+      "recordedWholeSourceBytes": 803873,
+      "recordedWholeSourceSha256": "ba84d3f5fe9d2b1bfa444931de813a328004cf2adfc8624fac6ef215299003e6",
+      "allMatching": {
+        "rows": 1951,
+        "maxDistinctReadings": 3,
+        "maxReadingUtf16": 15,
+        "maxNewReadingUtf16": 0,
+        "over100": 0,
+        "over200": 0,
+        "over256": 0,
+        "newFormattedOver1000": 0,
+        "newFormattedInvalidText": 0,
+        "topCases": [
+          {
+            "line": 14,
+            "word": "qualify",
+            "gloss": false,
+            "formLink": false,
+            "distinctReadings": 3
+          },
+          {
+            "line": 154,
+            "word": "lay",
+            "gloss": false,
+            "formLink": false,
+            "distinctReadings": 3
+          },
+          {
+            "line": 155,
+            "word": "lay",
+            "gloss": false,
+            "formLink": false,
+            "distinctReadings": 3
+          },
+          {
+            "line": 1,
+            "word": "tail",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 2
+          },
+          {
+            "line": 6,
+            "word": "flash",
+            "gloss": false,
+            "formLink": false,
+            "distinctReadings": 2
+          },
+          {
+            "line": 18,
+            "word": "scanner",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 2
+          },
+          {
+            "line": 31,
+            "word": "save",
+            "gloss": false,
+            "formLink": false,
+            "distinctReadings": 2
+          },
+          {
+            "line": 67,
+            "word": "fetch",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 2
+          }
+        ],
+        "longestNew": null
+      },
+      "eligible": {
+        "rows": 1942,
+        "maxDistinctReadings": 2,
+        "maxReadingUtf16": 15,
+        "maxNewReadingUtf16": 0,
+        "over100": 0,
+        "over200": 0,
+        "over256": 0,
+        "newFormattedOver1000": 0,
+        "newFormattedInvalidText": 0,
+        "topCases": [
+          {
+            "line": 1,
+            "word": "tail",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 2
+          },
+          {
+            "line": 18,
+            "word": "scanner",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 2
+          },
+          {
+            "line": 67,
+            "word": "fetch",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 2
+          },
+          {
+            "line": 68,
+            "word": "fetch",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 2
+          },
+          {
+            "line": 93,
+            "word": "recipient",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 2
+          },
+          {
+            "line": 202,
+            "word": "population",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 2
+          },
+          {
+            "line": 210,
+            "word": "rate",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 2
+          },
+          {
+            "line": 214,
+            "word": "leaf",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 2
+          }
+        ],
+        "longestNew": null
+      },
+      "withGloss": {
+        "rows": 1942,
+        "maxDistinctReadings": 2,
+        "maxReadingUtf16": 15,
+        "maxNewReadingUtf16": 0,
+        "over100": 0,
+        "over200": 0,
+        "over256": 0,
+        "newFormattedOver1000": 0,
+        "newFormattedInvalidText": 0,
+        "topCases": [
+          {
+            "line": 1,
+            "word": "tail",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 2
+          },
+          {
+            "line": 18,
+            "word": "scanner",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 2
+          },
+          {
+            "line": 67,
+            "word": "fetch",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 2
+          },
+          {
+            "line": 68,
+            "word": "fetch",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 2
+          },
+          {
+            "line": 93,
+            "word": "recipient",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 2
+          },
+          {
+            "line": 202,
+            "word": "population",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 2
+          },
+          {
+            "line": 210,
+            "word": "rate",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 2
+          },
+          {
+            "line": 214,
+            "word": "leaf",
+            "gloss": true,
+            "formLink": false,
+            "distinctReadings": 2
+          }
+        ],
+        "longestNew": null
+      },
+      "formLinkOnly": {
+        "rows": 0,
+        "maxDistinctReadings": 0,
+        "maxReadingUtf16": 0,
+        "maxNewReadingUtf16": 0,
+        "over100": 0,
+        "over200": 0,
+        "over256": 0,
+        "newFormattedOver1000": 0,
+        "newFormattedInvalidText": 0,
+        "topCases": [],
+        "longestNew": null
+      },
+      "scannedLines": 1951
+    }
+  ],
+  "portableCopy": {
+    "originalReportSha256": "ec4e52aa2d83b97edea6231e1670ecc3b734268e3281bfe95c434c4bc73a04df",
+    "changes": "Only absolute project paths made relative; measurement values unchanged."
+  }
+}

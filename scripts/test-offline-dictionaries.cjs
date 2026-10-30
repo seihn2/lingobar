@@ -29,7 +29,9 @@ async function main() {
     writeFileSync(input, records.map(record => JSON.stringify(record)).join('\n') + '\n')
     const metadata = JSON.parse(readFileSync(join(root, 'test/fixtures/offline-dictionaries/en.metadata.json'), 'utf8'))
     const largeInput = join(directory, 'synthetic-many-senses.jsonl')
-    writeFileSync(largeInput, JSON.stringify({ word: 'synthetic boundary word', lang_code: 'en', pos: 'noun', senses: Array.from({ length: 225 }, (_, index) => ({ glosses: [`Self-authored synthetic boundary sense ${index + 1}`] })) }) + '\n')
+    writeFileSync(largeInput, JSON.stringify({ word: 'synthetic boundary word', lang_code: 'en', pos: 'noun',
+      sounds: [{ ipa: '[synthetic]', hangeul: 'synthetic-hangeul', tags: ['phonetic'], raw_tags: ['synthetic-region'] }, { zh_pron: 'synthetic-notation', tags: ['synthetic-variety'], raw_tags: ['synthetic-region'] }],
+      senses: Array.from({ length: 225 }, (_, index) => ({ glosses: [`Self-authored synthetic boundary sense ${index + 1}`] })) }) + '\n')
     const large = join(directory, 'packs', 'synthetic-many-senses')
     const largeManifest = await buildDictionaryPack({ input: largeInput, output: large, manifest: {
       packId: 'synthetic-many-senses-boundary', version: 'boundary-v2', sourceLanguage: 'en', glossLanguage: 'en',

@@ -62,7 +62,7 @@ function validateOfflineExplanation(value: unknown, encounterId: string): Offlin
   const item = keys(value, ['schemaVersion', 'encounterId', 'explanationId', 'version', 'providerKind', 'providerLabel', 'createdAt', 'pack', 'entry', 'sense', 'matchPath', 'matchedText'])
   if (item.schemaVersion !== 1 || item.encounterId !== encounterId || !id(item.explanationId) || !Number.isInteger(item.version) || Number(item.version) < 1 || !text(item.providerLabel, 200, true) || !timestamp(item.createdAt) || !['exact', 'nfc', 'form', 'nfc-form'].includes(String(item.matchPath)) || !text(item.matchedText, 256, true)) invalid()
   const pack = keys(item.pack, ['schemaVersion', 'packId', 'version', 'sourceLanguage', 'glossLanguage', 'sourceName', 'sourceUrl', 'sourceRevision', 'license', 'licenseUrl', 'attribution', 'dbSha256', 'counts'])
-  if ((pack.schemaVersion !== 1 && pack.schemaVersion !== 2) || !id(pack.packId) || !text(pack.version, 200, true) || !text(pack.sourceLanguage, 80, true) || !text(pack.glossLanguage, 80, true) || !text(pack.sourceName, 200, true) || !text(pack.sourceUrl, 2000, true) || !text(pack.sourceRevision, 200, true) || !text(pack.license, 2000, true) || !text(pack.licenseUrl, 2000, true) || !text(pack.attribution, 10000, true) || !digest(pack.dbSha256)) invalid()
+  if ((pack.schemaVersion !== 1 && pack.schemaVersion !== 2 && pack.schemaVersion !== 3) || !id(pack.packId) || !text(pack.version, 200, true) || !text(pack.sourceLanguage, 80, true) || !text(pack.glossLanguage, 80, true) || !text(pack.sourceName, 200, true) || !text(pack.sourceUrl, 2000, true) || !text(pack.sourceRevision, 200, true) || !text(pack.license, 2000, true) || !text(pack.licenseUrl, 2000, true) || !text(pack.attribution, 10000, true) || !digest(pack.dbSha256)) invalid()
   for (const value of [pack.sourceUrl, pack.licenseUrl]) { try { const url = new URL(String(value)); if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) invalid() } catch { invalid() } }
   const counts = keys(pack.counts, ['entries', 'senses', 'forms'])
   if (Object.values(counts).some(count => !Number.isSafeInteger(count) || Number(count) < 0)) invalid()
@@ -73,7 +73,7 @@ function validateOfflineExplanation(value: unknown, encounterId: string): Offlin
   const entry = keys(item.entry, ['id', 'headword', 'language', 'readings', 'partOfSpeech', 'forms'])
   if (!text(entry.headword, 1000) || !entry.headword.length || (!entry.headword.trim() && (entry.partOfSpeech !== 'punct' || /[\u0000-\u001f\u007f-\u009f]/u.test(entry.headword)))) invalid()
   if (!id(entry.id) || !text(entry.language, 80, true) || entry.language !== pack.sourceLanguage || !(entry.partOfSpeech === null || text(entry.partOfSpeech, 200, true)) || !Array.isArray(entry.forms) || entry.forms.length > 5000) invalid()
-  const readings = strings(entry.readings, 200, 1000)
+  const readings = strings(entry.readings, pack.schemaVersion === 3 ? 256 : 200, 1000)
   const forms = entry.forms.map(value => { const form = keys(value, ['form', 'tags']); if (!text(form.form, 1000, true)) invalid(); return { form: form.form, tags: strings(form.tags, 100, 200) } })
   const sense = keys(item.sense, ['id', 'glosses', 'tags', 'examples'])
   if (!id(sense.id) || !Array.isArray(sense.examples) || sense.examples.length > 100) invalid()

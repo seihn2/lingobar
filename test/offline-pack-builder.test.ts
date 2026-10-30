@@ -23,6 +23,45 @@ function input(records: unknown[]) {
 afterEach(() => { for (const dir of directories.splice(0)) rmSync(dir, { recursive: true, force: true }) })
 
 describe('local Kaikki-shaped JSONL language-pack builder', () => {
+  it('retains source-labelled Korean and Chinese notations and distinct original regions without changing legacy readings', async () => {
+    const f = input([{ word: 'authored', lang_code: 'en', sounds: [
+      { ipa: '/old-IPA/', enpr: 'old-enpr', roman: 'old-roman', other: 'old-other' },
+      { hangeul: '합성', tags: ['phonetic'], raw_tags: ['source Korean label'] },
+      { zh_pron: 'same--source', tags: ['Min-Nan'], raw_tags: ['菲律賓'] },
+      { zh_pron: 'same--source', tags: ['Min-Nan'], raw_tags: ['臺灣'] },
+      { zh_pron: '<img src="https://not-fetched.invalid/read">', tags: ['unverified'], raw_tags: ['<b>literal label</b>'], mp3_url: 'https://not-fetched.invalid/audio' }
+    ], senses: [{ glosses: ['Self-authored synthetic source definition.'] }] }])
+    const manifest = await buildDictionaryPack({ input: f.source, output: f.output, manifest: metadata })
+    expect(manifest.schemaVersion).toBe(1)
+    const packs = new OfflinePacks(join(f.dir, 'installed'))
+    try {
+      packs.install(join(f.output, 'manifest.json'))
+      const readings = packs.lookup({ text: 'authored', language: 'en' }).results[0].entry.readings
+      expect(readings).toEqual([
+        '/old-IPA/', 'old-enpr', 'old-roman', 'old-other',
+        '来源韩文记音（hangeul；标签：["phonetic"]；原标签：["source Korean label"]）：합성',
+        '来源中文记音（zh_pron；标签：["Min-Nan"]；原标签：["菲律賓"]）：same--source',
+        '来源中文记音（zh_pron；标签：["Min-Nan"]；原标签：["臺灣"]）：same--source',
+        '来源中文记音（zh_pron；标签：["unverified"]；原标签：["<b>literal label</b>"]）：<img src="https://not-fetched.invalid/read">'
+      ])
+      expect(readings.join()).not.toContain('/audio')
+      expect(readings.join()).not.toContain('普通话')
+    } finally { packs.close() }
+  })
+  it('does not merge distinct source label arrays after rendering their exact identities', async () => {
+    const f = input([{ word: 'authored', lang_code: 'en', sounds: [
+      { zh_pron: 'same', raw_tags: ['a、b'] }, { zh_pron: 'same', raw_tags: ['a', 'b'] }
+    ], senses: [{ glosses: ['Self-authored definition.'] }] }])
+    await buildDictionaryPack({ input: f.source, output: f.output, manifest: metadata })
+    const db = new DatabaseSync(join(f.output, 'entries.sqlite'), { readOnly: true })
+    try { expect(JSON.parse(String(db.prepare('SELECT readings_json FROM entries').get()!.readings_json))).toEqual(['来源中文记音（zh_pron；原标签：["a、b"]）：same', '来源中文记音（zh_pron；原标签：["a","b"]）：same']) }
+    finally { db.close() }
+  })
+  it('rejects an oversized source-labelled reading instead of truncating its pronunciation or labels', async () => {
+    const f = input([{ word: 'authored', lang_code: 'en', sounds: [{ hangeul: 'a'.repeat(990), tags: ['phonetic'] }], senses: [{ glosses: ['Self-authored definition.'] }] }])
+    await expect(buildDictionaryPack({ input: f.source, output: f.output, manifest: metadata })).rejects.toThrow(/Source line 1.*source-labelled reading/)
+    expect(existsSync(f.output)).toBe(false)
+  })
   it('writes read-only-consumable SQLite with distinct senses, actual readings/examples and bound source metadata', async () => {
     const f = input([
       { word: 'cafe\u0301', lang_code: 'en', pos: 'noun', sounds: [{ ipa: '/synthetic/' }, { audio: 'https://forbidden.example/audio.mp3' }], forms: [{ form: 'cafes', tags: ['plural'] }], senses: [{ glosses: ['An authored synthetic first sense.'], examples: [{ text: 'Synthetic source sentence.', english: 'Synthetic translation.' }] }, { glosses: ['A separate authored second sense.'], tags: ['figurative'] }] },
@@ -144,6 +183,7 @@ describe('local Kaikki-shaped JSONL language-pack builder', () => {
   })
   it.each([
     { name: '501 forms', extra: { forms: Array.from({ length: 501 }, (_, i) => ({ form: `authored-${i}` })) } },
+    { name: '257 readings', extra: { sounds: Array.from({ length: 257 }, (_, i) => ({ ipa: `authored-reading-${i}` })) } },
     { name: '257 senses', extra: { senses: Array.from({ length: 257 }, (_, i) => ({ glosses: [`Authored sense ${i}.`] })) } },
     { name: '101 glosses', extra: { senses: [{ glosses: Array.from({ length: 101 }, (_, i) => `Authored gloss ${i}.`) }] } },
     { name: '21 examples', extra: { senses: [{ glosses: ['Authored gloss.'], examples: Array.from({ length: 21 }, (_, i) => ({ text: `Authored example ${i}.` })) }] } },
@@ -181,5 +221,18 @@ describe('local Kaikki-shaped JSONL language-pack builder', () => {
     const db = new DatabaseSync(join(f.output, 'entries.sqlite'), { readOnly: true })
     try { expect(db.prepare('PRAGMA user_version').get()?.user_version).toBe(1) }
     finally { db.close() }
+  })
+  it.each([{ count: 100, schemaVersion: 1 }, { count: 101, schemaVersion: 3 }, { count: 256, schemaVersion: 3 }])('marks $count actual readings with manifest v$schemaVersion without changing SQLite DDL', async ({ count, schemaVersion }) => {
+    const f = input([{ word: 'authored', lang_code: 'en', sounds: Array.from({ length: count }, (_, i) => ({ zh_pron: `authored-${i}`, tags: ['synthetic-source'] })), senses: [{ glosses: ['Self-authored definition.'] }] }])
+    const built = await buildDictionaryPack({ input: f.source, output: f.output, manifest: metadata })
+    expect(built.schemaVersion).toBe(schemaVersion)
+    expect(JSON.parse(readFileSync(join(f.output, 'BUILD-REPORT.json'), 'utf8')).maxSourceReadings).toBe(count)
+    const packs = new OfflinePacks(join(f.dir, 'installed'))
+    try {
+      packs.install(join(f.output, 'manifest.json'))
+      const readings = packs.lookup({ text: 'authored', language: 'en' }).results[0].entry.readings
+      expect(readings).toHaveLength(count)
+      expect(readings.at(-1)).toBe(`来源中文记音（zh_pron；标签：["synthetic-source"]）：authored-${count - 1}`)
+    } finally { packs.close() }
   })
 })

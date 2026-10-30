@@ -45,6 +45,30 @@ beforeEach(() => { fault.rename = false; network.mockClear(); vi.stubGlobal('fet
 afterEach(() => { resources.splice(0).forEach(learning => learning.close()); directories.splice(0).forEach(directory => rmSync(directory, { recursive: true, force: true })); expect(network).not.toHaveBeenCalled(); vi.unstubAllGlobals() })
 
 describe('local selected-sense learning without AI configuration', () => {
+  it('keeps source-labelled readings in frozen history and export, hidden until explicit review reveal', () => {
+    const f = fixture(), readings = [
+      '来源韩文记音 · hangeul；tags=["phonetic"]：공(ː)산당',
+      '来源读音 · zh_pron；tags=["Min-Nan","Hokkien"]；raw_tags=["菲律賓"]：--le',
+      '来源读音 · zh_pron；tags=["<img src=\"https://remote.invalid/\">"]：![raw](https://remote.invalid/)'
+    ]
+    f.state.results[0].entry.readings = readings
+    const saved = f.save(), before = structuredClone(saved)
+    f.state.results = []
+    const restarted = new DictionaryStore(f.directory)
+    expect(restarted.get(saved.id)).toEqual(before)
+    const exported = JSON.parse(dictionaryJson(restarted.exportSnapshot()))
+    expect(exported.entries[0].explanation.entry.readings).toEqual(readings)
+    expect(exported.readingNotice).toContain('不视为标准答案')
+    expect(exported.readingNotice).not.toContain('已请求')
+    const markdown = dictionaryMarkdown(restarted.exportSnapshot())
+    expect(markdown).toContain('来源读音记录（未校验）')
+    for (const line of markdown.split('\n').filter(line => line.includes('remote.invalid'))) expect(line.startsWith('    ')).toBe(true)
+    const review = f.learning.startReview(1)
+    expect(JSON.stringify(review)).not.toMatch(/공\(ː\)산당|--le|remote\.invalid|hangeul|zh_pron/)
+    const revealed = f.learning.reveal(1, review.sessionId, saved.id, saved.explanations[0].explanationId).explanation
+    expect(revealed.providerKind === 'offline-dictionary' && revealed.entry.readings).toEqual(readings)
+    expect(f.provider).not.toHaveBeenCalled()
+  })
   it('preserves an explicitly punctuated spacing headword in learning snapshots without accepting blank ordinary words', () => {
     const f = fixture()
     f.state.results[0].entry.headword = ' '
@@ -140,6 +164,25 @@ describe('local selected-sense learning without AI configuration', () => {
     const review = f.learning.startReview(1)
     const answer = f.learning.reveal(1, review.sessionId, saved.id, explanation.explanationId).explanation
     expect(answer.providerKind === 'offline-dictionary' && answer.pack.schemaVersion).toBe(2)
+    expect(f.provider).not.toHaveBeenCalled()
+  })
+  it('keeps all 254 source-reading records and manifest3 across frozen history, export and review', () => {
+    const f = fixture(), readings = Array.from({ length: 254 }, (_, index) => `来源中文记音（zh_pron；标签：["synthetic-variety-${index}"]）：synthetic-${index}`)
+    f.state.results[0].pack.schemaVersion = 3
+    f.state.results[0].entry.readings = readings
+    const saved = f.save(), restarted = new DictionaryStore(f.directory)
+    const explanation = restarted.get(saved.id)!.explanations[0]
+    expect(explanation.providerKind === 'offline-dictionary' && explanation.pack.schemaVersion).toBe(3)
+    expect(explanation.providerKind === 'offline-dictionary' && explanation.entry.readings).toEqual(readings)
+    const exported = JSON.parse(dictionaryJson(restarted.exportSnapshot())).entries[0].explanation
+    expect(exported.pack.schemaVersion).toBe(3); expect(exported.entry.readings.at(-1)).toBe(readings.at(-1))
+    const review = f.learning.startReview(1)
+    expect(JSON.stringify(review)).not.toContain('synthetic-variety')
+    const answer = f.learning.reveal(1, review.sessionId, saved.id, explanation.explanationId).explanation
+    expect(answer.providerKind === 'offline-dictionary' && answer.entry.readings.at(-1)).toBe(readings.at(-1))
+    f.state.results[0].entry.readings = Array.from({ length: 257 }, (_, index) => `source-${index}`)
+    expect(() => f.save()).toThrow('学习历史格式')
+    expect(f.store.list().total).toBe(1)
     expect(f.provider).not.toHaveBeenCalled()
   })
   it('retains old AI records alongside offline cards without rewriting other learning files', () => {

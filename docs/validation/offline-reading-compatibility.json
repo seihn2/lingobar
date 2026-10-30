@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "previousHead": "6b41f163e81d22e7fdc5ad0c77303d9f10e6f191",
+  "previousSourceSha256": "518c5b58c0c93130b114a1123b96ba86b783fc0bd31bbc772cf9b573c7a025d6",
+  "scope": "Executed previous draft validator only; no app, database, provider or network started",
+  "results": [
+    {
+      "version": 1,
+      "accepted": true
+    },
+    {
+      "version": 2,
+      "accepted": true
+    },
+    {
+      "version": 3,
+      "accepted": false
+    }
+  ],
+  "portableCopy": {
+    "originalReportSha256": "2fdcd19e6bdd29a13f1034f2a41bf0134458aa02cc9680cbf2dd904d4cb8c29b",
+    "changes": "Only absolute project paths made relative; measurement values unchanged."
+  }
+}

@@ -116,13 +116,17 @@ async function run() {
     const boundaryLookup = await call('offlineLookup', boundaryInput)
     const boundaryHit = boundaryLookup.results.find(hit => hit.pack.packId === boundaryPack.pack.manifest.packId)
     check(boundaryHit && boundaryHit.entry.senses.length === 225, 'Actual Electron SQLite/preload/main path returns all 225 synthetic senses without truncating at 100')
+    const sourceReadings = ['[synthetic]', '来源韩文记音（hangeul；标签：["phonetic"]；原标签：["synthetic-region"]）：synthetic-hangeul', '来源中文记音（zh_pron；标签：["synthetic-variety"]；原标签：["synthetic-region"]）：synthetic-notation']
+    check(JSON.stringify(boundaryHit.entry.readings) === JSON.stringify(sourceReadings), 'Actual import/SQLite/preload lookup preserves both synthetic notation fields and their original source labels')
     const lastBoundarySense = boundaryHit.entry.senses.at(-1)
     const boundaryEncounter = await call('saveOffline', { ...boundaryInput, packId: boundaryHit.pack.packId, packVersion: boundaryHit.pack.version, packSha256: boundaryHit.pack.dbSha256, entryId: boundaryHit.entry.id, senseId: lastBoundarySense.id })
     const boundaryDetail = await call('get', boundaryEncounter.id)
     check(boundaryDetail.encounter.explanations[0].pack.schemaVersion === 2 && boundaryDetail.encounter.explanations[0].sense.id === lastBoundarySense.id && boundaryDetail.encounter.explanations[0].sense.glosses[0] === 'Self-authored synthetic boundary sense 225', 'Actual history IPC retains manifest2 and the selected 225th synthetic sense')
+    check(JSON.stringify(boundaryDetail.encounter.explanations[0].entry.readings) === JSON.stringify(sourceReadings), 'Actual history IPC retains source notations without interpreting them as standard pronunciation')
     await call('export', 'json')
     const boundaryExport = JSON.parse(readFileSync(join(directory, 'export-fresh-1.json'), 'utf8')).entries.find(entry => entry.encounterId === boundaryEncounter.id)
     check(boundaryExport && boundaryExport.explanation.pack.schemaVersion === 2 && boundaryExport.explanation.sense.id === lastBoundarySense.id, 'Actual export IPC preserves manifest2 and the last selected synthetic sense')
+    check(JSON.stringify(boundaryExport.explanation.entry.readings) === JSON.stringify(sourceReadings), 'Actual export IPC retains original notation and region-label strings')
     largeBoundary = { synthetic: true, independentCoverageEvidence: false, readableSenses: 225, selectedSenseId: lastBoundarySense.id, savedManifestSchema: boundaryExport.explanation.pack.schemaVersion, exported: true }
     await call('remove', boundaryEncounter.id)
     await call('packs.uninstall', boundaryPack.pack.manifest.packId)

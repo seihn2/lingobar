@@ -77,11 +77,24 @@ function indexableForm(item) {
   const nonLexical = new Set(['counter', 'table-tags', 'class', 'inflection-template', 'auxiliary'])
   return item.form.trim() !== '-' && !/\+\s*past participle\b/iu.test(item.form) && !item.tags.some(tag => nonLexical.has(tag))
 }
-function readingsFor(record) {
+function readingsFor(record, lineNumber) {
   const result = []
   if (Array.isArray(record.sounds)) for (const sound of record.sounds.filter(plain)) {
     // Preserve written pronunciations supplied by the source; an audio URL is not an offline reading.
     for (const key of ['ipa', 'enpr', 'roman', 'other']) if (text(sound[key], 1024)) result.push(sound[key])
+    // These are source notations, not an inferred standard pronunciation. Keep
+    // normalized and raw labels distinct (including regional/variety labels).
+    for (const [key, label] of [['hangeul', '来源韩文记音'], ['zh_pron', '来源中文记音']]) if (text(sound[key], 1024)) {
+      const labels = [key]
+      for (const [field, title] of [['tags', '标签'], ['raw_tags', '原标签']]) {
+        if (Array.isArray(sound[field])) labels.push(`${title}：${JSON.stringify(sound[field].filter(value => typeof value === 'string'))}`)
+      }
+      const reading = `${label}（${labels.join('；')}）：${sound[key]}`
+      // Persisted learning snapshots already accept at most 1000 UTF-16 units.
+      // Do not build an answer which displays but cannot be saved, or trim labels.
+      if (!text(reading, 1000)) throw new Error(`Source line ${lineNumber} exceeds the local runtime limit for source-labelled reading; no truncated pack was produced.`)
+      result.push(reading)
+    }
   }
   return unique(result)
 }
@@ -108,7 +121,7 @@ function runtimeBounds(record, forms, readings, senses, lineNumber) {
     for (const tag of Array.isArray(form.tags) ? form.tags : []) length(tag, 256, 'form tag')
   }
   for (const sound of Array.isArray(record.sounds) ? record.sounds.filter(plain) : []) {
-    for (const key of ['ipa', 'enpr', 'roman', 'other']) length(sound[key], 1024, 'reading')
+    for (const key of ['ipa', 'enpr', 'roman', 'other', 'hangeul', 'zh_pron']) length(sound[key], 1024, 'reading')
   }
   for (const sense of Array.isArray(record.senses) ? record.senses.filter(plain) : []) {
     for (const key of ['glosses', 'raw_glosses']) for (const gloss of Array.isArray(sense[key]) ? sense[key] : []) length(gloss, 16000, 'gloss text')
@@ -117,7 +130,7 @@ function runtimeBounds(record, forms, readings, senses, lineNumber) {
       for (const key of ['text', 'translation', 'english']) length(example[key], 16000, 'example text')
     }
   }
-  column(forms, 500, 'forms'); column(readings, 100, 'readings')
+  column(forms, 500, 'forms'); column(readings, 256, 'readings')
   if (senses.length > 256) reject('senses')
   for (const form of forms) column(form.tags, 100, 'form tags')
   for (const sense of senses) {
@@ -148,7 +161,7 @@ async function buildDictionaryPack({ input, output, manifest: supplied }) {
     const insertForm = db.prepare('INSERT INTO forms VALUES(?,?,?,?)')
     const pendingForm = db.prepare('INSERT INTO pending_forms VALUES(?,?,?)')
     db.exec('BEGIN')
-    let lineNumber = 0, maxSourceSenses = 0
+    let lineNumber = 0, maxSourceSenses = 0, maxSourceReadings = 0
     const records = { parsed: 0, otherLanguage: 0, matchingLanguage: 0, skippedNoLexicalContent: 0, formLinkOnly: 0, withGlosses: 0 }
     for await (const line of jsonlLines(source)) {
       lineNumber++
@@ -159,7 +172,7 @@ async function buildDictionaryPack({ input, output, manifest: supplied }) {
       records.parsed++
       if (record.lang_code !== descriptor.sourceLanguage) { records.otherLanguage++; continue }
       records.matchingLanguage++
-      const entryId = `line:${lineNumber}`, forms = formsFor(record), readings = readingsFor(record), senses = sensesFor(record, entryId)
+      const entryId = `line:${lineNumber}`, forms = formsFor(record), readings = readingsFor(record, lineNumber), senses = sensesFor(record, entryId)
       const formOf = Array.isArray(record.senses) ? record.senses.filter(plain).flatMap(sense => Array.isArray(sense.form_of)
         ? sense.form_of.filter(plain).filter(target => text(target.word, 1024)).map(target => ({ word: target.word, tags: unique(texts(sense.tags, 256)) })) : []) : []
       runtimeBounds(record, forms, readings, senses, lineNumber)
@@ -173,6 +186,7 @@ async function buildDictionaryPack({ input, output, manifest: supplied }) {
       if (!senses.length) { records.formLinkOnly++; continue }
       records.withGlosses++
       maxSourceSenses = Math.max(maxSourceSenses, senses.length)
+      maxSourceReadings = Math.max(maxSourceReadings, readings.length)
       insertEntry.run(entryId, record.word, nfc(record.word), record.lang_code, JSON.stringify(readings), text(record.pos, 256) ? record.pos : null, JSON.stringify(forms))
       for (const sense of senses) insertSense.run(sense.id, entryId, JSON.stringify(sense.glosses), JSON.stringify(sense.tags), JSON.stringify(sense.examples))
       for (const form of forms.filter(indexableForm)) insertForm.run(form.form, nfc(form.form), entryId, JSON.stringify(form.tags))
@@ -185,12 +199,13 @@ async function buildDictionaryPack({ input, output, manifest: supplied }) {
     if (!counts.entries || !counts.senses) throw new Error('No source-language entries with actual glosses were found.')
     db.close(); db = null
     chmodSync(databasePath, 0o600)
-    // Older applications must reject packages whose entries would exceed their old 100-sense reader.
+    // Older applications must reject packages whose entries exceed their old
+    // 100-reading or 100-sense reader; the newer bounds are both 256.
     // The SQLite DDL stays v1; only the manifest advertises this larger bounded payload.
-    const result = { schemaVersion: maxSourceSenses > 100 ? 2 : 1, ...descriptor, dbSha256: await fileSha256(databasePath), counts }
+    const result = { schemaVersion: maxSourceReadings > 100 ? 3 : maxSourceSenses > 100 ? 2 : 1, ...descriptor, dbSha256: await fileSha256(databasePath), counts }
     writeFileSync(join(destination, 'manifest.json'), JSON.stringify(result, null, 2) + '\n', { flag: 'wx', mode: 0o600 })
     const report = { schemaVersion: 1, input: { file: basename(source), bytes: statSync(source).size, sha256: await fileSha256(source), compression: source.toLowerCase().endsWith('.gz') ? 'gzip' : 'none' },
-      lines: lineNumber, records, maxSourceSenses, output: { packId: descriptor.packId, version: descriptor.version, dbSha256: result.dbSha256, counts },
+      lines: lineNumber, records, maxSourceSenses, maxSourceReadings, output: { packId: descriptor.packId, version: descriptor.version, dbSha256: result.dbSha256, counts },
       skippedMeaning: 'skippedNoLexicalContent records have neither a usable gloss nor an explicit form_of target; formLinkOnly records add source form links but no fabricated answer.' }
     writeFileSync(join(destination, 'BUILD-REPORT.json'), JSON.stringify(report, null, 2) + '\n', { flag: 'wx', mode: 0o600 })
     return result

@@ -1,6 +1,6 @@
 /** Local dictionary data has its own source/license; it is never an AI citation. */
 export type OfflinePackManifest = {
-  schemaVersion: 1 | 2; packId: string; version: string; sourceLanguage: string; glossLanguage: string
+  schemaVersion: 1 | 2 | 3; packId: string; version: string; sourceLanguage: string; glossLanguage: string
   sourceName: string; sourceUrl: string; sourceRevision: string; license: string; licenseUrl: string; attribution: string
   dbSha256: string; counts: { entries: number; senses: number; forms: number }
 }
