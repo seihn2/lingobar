@@ -61,7 +61,7 @@ export default function OfflinePhraseLookup({ api, handle, source, phrase, defau
     {result && <p role="status">{result.message || (result.results.length ? `找到 ${result.results.length} 个来源词条` : '本机已启用词库未找到该词；可选择其他语言或主动使用下方 AI 解释。')}</p>}
     {noChinese && <p className="dictionary-warning">本机已安装词库暂无中文释义，当前显示英语/原语言（{[...new Set(result.results.map(hit => languageLabels[hit.pack.glossLanguage] || hit.pack.glossLanguage))].join('、')}）。没有自动翻译或调用 AI。</p>}
     {result?.results.map(hit => <article className="dictionary-offline-hit" key={JSON.stringify([hit.pack.packId, hit.pack.version, hit.entry.id])} data-offline-entry={hit.entry.id}>
-      <h4 dir="auto">{hit.entry.headword}</h4><p>{hit.entry.readings.join(' · ') || '未提供读音'} · {hit.entry.partOfSpeech || '未提供词性'}</p>
+      <h4 dir="auto">{hit.entry.headword}</h4><p>来源读音记录（未校验）：<span dir="auto">{hit.entry.readings.join(' · ') || '未提供读音'}</span> · {hit.entry.partOfSpeech || '未提供词性'}</p>
       <p className="dictionary-version">{hit.pack.sourceName} · {hit.pack.sourceLanguage} → {hit.pack.glossLanguage} · {matchLabels[hit.matchPath]}</p>
       {hit.entry.senses.map((sense, index) => <section className="dictionary-offline-sense" key={sense.id} data-offline-sense={sense.id}>
         <h5>义项 {index + 1}</h5><ul>{sense.glosses.map((gloss, i) => <li key={i} dir="auto">{gloss}</li>)}</ul>

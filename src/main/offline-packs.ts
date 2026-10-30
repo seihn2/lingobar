@@ -15,7 +15,7 @@ const clone = <T>(value: T): T => structuredClone(value)
 export function validateOfflineManifest(value: unknown): OfflinePackManifest {
   if (!object(value)) return fail()
   const keys = ['schemaVersion', 'packId', 'version', 'sourceLanguage', 'glossLanguage', 'sourceName', 'sourceUrl', 'sourceRevision', 'license', 'licenseUrl', 'attribution', 'dbSha256', 'counts']
-  if (Object.keys(value).length !== keys.length || keys.some(key => !Object.hasOwn(value, key)) || (value.schemaVersion !== 1 && value.schemaVersion !== 2) || !text(value.packId, 100) || !ID.test(value.packId) || !text(value.version, 100) ||
+  if (Object.keys(value).length !== keys.length || keys.some(key => !Object.hasOwn(value, key)) || (value.schemaVersion !== 1 && value.schemaVersion !== 2 && value.schemaVersion !== 3) || !text(value.packId, 100) || !ID.test(value.packId) || !text(value.version, 100) ||
     !text(value.sourceLanguage, 40) || !LANGUAGE.test(value.sourceLanguage) || !text(value.glossLanguage, 40) || !LANGUAGE.test(value.glossLanguage) ||
     !text(value.sourceName, 2000) || !text(value.sourceUrl, 2000) || !text(value.sourceRevision, 2000) || !text(value.license, 2000) || !text(value.licenseUrl, 2000) || !text(value.attribution, 16000) ||
     typeof value.dbSha256 !== 'string' || !/^[a-f0-9]{64}$/.test(value.dbSha256) || !object(value.counts) || Object.keys(value.counts).length !== 3) return fail()
@@ -162,7 +162,7 @@ export class OfflinePacks {
         const direct = [...new Map([...exact, ...canonical].map(row => [String(row.id), row])).values()]
           .sort((a, b) => Number(a.lookup_order) - Number(b.lookup_order)).slice(0, 30)
         for (const row of direct) {
-          const entry = this.entry(db, row)
+          const entry = this.entry(db, row, pack.manifest.schemaVersion)
           if (!entry.senses.length || seen.has(entry.id)) continue
           seen.add(entry.id); results.push({ pack: clone(pack.manifest), entry, matchPath: entry.headword === input.text ? 'exact' : 'nfc', matchedText: entry.headword })
           if (results.length >= 30) break
@@ -171,7 +171,7 @@ export class OfflinePacks {
         const forms = db.prepare('SELECT e.id,e.headword,e.language,e.readings_json,e.pos,e.forms_json,f.form FROM forms f JOIN entries e ON e.id=f.entry_id WHERE e.language=? AND (f.form=? OR f.form_nfc=?) LIMIT 60').all(pack.manifest.sourceLanguage, input.text, normalized)
         for (const row of forms) {
           if (seen.has(String(row.id))) continue
-          const entry = this.entry(db, row)
+          const entry = this.entry(db, row, pack.manifest.schemaVersion)
           if (!entry.senses.length) continue
           seen.add(entry.id); results.push({ pack: clone(pack.manifest), entry, matchPath: row.form === input.text ? 'form' : 'nfc-form', matchedText: String(row.form) })
           if (results.length >= 30) break
@@ -182,7 +182,7 @@ export class OfflinePacks {
     const fallback = results.length && preferred.split('-')[0] === 'zh' && !chinese ? '本机已安装词库暂无中文释义，当前显示英语／原语言；具体语言见每个来源。' : ''
     return { query: input.text, language, requestedGlossLanguage: preferred, results, message: [this._warning, ...errors, fallback, !packs.length ? '尚未启用该原文语言的本地词库，请先导入语言包。' : !results.length ? '本地词库未找到该词或已收录词形；没有自动调用 AI。' : ''].filter(Boolean).join(' ') }
   }
-  private entry(db: DatabaseSync, raw: Record<string, unknown>): OfflineEntry {
+  private entry(db: DatabaseSync, raw: Record<string, unknown>, manifestVersion: OfflinePackManifest['schemaVersion']): OfflineEntry {
     const array = (value: unknown, maximum: number): unknown[] => {
       if (typeof value !== 'string' || value.length > 1024 * 1024) throw new Error('entry JSON')
       const result: unknown = JSON.parse(value)
@@ -208,7 +208,7 @@ export class OfflinePacks {
       })
       return { id: sense.id, glosses: strings(sense.glosses_json, 100), tags: strings(sense.tags_json, 100), examples }
     }).filter(sense => sense.glosses.length > 0)
-    return { id: raw.id, headword: raw.headword, language: raw.language, readings: strings(raw.readings_json, 100), partOfSpeech: raw.pos as string | null, forms, senses }
+    return { id: raw.id, headword: raw.headword, language: raw.language, readings: strings(raw.readings_json, manifestVersion === 3 ? 256 : 100), partOfSpeech: raw.pos as string | null, forms, senses }
   }
   close(): void { for (const db of this.connections.values()) db.close(); this.connections.clear(); this.closed = true }
 }

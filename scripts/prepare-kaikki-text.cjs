@@ -5,7 +5,7 @@ const { resolve } = require('node:path')
 const { createInterface } = require('node:readline')
 const { createHash, randomUUID } = require('node:crypto')
 
-const CHANGES = 'Kept word/language/part-of-speech, recorded form text/tags, redirects, written pronunciation fields, and sense glosses/raw_glosses/tags/form_of/alt_of. Removed all examples and quotations, media/audio fields and URLs, etymology, linkages and unrelated fields. No definitions, readings or translations generated; no Unicode normalization.'
+const CHANGES = 'Kept word/language/part-of-speech, recorded form text/tags, redirects, written pronunciation fields with sound tags/raw_tags, and sense glosses/raw_glosses/tags/form_of/alt_of. Removed all examples and quotations, media/audio fields and URLs, etymology, linkages and unrelated fields. No definitions, readings or translations generated; no Unicode normalization.'
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value)
 const strings = value => Array.isArray(value) ? value.filter(item => typeof item === 'string') : null
 function copyText(input, keys) { return Object.fromEntries(keys.filter(key => typeof input[key] === 'string').map(key => [key, input[key]])) }
@@ -17,7 +17,7 @@ function projectKaikkiText(record) {
   if (!object(record)) throw new Error('Every source JSONL row must be an object.')
   const result = withStrings(copyText(record, ['word', 'lang', 'lang_code', 'pos']), record, ['redirects'])
   if (Array.isArray(record.forms)) result.forms = record.forms.filter(object).map(form => withStrings(copyText(form, ['form']), form, ['tags'])).filter(form => typeof form.form === 'string')
-  if (Array.isArray(record.sounds)) result.sounds = record.sounds.filter(object).map(sound => withStrings(copyText(sound, ['ipa', 'enpr', 'enPR', 'roman', 'hangeul', 'other', 'zh-pron', 'zh_pron']), sound, ['tags']))
+  if (Array.isArray(record.sounds)) result.sounds = record.sounds.filter(object).map(sound => withStrings(copyText(sound, ['ipa', 'enpr', 'enPR', 'roman', 'hangeul', 'other', 'zh-pron', 'zh_pron']), sound, ['tags', 'raw_tags']))
   if (Array.isArray(record.senses)) result.senses = record.senses.filter(object).map(sense => {
     const output = withStrings({}, sense, ['glosses', 'raw_glosses', 'tags'])
     for (const key of ['form_of', 'alt_of']) { const value = references(sense[key]); if (value !== null) output[key] = value }

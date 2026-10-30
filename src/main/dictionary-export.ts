@@ -2,6 +2,7 @@ import type { DictionaryDocument, DictionaryExplanation, DictionaryReviewEvent, 
 
 const DISCLAIMER = 'AI生成，可能不准确；不是权威词典或经核实的语言事实。'
 const READING_NOTICE = '已请求所选表面形式的读音，但实际对应未验证，也可能是AI建议原形的读音。'
+const OFFLINE_READING_NOTICE = '来源读音记录未经本地校验；保留来源标注，不视为标准答案。'
 const USAGE_NOTICE = 'usage仅记录服务实际返回的计量，不代表账单、结算金额或退款。'
 
 /** Rebuild only the application contract; never spread a disk/provider object into export. */
@@ -58,7 +59,7 @@ function committedExport(document: DictionaryDocument) {
   const identities = new Set(entries.map(entry => JSON.stringify([entry.encounterId, entry.explanation.explanationId])))
   return {
     schemaVersion: 1 as const, kind: 'lingobar-dictionary-learning-export' as const,
-    disclaimer: entries.some(entry => entry.explanation.providerKind === 'llm-generated') ? DISCLAIMER : '离线词典快照；释义来源及许可随各词条保留，不是AI生成解释。', readingNotice: READING_NOTICE, usageNotice: USAGE_NOTICE,
+    disclaimer: entries.some(entry => entry.explanation.providerKind === 'llm-generated') ? DISCLAIMER : '离线词典快照；释义来源及许可随各词条保留，不是AI生成解释。', readingNotice: entries.some(entry => entry.explanation.providerKind === 'llm-generated') ? READING_NOTICE : OFFLINE_READING_NOTICE, usageNotice: USAGE_NOTICE,
     offlineNotice: '离线词条保留用户选择义项时的来源、许可与版本；更新或卸载词库不改变已收藏快照。AI声明仅适用于 llm-generated 条目。',
     entries, unexplainedEncounters,
     reviewEvents: document.reviews.filter(review => identities.has(JSON.stringify([review.encounterId, review.explanationId]))).map(reviewCopy),
@@ -108,7 +109,7 @@ export function dictionaryMarkdown(document: DictionaryDocument): string {
       result += field('词条语言', explanation.pack.sourceLanguage) + field('释义语言', explanation.pack.glossLanguage)
       result += field('来源 URL（纯文本）', explanation.pack.sourceUrl) + field('许可', explanation.pack.license) + field('许可 URL（纯文本）', explanation.pack.licenseUrl) + field('署名', explanation.pack.attribution)
       result += field('Entry ID', explanation.entry.id) + field('Sense ID', explanation.sense.id) + field('词头', explanation.entry.headword)
-      result += field('读音（词库记录）', explanation.entry.readings.join('\n') || null) + field('词性（词库记录）', explanation.entry.partOfSpeech)
+      result += field('来源读音记录（未校验）', explanation.entry.readings.join('\n') || null) + field('词性（词库记录）', explanation.entry.partOfSpeech)
       result += field('选定义项', explanation.sense.glosses.join('\n')) + field('义项标签', explanation.sense.tags.join('\n') || null)
       result += field('命中路径', explanation.matchPath) + field('命中文本', explanation.matchedText)
       result += field('词库例句（非AI生成）', explanation.sense.examples.map(example => example.text + (example.translation === null ? '' : '\n' + example.translation)).join('\n\n') || null)

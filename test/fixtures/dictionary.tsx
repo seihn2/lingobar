@@ -171,6 +171,17 @@ const offlineWords = [['en', 'cats'], ['ja', '猫'], ['ko', '고양이'], ['fr',
 const offlinePacks = new Map<string, OfflinePackInfo>()
 let offlineQueries = 0, offlineSaves = 0, cancelInstall = false
 let largeEntryFixture = false
+let sourceReadingFixture = false
+// Self-authored renderer strings only: source-field semantics are tested against
+// real raw/projection/builder records separately, without claiming these are data.
+const sourceReadingFixtures = {
+  ko: ['[kʰojaŋi]', '来源韩文记音（hangeul；标签：["phonetic"]；原标签：["合成地区"]）：고양이'],
+  zh: [
+    '来源中文记音（zh_pron；标签：["Min-Nan"]；原标签：["菲律賓"]）：--le',
+    '来源中文记音（zh_pron；标签：["Min-Nan"]；原标签：["臺灣"]）：--le',
+    '来源中文记音（zh_pron；原标签：["<img src=\\"https://invalid.test/reading\\">"]）：<script>synthetic reading</script>',
+  ],
+} as const
 const offlineHits = (language: string, selected: string): OfflineHit[] => {
   const pack = offlinePacks.get(`synthetic-${language}`)
   if (!pack?.enabled || offlineWords.find(item => item[0] === language)?.[1] !== selected) return []
@@ -178,6 +189,7 @@ const offlineHits = (language: string, selected: string): OfflineHit[] => {
     { id: 'sense-1', glosses: [`SYNTHETIC_OFFLINE_MEANING_${language} <img src="https://invalid.test/offline">`], tags: [], examples: [] },
     { id: 'sense-2', glosses: [`SYNTHETIC_SECOND_SENSE_${language}`], tags: ['figurative'], examples: [] },
   ] }, matchPath: language === 'en' ? 'form' : 'exact', matchedText: selected }
+  if (sourceReadingFixture && (language === 'ko' || language === 'zh')) hit.entry.readings = [...sourceReadingFixtures[language]]
   if (largeEntryFixture && language === 'en') hit.entry.senses = Array.from({ length: 225 }, (_, index) => ({ id: `large-sense-${index + 1}`, glosses: [`SYNTHETIC_LARGE_SENSE_${String(index + 1).padStart(3, '0')}`], tags: [], examples: [] }))
   return [hit]
 }
@@ -469,6 +481,50 @@ async function prepareOfflineReviewAx() {
   if (saved.providerKind !== 'offline-dictionary') throw new Error('Expected an offline AX snapshot')
   return { forbidden: [...saved.sense.glosses, ...saved.entry.readings], source: text }
 }
+async function prepareSourceReadingReviewAx(language: 'ko' | 'zh') {
+  const checks: string[] = [], beforeCalls = providerCalls
+  const check = (value: unknown, message: string) => { if (!value) throw new Error(message); checks.push(message) }
+  records.clear(); runs.clear(); reviews.splice(0); resetOfflinePacks(); configured = false; sourceReadingFixture = true
+  const selected = offlineWords.find(item => item[0] === language)![1], expected = [...sourceReadingFixtures[language]]
+  const sentence = `Before ${selected} after.`, start = sentence.indexOf(selected)
+  mountHistory(); await wait(() => Boolean(document.querySelector(`[data-fixture-mount="${mountId}"] .dictionary-history`)), 'source-reading history did not mount')
+  button('离线查词').click(); await wait(() => Boolean(document.querySelector('[aria-label="离线查词原句"]')), 'source-reading input did not open')
+  setValue(query<HTMLTextAreaElement>('[aria-label="离线查词原句"]'), sentence)
+  setValue(query<HTMLInputElement>('[aria-label="离线输入原文语言"]'), language); await frame(); button('开始离线查词').click()
+  await wait(() => Boolean(document.querySelector('[aria-label="离线短语起点"]')), 'source-reading sentence did not freeze')
+  setValue(query<HTMLInputElement>('[aria-label="离线短语起点"]'), String(start)); setValue(query<HTMLInputElement>('[aria-label="离线短语终点"]'), String(start + selected.length)); await frame(); button('采用此范围').click()
+  await wait(() => !button('查询本机词典').disabled, 'source-reading lookup was not ready'); button('查询本机词典').click()
+  await wait(() => Boolean(document.querySelector('.dictionary-offline-hit')), 'source-reading result did not mount')
+  const hit = query('.dictionary-offline-hit')
+  check(hit.textContent?.includes('来源读音记录（未校验）') && expected.every(reading => hit.textContent?.includes(reading)), `${language} source-reading lookup preserves source field, tags and original regional labels as unverified records`)
+  check(!hit.querySelector('img,script,iframe,a'), `${language} source-reading labels and malicious-looking text stay inert without media or links`)
+  query<HTMLButtonElement>('.dictionary-offline-sense button').click()
+  await wait(() => records.size === 1 && Boolean(document.querySelector('.dictionary-offline-sense button:disabled')), 'source-reading sense did not save')
+  const record = [...records.values()][0], saved = record.explanations[0]
+  if (saved.providerKind !== 'offline-dictionary') throw new Error('Expected source-reading snapshot')
+  check(JSON.stringify(saved.entry.readings) === JSON.stringify(expected), `${language} explicit save snapshots every distinct labelled reading without normalizing or merging it`)
+  sourceReadingFixture = false
+  button('查看学习历史中的收藏').click(); await wait(() => Boolean(document.querySelector('.dictionary-history [data-encounter-id]')), 'source-reading saved history did not open')
+  await openRow(record.id)
+  check(getText().includes('来源读音记录（未校验）') && expected.every(reading => getText().includes(reading)), `${language} saved history retains the reading snapshot after the lookup source changes`)
+  check(!document.querySelector('.dictionary-offline-explanation img,.dictionary-offline-explanation script,.dictionary-offline-explanation iframe,.dictionary-offline-explanation a'), `${language} saved-reading detail renders no source-supplied HTML or external link`)
+  button('返回学习历史').click(); await wait(() => Boolean(document.querySelector('.dictionary-history')), 'source-reading detail did not return')
+  button('复习收藏').click(); await wait(() => Boolean(document.querySelector('.dictionary-review')), 'source-reading review did not mount')
+  const forbidden = [...saved.sense.glosses, ...expected]
+  check(!document.querySelector('.dictionary-explanation,.dictionary-history,.dictionary-detail') && forbidden.every(value => !getText().includes(value)), `${language} reading records and definitions are absent from the prereveal DOM`)
+  check(reviews.length === 0 && session?.completed === 0 && providerCalls === beforeCalls && forbiddenNetwork === 0 && forbiddenMedia === 0, `${language} lookup/history/review neither grade a reading nor invoke a provider or media`)
+  return { checks, forbidden, language }
+}
+async function finishSourceReadingReview(language: 'ko' | 'zh') {
+  const checks: string[] = []
+  const check = (value: unknown, message: string) => { if (!value) throw new Error(message); checks.push(message) }
+  button('揭示已保存解释').click(); await wait(() => Boolean(document.querySelector('.dictionary-offline-explanation')), 'source-reading answer did not reveal')
+  check(getText().includes('来源读音记录（未校验）') && sourceReadingFixtures[language].every(reading => getText().includes(reading)), `${language} reveal displays only the saved unverified source readings and their labels`)
+  check(reviews.length === 0 && session?.completed === 0 && !document.querySelector('.dictionary-offline-explanation img,.dictionary-offline-explanation script,.dictionary-offline-explanation iframe,.dictionary-offline-explanation a'), `${language} revealing readings never auto-grades them or activates HTML`)
+  button('跳过').click(); await wait(() => getText().includes('本次列表已结束'), 'source-reading review did not skip')
+  check(reviews.length === 0 && session?.completed === 0 && forbiddenNetwork === 0 && forbiddenMedia === 0, `${language} skip remains a local non-rating action`)
+  return { checks }
+}
 // A capacity regression with synthetic data, not evidence of language coverage.
 async function prepareLargeEntryReviewAx() {
   const checks: string[] = [], beforeCalls = providerCalls
@@ -512,5 +568,5 @@ async function finishLargeEntryReview() {
 }
 function verifyReviewAx() { return { answerNodes: document.querySelectorAll('.dictionary-explanation,.dictionary-history,.dictionary-detail').length, diagnostics: diagnostics() } }
 seed()
-;(window as unknown as { __lingobarDictionaryTest: unknown }).__lingobarDictionaryTest = { run, appIntegration, mountPhrase, mountHistory, prepareReviewAx, prepareOfflineReviewAx, prepareLargeEntryReviewAx, finishLargeEntryReview, verifyReviewAx, diagnostics, complete }
+;(window as unknown as { __lingobarDictionaryTest: unknown }).__lingobarDictionaryTest = { run, appIntegration, mountPhrase, mountHistory, prepareReviewAx, prepareOfflineReviewAx, prepareSourceReadingReviewAx, finishSourceReadingReview, prepareLargeEntryReviewAx, finishLargeEntryReview, verifyReviewAx, diagnostics, complete }
 mountHistory()

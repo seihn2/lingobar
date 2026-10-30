@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 1,
+  "kind": "small-public-source-reading-field-fixture",
+  "scope": "Six selected real source rows from four already-downloaded official exports; a regression fixture, not a language-coverage or pronunciation-quality sample. No source reading, variety or spelling was corrected or generated.",
+  "changes": "Explicit lexical projection retains written sound fields, original sound tags and raw_tags; removes all examples/quotations, media/audio URLs, homophones, rich fields, unrelated branches and sense ids. No source normalization.",
+  "dictionaryLicense": "CC-BY-SA-4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "sources": [
+    {
+      "file": "ko-hans.jsonl",
+      "metadataFile": "ko-hans.metadata.json",
+      "sourceDirectoryLabel": "zhwiktionary-ko-hans-label-20261029",
+      "source": {
+        "url": "https://kaikki.org/zhwiktionary/%E6%9C%9D%E9%B2%9C%E8%AF%AD/kaikki.org-dictionary-%E6%9C%9D%E9%B2%9C%E8%AF%AD.jsonl",
+        "edition": "zhwiktionary",
+        "label": "朝鲜语",
+        "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:41 GMT",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 朝鲜语 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+      },
+      "recordedWholeSourceBytes": 59605170,
+      "recordedWholeSourceSha256": "22a71151ef6e21cbb91be5fc79256d8ac6a341e31b613ae117d6a76afc393a13",
+      "wholeSourceHashBoundary": "Copied from the retained download report; not a new whole-source hash pass in this fixture step. Selected raw line hashes below were computed during local extraction.",
+      "rawSubsetSha256": "e3782a6879dce217c99eb53b896bc4f28c12d560a91b044dc0709f9e136c8eef",
+      "fixtureBytes": 519,
+      "fixtureSha256": "938f8122137ff163ec8daf587e5c2aa86a079a55a2fe7f734d2aba87126582a4",
+      "selectedRows": [
+        {
+          "sourceLine": 3,
+          "word": "공산당",
+          "language": "ko",
+          "rawLineBytes": 1617,
+          "rawLineSha256": "e3782a6879dce217c99eb53b896bc4f28c12d560a91b044dc0709f9e136c8eef",
+          "sounds": 6
+        }
+      ]
+    },
+    {
+      "file": "ko-hant.jsonl",
+      "metadataFile": "ko-hant.metadata.json",
+      "sourceDirectoryLabel": "zhwiktionary-ko-hant-label-20261029",
+      "source": {
+        "url": "https://kaikki.org/zhwiktionary/%E6%9C%9D%E9%AE%AE%E8%AA%9E/kaikki.org-dictionary-%E6%9C%9D%E9%AE%AE%E8%AA%9E.jsonl",
+        "edition": "zhwiktionary",
+        "label": "朝鮮語",
+        "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:35 GMT",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 朝鮮語 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+      },
+      "recordedWholeSourceBytes": 31343071,
+      "recordedWholeSourceSha256": "efd1ca7a0b98407e71f02f81ea12479eb5465c76ce144b3557f2425af5ab195f",
+      "wholeSourceHashBoundary": "Copied from the retained download report; not a new whole-source hash pass in this fixture step. Selected raw line hashes below were computed during local extraction.",
+      "rawSubsetSha256": "4737df4e55594f3f08697979e2be01655d1415f4739acd9f6facb01149bce6b2",
+      "fixtureBytes": 669,
+      "fixtureSha256": "a584f602b4d3d9fd570405beb135a5cdadb387bced253cd1d09fa8b338763323",
+      "selectedRows": [
+        {
+          "sourceLine": 82,
+          "word": "회교",
+          "language": "ko",
+          "rawLineBytes": 1622,
+          "rawLineSha256": "4737df4e55594f3f08697979e2be01655d1415f4739acd9f6facb01149bce6b2",
+          "sounds": 8
+        }
+      ]
+    },
+    {
+      "file": "zh-hans.jsonl",
+      "metadataFile": "zh-hans.metadata.json",
+      "sourceDirectoryLabel": "zhwiktionary-zh-hans-label-20261029",
+      "source": {
+        "url": "https://kaikki.org/zhwiktionary/%E6%B1%89%E8%AF%AD/kaikki.org-dictionary-%E6%B1%89%E8%AF%AD.jsonl",
+        "edition": "zhwiktionary",
+        "label": "汉语",
+        "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:21 GMT",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 汉语 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+      },
+      "recordedWholeSourceBytes": 21786772,
+      "recordedWholeSourceSha256": "5111a255668451fa9d1469910d6fda76adf44eac5847ac70144c9a3e7d98c049",
+      "wholeSourceHashBoundary": "Copied from the retained download report; not a new whole-source hash pass in this fixture step. Selected raw line hashes below were computed during local extraction.",
+      "rawSubsetSha256": "a1ed18269959b41080baa75e4e877eb87a0d16de7b9e5602d68e9c22056eb6fb",
+      "fixtureBytes": 877,
+      "fixtureSha256": "2038fd2cba463ea45c7e5cd793b2f17d1510e6389ac41ff24596a757b543062c",
+      "selectedRows": [
+        {
+          "sourceLine": 1113,
+          "word": "咧",
+          "language": "zh",
+          "rawLineBytes": 2935,
+          "rawLineSha256": "a1ed18269959b41080baa75e4e877eb87a0d16de7b9e5602d68e9c22056eb6fb",
+          "sounds": 9
+        }
+      ]
+    },
+    {
+      "file": "zh-hant.jsonl",
+      "metadataFile": "zh-hant.metadata.json",
+      "sourceDirectoryLabel": "zhwiktionary-zh-hant-label-20261029",
+      "source": {
+        "url": "https://kaikki.org/zhwiktionary/%E6%BC%A2%E8%AA%9E/kaikki.org-dictionary-%E6%BC%A2%E8%AA%9E.jsonl",
+        "edition": "zhwiktionary",
+        "label": "漢語",
+        "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:15:21 GMT",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 漢語 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+      },
+      "recordedWholeSourceBytes": 796331489,
+      "recordedWholeSourceSha256": "b4ffef1dbc4c1e5858efc5b26c29d4d5d5b443bd614398ba33cce922ca2859b0",
+      "wholeSourceHashBoundary": "Copied from the retained download report; not a new whole-source hash pass in this fixture step. Selected raw line hashes below were computed during local extraction.",
+      "rawSubsetSha256": "83a99487c4feda4a1901924f91f5dac31e4c8c28d23144f7336d25615ffacfa3",
+      "fixtureBytes": 4721,
+      "fixtureSha256": "88bdfd9eb001ae130bd1856a84316ac65b819e5fd0e00b193b7624c1cf5fd8cb",
+      "selectedRows": [
+        {
+          "sourceLine": 1,
+          "word": "首頁",
+          "language": "zh",
+          "rawLineBytes": 21528,
+          "rawLineSha256": "174d670051d2379ce87777b3f7e2380f4e58821db623de7ac5363b457a36c2ab",
+          "sounds": 47
+        },
+        {
+          "sourceLine": 39604,
+          "word": "大去",
+          "language": "zh",
+          "rawLineBytes": 1240,
+          "rawLineSha256": "b744af3c24ad7ef315190a93e2c8fc91e009157d6e110d16ab1ab6789dc12b39",
+          "sounds": 3
+        }
+      ]
+    },
+    {
+      "file": "zh-many-readings.jsonl",
+      "metadataFile": "zh-many-readings.metadata.json",
+      "sourceDirectoryLabel": "zhwiktionary-zh-hant-label-20261029",
+      "source": {
+        "url": "https://kaikki.org/zhwiktionary/%E6%BC%A2%E8%AA%9E/kaikki.org-dictionary-%E6%BC%A2%E8%AA%9E.jsonl",
+        "edition": "zhwiktionary",
+        "label": "漢語",
+        "revision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:15:21 GMT",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 漢語 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+      },
+      "recordedWholeSourceBytes": 796331489,
+      "recordedWholeSourceSha256": "b4ffef1dbc4c1e5858efc5b26c29d4d5d5b443bd614398ba33cce922ca2859b0",
+      "wholeSourceHashBoundary": "Copied from the retained download report; not a new whole-source hash pass. Selected raw line hash was computed during local extraction.",
+      "rawSubsetSha256": "591b9daa5ccad026936643171ddcbfc666ed374eac55a1fb126b8f1a29485a62",
+      "fixtureBytes": 22586,
+      "fixtureSha256": "6f605f5675635a95861207d4117b5cd2a0c468c84f907e10d37c1779d5c710a7",
+      "selectedRows": [
+        {
+          "sourceLine": 209757,
+          "word": "在",
+          "language": "zh",
+          "rawLineBytes": 80317,
+          "rawLineSha256": "591b9daa5ccad026936643171ddcbfc666ed374eac55a1fb126b8f1a29485a62",
+          "sounds": 277
+        }
+      ],
+      "expectedCurrentSourceLabelledReadingCount": 254,
+      "countEvidence": "The independent full-raw reading bounds audit under the current source-labelled formatter found this glossed record has254 distinct readings; not a claim of254 standard pronunciations.",
+      "expectedCurrentLastSourceLabelledReading": "来源中文记音（zh_pron；标签：[\"Old-Chinese\",\"Zhengzhang\"]）：/*zlɯːs/"
+    }
+  ]
+}

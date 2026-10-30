@@ -1,0 +1,12 @@
+{
+  "packId": "reading-fields-zh-hans",
+  "version": "source-20261029-reading-fixture1",
+  "sourceLanguage": "zh",
+  "glossLanguage": "zh",
+  "sourceName": "Wiktionary via Kaikki.org — 汉语 label partition, Chinese definitions — selected reading-field fixture",
+  "sourceUrl": "https://kaikki.org/zhwiktionary/%E6%B1%89%E8%AF%AD/kaikki.org-dictionary-%E6%B1%89%E8%AF%AD.jsonl",
+  "sourceRevision": "Source page extraction2026-10-29; zhwiktionary dump2026-10-01; HTTP Last-Modified Thu, 29 Oct 2026 21:14:21 GMT; selected raw lines 1113",
+  "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 汉语 label partition, not all entries of the source language. Text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license."
+}

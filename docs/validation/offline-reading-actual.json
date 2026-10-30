@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 1,
+  "kind": "real-raw-subset-reading-field-production-validation",
+  "startedAt": "2026-10-30T20:38:34.083Z",
+  "scope": "Selected public source rows only; no complete language packs rebuilt, no renderer/hardware/linguistic quality claim.",
+  "runtime": {
+    "node": "24.19.0",
+    "sqlite": "3.53.3",
+    "platform": "linux"
+  },
+  "productionBundleSha256": "0ee9cabe26960b0cf2f6ae1666c83ba5a8370d6c609481a08dfa3e15d0a5a342",
+  "builderSha256": "ce7f2c3e198c605362d4917ff0feaca4ec741a5e534fb252d51364f18d1da475",
+  "projectionSha256": "fe7f371f020047af5f1fe2c435220d318cc0233ef889ccc747ea02abbd6ef2ad",
+  "sources": [
+    {
+      "label": "ko-hans",
+      "rawSubsetSha256": "e3782a6879dce217c99eb53b896bc4f28c12d560a91b044dc0709f9e136c8eef",
+      "projectionSha256": "938f8122137ff163ec8daf587e5c2aa86a079a55a2fe7f734d2aba87126582a4",
+      "dbSha256": "73b43095128f18aeb9ca57e1016cf0e5869332c8210dae150ef174d5e9af44d7",
+      "schemaVersion": 1,
+      "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+      "sourceUrl": "https://kaikki.org/zhwiktionary/%E6%9C%9D%E9%B2%9C%E8%AF%AD/kaikki.org-dictionary-%E6%9C%9D%E9%B2%9C%E8%AF%AD.jsonl",
+      "selectedEntries": [
+        {
+          "word": "공산당",
+          "readingCount": 5,
+          "lastReading": "kōngsantang",
+          "saved": true,
+          "json": true,
+          "markdown": true
+        }
+      ]
+    },
+    {
+      "label": "ko-hant",
+      "rawSubsetSha256": "4737df4e55594f3f08697979e2be01655d1415f4739acd9f6facb01149bce6b2",
+      "projectionSha256": "a584f602b4d3d9fd570405beb135a5cdadb387bced253cd1d09fa8b338763323",
+      "dbSha256": "8c6c0fee1bbbb8f4c8cb0a02428bc19a8748dcc55d1ba49aebeed4730d048510",
+      "schemaVersion": 1,
+      "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+      "sourceUrl": "https://kaikki.org/zhwiktionary/%E6%9C%9D%E9%AE%AE%E8%AA%9E/kaikki.org-dictionary-%E6%9C%9D%E9%AE%AE%E8%AA%9E.jsonl",
+      "selectedEntries": [
+        {
+          "word": "회교",
+          "readingCount": 6,
+          "lastReading": "hoykyo",
+          "saved": true,
+          "json": true,
+          "markdown": true
+        }
+      ]
+    },
+    {
+      "label": "zh-hans",
+      "rawSubsetSha256": "a1ed18269959b41080baa75e4e877eb87a0d16de7b9e5602d68e9c22056eb6fb",
+      "projectionSha256": "2038fd2cba463ea45c7e5cd793b2f17d1510e6389ac41ff24596a757b543062c",
+      "dbSha256": "adba0011257d5784f3d03efc6ac699625deea4f4d848ca2104248b50679f8432",
+      "schemaVersion": 1,
+      "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+      "sourceUrl": "https://kaikki.org/zhwiktionary/%E6%B1%89%E8%AF%AD/kaikki.org-dictionary-%E6%B1%89%E8%AF%AD.jsonl",
+      "selectedEntries": [
+        {
+          "word": "咧",
+          "readingCount": 9,
+          "lastReading": "来源中文记音（zh_pron；标签：[\"Min-Nan\",\"Hokkien\",\"Tâi-lô\"]；原标签：[\"菲律賓\"]）：--le",
+          "saved": true,
+          "json": true,
+          "markdown": true
+        }
+      ]
+    },
+    {
+      "label": "zh-hant",
+      "rawSubsetSha256": "83a99487c4feda4a1901924f91f5dac31e4c8c28d23144f7336d25615ffacfa3",
+      "projectionSha256": "88bdfd9eb001ae130bd1856a84316ac65b819e5fd0e00b193b7624c1cf5fd8cb",
+      "dbSha256": "98824a31d451746958b6ae599a62c693378ff520a5d593b2b20f462526275ba5",
+      "schemaVersion": 1,
+      "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+      "sourceUrl": "https://kaikki.org/zhwiktionary/%E6%BC%A2%E8%AA%9E/kaikki.org-dictionary-%E6%BC%A2%E8%AA%9E.jsonl",
+      "selectedEntries": [
+        {
+          "word": "首頁",
+          "readingCount": 36,
+          "lastReading": "/siu⁵²⁻³⁵ hieʔ⁴/",
+          "saved": true,
+          "json": true,
+          "markdown": true
+        },
+        {
+          "word": "大去",
+          "readingCount": 2,
+          "lastReading": "来源中文记音（zh_pron；标签：[\"Min-Nan\",\"Hokkien\",\"Tâi-lô\"]）：tuā--khì",
+          "saved": true,
+          "json": true,
+          "markdown": true
+        }
+      ]
+    },
+    {
+      "label": "zh-many-readings",
+      "rawSubsetSha256": "591b9daa5ccad026936643171ddcbfc666ed374eac55a1fb126b8f1a29485a62",
+      "projectionSha256": "6f605f5675635a95861207d4117b5cd2a0c468c84f907e10d37c1779d5c710a7",
+      "dbSha256": "4bfd79bd4ddd0bf8fef88c427c1fd8d7c4f4dc01df81b25d324cb4feeae22128",
+      "schemaVersion": 3,
+      "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+      "sourceUrl": "https://kaikki.org/zhwiktionary/%E6%BC%A2%E8%AA%9E/kaikki.org-dictionary-%E6%BC%A2%E8%AA%9E.jsonl",
+      "selectedEntries": [
+        {
+          "word": "在",
+          "readingCount": 254,
+          "lastReading": "来源中文记音（zh_pron；标签：[\"Old-Chinese\",\"Zhengzhang\"]）：/*zlɯːs/",
+          "saved": true,
+          "json": true,
+          "markdown": true
+        }
+      ]
+    }
+  ],
+  "checks": [
+    "all5 actual RAW subsets reproject to reviewed fixture hashes",
+    "all6 real entries built/imported/looked up/saved/JSON+Markdown exported",
+    "schema3 admits254 real readings and preserves lastOld-Chinese-labelled value",
+    "uninstall retains full254-reading snapshot",
+    "restart retains all254 readings",
+    "review hides reading answers until reveal and retains all254 afterwards"
+  ],
+  "networkAttempts": 0,
+  "providerCalls": 0,
+  "finishedAt": "2026-10-30T20:38:35.088Z",
+  "portableCopy": {
+    "originalReportSha256": "7021b49c92bc19cb67a693bacd39ca36bcb06815e0d0b290de5ba25c47533612",
+    "changes": "Only absolute project paths made relative; measurement values unchanged."
+  }
+}

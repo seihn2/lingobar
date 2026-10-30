@@ -18,10 +18,10 @@ describe('source-preserving Kaikki lexical-text preparation', () => {
     const row = { word: '食べる', lang: '日語', lang_code: 'ja', pos: 'verb', arbitrary: 'omit', etymology_text: 'omit',
       examples: [{ text: 'omit' }], etymology_examples: [{ text: 'omit' }], redirects: ['たべる'],
       forms: [{ form: '食べた', tags: ['past'], source: 'conjugation', ruby: [['食', 'た']], audio: 'omit' }],
-      sounds: [{ ipa: '[ta̠be̞ɾɯ̟ᵝ]', enpr: 'written', roman: 'taberu', hangeul: 'written', 'zh-pron': 'written', zh_pron: 'written', other: 'written', tags: ['standard'], audio: 'omit', mp3_url: 'https://example.test/media', ogg_url: 'https://example.test/media', text: 'audio-related text omitted' }],
+      sounds: [{ ipa: '[ta̠be̞ɾɯ̟ᵝ]', enpr: 'written', roman: 'taberu', hangeul: 'written', 'zh-pron': 'written', zh_pron: 'written', other: 'written', tags: ['standard'], raw_tags: ['original region'], audio: 'omit', mp3_url: 'https://example.test/media', ogg_url: 'https://example.test/media', text: 'audio-related text omitted' }],
       senses: [{ glosses: ['吃；进食'], raw_glosses: ['(動詞) 吃；进食'], tags: ['transitive'], form_of: [{ word: '食べる', extra: 'source note', url: 'omit' }], alt_of: [{ word: '喰べる' }], examples: [{ text: 'omit quotation', ref: 'third-party' }], links: [['omit']], wikipedia: ['omit'] }] }
     expect(projectKaikkiText(row)).toEqual({ word: '食べる', lang: '日語', lang_code: 'ja', pos: 'verb', redirects: ['たべる'],
-      forms: [{ form: '食べた', tags: ['past'] }], sounds: [{ ipa: '[ta̠be̞ɾɯ̟ᵝ]', enpr: 'written', roman: 'taberu', hangeul: 'written', other: 'written', 'zh-pron': 'written', zh_pron: 'written', tags: ['standard'] }],
+      forms: [{ form: '食べた', tags: ['past'] }], sounds: [{ ipa: '[ta̠be̞ɾɯ̟ᵝ]', enpr: 'written', roman: 'taberu', hangeul: 'written', other: 'written', 'zh-pron': 'written', zh_pron: 'written', tags: ['standard'], raw_tags: ['original region'] }],
       senses: [{ glosses: ['吃；进食'], raw_glosses: ['(動詞) 吃；进食'], tags: ['transitive'], form_of: [{ word: '食べる', extra: 'source note' }], alt_of: [{ word: '喰べる' }] }] })
     expect(row.senses[0].examples).toHaveLength(1)
   })
