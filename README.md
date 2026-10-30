@@ -74,6 +74,8 @@ Windows x64 支持已合并到 `main`；此前已验证测试包与校验记录�
 
 桌面学习：[AI 语境解释、独立历史与主动复习](docs/dictionary-learning.md)；[离线词典与语言包](docs/offline-dictionaries.md)（当前 draft，提供八语真实小样本，非完整词库；AI 另行主动调用）。
 
+后续批次提供[实用规模日语词库](docs/offline-dictionary-scale.md)：英语及真实中文释义来源独立保留，查询不依赖 AI；其余语言尚未完成规模化词库交付。
+
 | 语言 | 使用指南 |
 | --- | --- |
 | 简体中文 | [安装、配置与日常使用](docs/usage.zh-CN.md) |

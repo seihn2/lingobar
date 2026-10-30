@@ -16,6 +16,8 @@
     "test:ui": "node scripts/test-ui.cjs",
     "test:dictionary-ui": "node scripts/test-dictionary-ui.cjs",
     "build:dictionary-samples": "node scripts/build-dictionary-samples.cjs",
+    "prepare:dictionary-text": "node scripts/prepare-kaikki-text.cjs",
+    "validate:dictionary-scale": "node scripts/validate-dictionary-scale.cjs",
     "test:offline-dictionaries": "node scripts/test-offline-dictionaries.cjs",
     "test:media-permissions": "node scripts/test-media-permissions.cjs",
     "test:windows-native": "node scripts/verify-windows-system-audio.cjs",

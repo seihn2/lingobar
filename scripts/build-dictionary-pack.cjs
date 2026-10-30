@@ -1,9 +1,10 @@
 // Independent Kaikki/Wiktextract JSONL -> local SQLite language-pack builder.
 // Reads local files only. No downloads, model calls, or upstream executable code.
 const { createReadStream } = require('node:fs')
-const { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, chmodSync } = require('node:fs')
-const { dirname, join, resolve } = require('node:path')
-const { createInterface } = require('node:readline')
+const { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, chmodSync, statSync } = require('node:fs')
+const { basename, dirname, join, resolve } = require('node:path')
+const { StringDecoder } = require('node:string_decoder')
+const { createGunzip } = require('node:zlib')
 const { createHash } = require('node:crypto')
 const { DatabaseSync } = require('node:sqlite')
 
@@ -13,6 +14,41 @@ const text = (value, limit = 16000) => typeof value === 'string' && value.length
 const texts = (values, limit = 16000) => Array.isArray(values) ? values.filter(value => text(value, limit)) : []
 const unique = values => [...new Set(values)]
 const nfc = value => value.normalize('NFC')
+/** Stream local plain/gzip JSONL with one bounded decoded record in memory. */
+async function* jsonlLines(path) {
+  const source = createReadStream(path)
+  const stream = path.toLowerCase().endsWith('.gz') ? createGunzip() : source
+  if (stream !== source) {
+    source.on('error', error => stream.destroy(error))
+    source.pipe(stream)
+  }
+  const decoder = new StringDecoder('utf8'), maximum = 4 * 1024 * 1024
+  let pending = '', lineNumber = 0
+  const record = line => {
+    const value = line.endsWith('\r') ? line.slice(0, -1) : line
+    if (Buffer.byteLength(value, 'utf8') > maximum) throw new Error(`JSONL line ${lineNumber + 1} exceeds the documented 4MiB record limit.`)
+    lineNumber++
+    return value
+  }
+  try {
+    for await (const chunk of stream) {
+      pending += decoder.write(chunk)
+      let start = 0, newline
+      while ((newline = pending.indexOf('\n', start)) !== -1) {
+        yield record(pending.slice(start, newline))
+        start = newline + 1
+      }
+      pending = pending.slice(start)
+      // Allow a trailing CR, which is excluded from a CRLF record's byte count.
+      if (Buffer.byteLength(pending, 'utf8') > maximum + 1) throw new Error(`JSONL line ${lineNumber + 1} exceeds the documented 4MiB record limit.`)
+    }
+    pending += decoder.end()
+    if (pending.length) yield record(pending)
+  } finally {
+    source.destroy()
+    if (stream !== source) stream.destroy()
+  }
+}
 async function fileSha256(path) {
   const hash = createHash('sha256')
   for await (const chunk of createReadStream(path)) hash.update(chunk)
@@ -52,7 +88,10 @@ function readingsFor(record) {
 function sensesFor(record, entryId) {
   if (!Array.isArray(record.senses)) return []
   return record.senses.filter(plain).flatMap((sense, index) => {
-    const glosses = unique(texts(sense.glosses).length ? texts(sense.glosses) : texts(sense.raw_glosses))
+    // Explicit no-gloss tags can accompany raw label text such as "(Internet slang)".
+    // A label is not a dictionary answer; keep genuine glosses, but do not invent one from that raw fallback.
+    const noGloss = Array.isArray(sense.tags) && sense.tags.some(tag => tag === 'no-gloss' || tag === 'empty-gloss')
+    const glosses = unique(texts(sense.glosses).length ? texts(sense.glosses) : noGloss ? [] : texts(sense.raw_glosses))
     if (!glosses.length) return []
     const examples = Array.isArray(sense.examples) ? sense.examples.filter(plain).filter(example => text(example.text)).map(example => ({ text: example.text, translation: text(example.translation) ? example.translation : text(example.english) ? example.english : null })) : []
     return [{ id: `${entryId}:s${index + 1}`, glosses, tags: unique(texts(sense.tags, 256)), examples }]
@@ -110,23 +149,28 @@ async function buildDictionaryPack({ input, output, manifest: supplied }) {
     const pendingForm = db.prepare('INSERT INTO pending_forms VALUES(?,?,?)')
     db.exec('BEGIN')
     let lineNumber = 0
-    const lines = createInterface({ input: createReadStream(source, { encoding: 'utf8' }), crlfDelay: Infinity })
-    for await (const line of lines) {
+    const records = { parsed: 0, otherLanguage: 0, matchingLanguage: 0, skippedNoLexicalContent: 0, formLinkOnly: 0, withGlosses: 0 }
+    for await (const line of jsonlLines(source)) {
       lineNumber++
       if (!line.trim()) continue
-      if (Buffer.byteLength(line, 'utf8') > 4 * 1024 * 1024) throw new Error(`JSONL line ${lineNumber} exceeds the documented 4MiB record limit.`)
       let record
       try { record = JSON.parse(line) } catch { throw new Error(`Invalid JSON at source line ${lineNumber}.`) }
       if (!plain(record)) throw new Error(`Expected an object at source line ${lineNumber}.`)
-      if (record.lang_code !== descriptor.sourceLanguage) continue
-      if (!text(record.word, 1024)) throw new Error(`Invalid headword at source line ${lineNumber}.`)
+      records.parsed++
+      if (record.lang_code !== descriptor.sourceLanguage) { records.otherLanguage++; continue }
+      records.matchingLanguage++
       const entryId = `line:${lineNumber}`, forms = formsFor(record), readings = readingsFor(record), senses = sensesFor(record, entryId)
+      const formOf = Array.isArray(record.senses) ? record.senses.filter(plain).flatMap(sense => Array.isArray(sense.form_of)
+        ? sense.form_of.filter(plain).filter(target => text(target.word, 1024)).map(target => ({ word: target.word, tags: unique(texts(sense.tags, 256)) })) : []) : []
       runtimeBounds(record, forms, readings, senses, lineNumber)
+      // Real dumps include empty punctuation/redirect records (even word=" ").
+      // They supply neither an answer nor a usable form link, so validate only records that can contribute lexical data.
+      if (!senses.length && !formOf.length) { records.skippedNoLexicalContent++; continue }
+      if (!text(record.word, 1024)) throw new Error(`Invalid headword at source line ${lineNumber}.`)
       // Inflection records can contain only form_of; index their explicitly named lemma after all base records exist.
-      if (Array.isArray(record.senses)) for (const sense of record.senses.filter(plain)) {
-        if (Array.isArray(sense.form_of)) for (const target of sense.form_of.filter(plain)) if (text(target.word, 1024)) pendingForm.run(record.word, target.word, JSON.stringify(unique(texts(sense.tags, 256))))
-      }
-      if (!senses.length) continue
+      for (const target of formOf) pendingForm.run(record.word, target.word, JSON.stringify(target.tags))
+      if (!senses.length) { records.formLinkOnly++; continue }
+      records.withGlosses++
       insertEntry.run(entryId, record.word, nfc(record.word), record.lang_code, JSON.stringify(readings), text(record.pos, 256) ? record.pos : null, JSON.stringify(forms))
       for (const sense of senses) insertSense.run(sense.id, entryId, JSON.stringify(sense.glosses), JSON.stringify(sense.tags), JSON.stringify(sense.examples))
       for (const form of forms.filter(indexableForm)) insertForm.run(form.form, nfc(form.form), entryId, JSON.stringify(form.tags))
@@ -141,6 +185,10 @@ async function buildDictionaryPack({ input, output, manifest: supplied }) {
     chmodSync(databasePath, 0o600)
     const result = { schemaVersion: 1, ...descriptor, dbSha256: await fileSha256(databasePath), counts }
     writeFileSync(join(destination, 'manifest.json'), JSON.stringify(result, null, 2) + '\n', { flag: 'wx', mode: 0o600 })
+    const report = { schemaVersion: 1, input: { file: basename(source), bytes: statSync(source).size, sha256: await fileSha256(source), compression: source.toLowerCase().endsWith('.gz') ? 'gzip' : 'none' },
+      lines: lineNumber, records, output: { packId: descriptor.packId, version: descriptor.version, dbSha256: result.dbSha256, counts },
+      skippedMeaning: 'skippedNoLexicalContent records have neither a usable gloss nor an explicit form_of target; formLinkOnly records add source form links but no fabricated answer.' }
+    writeFileSync(join(destination, 'BUILD-REPORT.json'), JSON.stringify(report, null, 2) + '\n', { flag: 'wx', mode: 0o600 })
     return result
   } catch (error) {
     try { db?.close() } catch { /* failed construction owns this fresh output directory */ }

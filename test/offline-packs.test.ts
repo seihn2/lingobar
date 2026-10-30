@@ -15,9 +15,9 @@ const records = (definition = 'Authored test definition.') => [
   { word: 'allé', lang_code: 'fr', pos: 'verb', senses: [{ glosses: ['Authored inflection.'], form_of: [{ word: 'aller' }] }] },
   { word: 'aller', lang_code: 'fr', pos: 'verb', senses: [{ glosses: ['Authored lemma.'] }] }
 ]
-async function pack(id = 'test-fr', version = 'test-v1', glossLanguage = 'en', definition?: string) {
+async function pack(id = 'test-fr', version = 'test-v1', glossLanguage = 'en', definition?: string, sourceRecords?: unknown[]) {
   const dir = directory(), input = join(dir, 'source.jsonl'), output = join(dir, 'pack')
-  writeFileSync(input, records(definition).map(record => JSON.stringify(record)).join('\n'))
+  writeFileSync(input, (sourceRecords || records(definition)).map(record => JSON.stringify(record)).join('\n'))
   await buildDictionaryPack({ input, output, manifest: { packId: id, version, sourceLanguage: 'fr', glossLanguage, sourceName: 'Authored fixture', sourceUrl: 'https://example.test/source', sourceRevision: version,
     license: 'CC0-1.0 (authored test only)', licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/', attribution: 'Authored test data, not a real dictionary.' } })
   return join(output, 'manifest.json')
@@ -87,5 +87,30 @@ describe('local read-only dictionary packs', () => {
     const result = packs.lookup({ text: 'café', language: 'fr', glossLanguage: 'zh' })
     expect(result.results[0].pack.packId).toBe('chinese-fr')
     expect(result.results[1].pack.packId).toBe('english-fr'); expect(result.message).not.toContain('暂无中文释义')
+  })
+  it('deduplicates exact/NFC overlap while retaining distinct original entries, source order and senses', async () => {
+    const packs = manager(join(directory(), 'installed'))
+    packs.install(await pack('canonical-fr', 'v1', 'en', undefined, [
+      { word: 'cafe\u0301', lang_code: 'fr', senses: [{ glosses: ['First original spelling, first sense.'] }, { glosses: ['First original spelling, second sense.'] }] },
+      { word: 'café', lang_code: 'fr', senses: [{ glosses: ['Second original spelling, independent entry.'] }] }
+    ]))
+    for (const spelling of ['cafe\u0301', 'café']) {
+      const hits = packs.lookup({ text: spelling, language: 'fr' }).results
+      expect(hits.map(hit => hit.entry.id)).toEqual(['line:1', 'line:2'])
+      expect(hits.map(hit => hit.entry.headword)).toEqual(['cafe\u0301', 'café'])
+      expect(hits.map(hit => hit.matchPath)).toEqual(spelling === 'café' ? ['nfc', 'exact'] : ['exact', 'nfc'])
+      expect(hits[0].entry.senses).toHaveLength(2)
+      expect(hits.every(hit => hit.pack.packId === 'canonical-fr')).toBe(true)
+    }
+  })
+  it('keeps the existing thirty-candidate bound after merging value-index lookups', async () => {
+    const packs = manager(join(directory(), 'installed'))
+    packs.install(await pack('bounded-fr', 'v1', 'en', undefined, Array.from({ length: 36 }, (_, index) => ({
+      word: index === 0 ? 'cafe\u0301' : 'café', lang_code: 'fr', senses: [{ glosses: [`Independent source entry ${index + 1}.`] }]
+    }))))
+    const hits = packs.lookup({ text: 'café', language: 'fr' }).results
+    expect(hits).toHaveLength(30)
+    expect(hits.map(hit => hit.entry.id)).toEqual(Array.from({ length: 30 }, (_, index) => `line:${index + 1}`))
+    expect(hits[0].matchPath).toBe('nfc'); expect(hits.slice(1).every(hit => hit.matchPath === 'exact')).toBe(true)
   })
 })

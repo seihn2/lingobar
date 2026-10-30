@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "runtime": {
+    "node": "24.19.0",
+    "sqlite": "3.53.3"
+  },
+  "packId": "kaikki-enwiktionary-ja-en",
+  "databaseSha256FromManifest": "4a3b45b0b5bb984f43b314133cbc852252b81980642fdbdd728fd74b392affdb",
+  "entries": 145548,
+  "productionSourceSha256": "6d50686e5878bdf6ad51e836950697b6848d04c8e7cd9385968f8b0448564fd1",
+  "before": {
+    "sql": "SELECT id,headword,language,readings_json,pos,forms_json FROM entries WHERE language=? AND (headword=? OR headword_nfc=?) LIMIT 30",
+    "bindings": [
+      "ja",
+      "食べる",
+      "食べる"
+    ],
+    "plan": [
+      {
+        "id": 4,
+        "parent": 0,
+        "notused": 62,
+        "detail": "SEARCH entries USING INDEX entries_nfc (language=?)"
+      }
+    ]
+  },
+  "after": [
+    {
+      "sql": "SELECT rowid AS lookup_order,id,headword,language,readings_json,pos,forms_json FROM entries WHERE language=? AND headword=? ORDER BY rowid LIMIT 30",
+      "bindings": [
+        "ja",
+        "食べる"
+      ],
+      "plan": [
+        {
+          "id": 5,
+          "parent": 0,
+          "notused": 61,
+          "detail": "SEARCH entries USING INDEX entries_headword (language=? AND headword=?)"
+        }
+      ]
+    },
+    {
+      "sql": "SELECT rowid AS lookup_order,id,headword,language,readings_json,pos,forms_json FROM entries WHERE language=? AND headword_nfc=? ORDER BY rowid LIMIT 30",
+      "bindings": [
+        "ja",
+        "食べる"
+      ],
+      "plan": [
+        {
+          "id": 5,
+          "parent": 0,
+          "notused": 61,
+          "detail": "SEARCH entries USING INDEX entries_nfc (language=? AND headword_nfc=?)"
+        }
+      ]
+    }
+  ],
+  "unchangedForms": {
+    "sql": "SELECT e.id,e.headword,e.language,e.readings_json,e.pos,e.forms_json,f.form FROM forms f JOIN entries e ON e.id=f.entry_id WHERE e.language=? AND (f.form=? OR f.form_nfc=?) LIMIT 60",
+    "bindings": [
+      "ja",
+      "食べた",
+      "食べた"
+    ],
+    "plan": [
+      {
+        "id": 7,
+        "parent": 0,
+        "notused": 0,
+        "detail": "MULTI-INDEX OR"
+      },
+      {
+        "id": 8,
+        "parent": 7,
+        "notused": 0,
+        "detail": "INDEX 1"
+      },
+      {
+        "id": 16,
+        "parent": 8,
+        "notused": 62,
+        "detail": "SEARCH f USING INDEX forms_exact (form=?)"
+      },
+      {
+        "id": 21,
+        "parent": 7,
+        "notused": 0,
+        "detail": "INDEX 2"
+      },
+      {
+        "id": 29,
+        "parent": 21,
+        "notused": 62,
+        "detail": "SEARCH f USING INDEX forms_nfc (form_nfc=?)"
+      },
+      {
+        "id": 39,
+        "parent": 0,
+        "notused": 46,
+        "detail": "SEARCH e USING INDEX sqlite_autoindex_entries_1 (id=?)"
+      }
+    ]
+  },
+  "interpretation": "Before: only language prefix is constrained. After: exact and NFC queries constrain both indexed values. Forms already used its two value indexes and entry primary key and was left unchanged.",
+  "reportPathNote": "Portable copy of the completed local report; workspace paths made relative. Measurements and observations unchanged."
+}

@@ -57,6 +57,23 @@ describe('local Kaikki-shaped JSONL language-pack builder', () => {
       expect(db.prepare('SELECT count(*) AS count FROM forms WHERE form=?').get('missing-base-form')?.count).toBe(0)
     } finally { db.close() }
   })
+  it('skips source records without glosses or form links before requiring a usable headword', async () => {
+    const f = input([
+      { word: ' ', lang_code: 'en', pos: 'punct', senses: [{}] },
+      { word: ' ', lang_code: 'en', pos: 'punct', senses: [{ raw_glosses: ['(Internet slang)'], tags: ['empty-gloss', 'no-gloss'] }] },
+      { word: 'authored', lang_code: 'en', senses: [{ glosses: ['An authored usable answer.'] }] }
+    ])
+    const built = await buildDictionaryPack({ input: f.source, output: f.output, manifest: metadata })
+    expect(built.counts).toEqual({ entries: 1, senses: 1, forms: 0 })
+    const report = JSON.parse(readFileSync(join(f.output, 'BUILD-REPORT.json'), 'utf8'))
+    expect(report.records).toMatchObject({ parsed: 3, matchingLanguage: 3, skippedNoLexicalContent: 2, formLinkOnly: 0, withGlosses: 1 })
+    expect(report.input).toMatchObject({ bytes: readFileSync(f.source).byteLength, sha256: createHash('sha256').update(readFileSync(f.source)).digest('hex'), compression: 'none' })
+    const db = new DatabaseSync(join(f.output, 'entries.sqlite'), { readOnly: true })
+    try { expect(db.prepare('SELECT id,headword FROM entries').all()).toEqual([{ id: 'line:3', headword: 'authored' }]) }
+    finally { db.close() }
+    const invalid = input([{ word: ' ', lang_code: 'en', senses: [{ glosses: ['A source answer with an invalid lookup headword.'] }] }])
+    await expect(buildDictionaryPack({ input: invalid.source, output: invalid.output, manifest: metadata })).rejects.toThrow('Invalid headword at source line 1')
+  })
   it('does not index counters/table placeholders as forms and retains the kind of actual source aliases', async () => {
     const f = input([{ word: '고양이', lang_code: 'ko', pos: 'noun', forms: [
       { form: '마리', tags: ['counter'] }, { form: 'table metadata', tags: ['table-tags'] },

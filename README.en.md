@@ -74,6 +74,8 @@ See the [service configuration guide](docs/usage.en.md#services) for all fields,
 
 Desktop learning: [AI context explanations, independent history and active review](docs/dictionary-learning.md); [offline dictionaries and language packs](docs/offline-dictionaries.md) (current draft, real samples for eight languages rather than complete dictionaries; AI remains a separate explicit action).
 
+The follow-up adds [practical-size Japanese dictionaries](docs/offline-dictionary-scale.md) with separate English and genuinely Chinese source glosses, without AI lookup. Practical-size packs for the other languages are still in progress.
+
 | Language | User guide |
 | --- | --- |
 | 简体中文 | [安装、配置与日常使用](docs/usage.zh-CN.md) |

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "description": "Fixed public, self-written Japanese lookup and sentence-selection cases for scale measurement. These are not copied source definitions, a representative vocabulary corpus, expert semantic labels, or a semantic accuracy benchmark. They are separate from the first eight-language sample validation.",
+  "cases": [
+    { "id": "lemma-dog", "language": "ja", "text": "犬", "expectedHeadword": "犬" },
+    { "id": "lemma-water", "language": "ja", "text": "水", "expectedHeadword": "水" },
+    { "id": "lemma-school", "language": "ja", "text": "学校", "expectedHeadword": "学校" },
+    { "id": "lemma-teacher", "language": "ja", "text": "先生", "expectedHeadword": "先生" },
+    { "id": "lemma-japanese", "language": "ja", "text": "日本語", "expectedHeadword": "日本語" },
+    { "id": "lemma-news", "language": "ja", "text": "新聞", "expectedHeadword": "新聞" },
+    { "id": "lemma-game", "language": "ja", "text": "ゲーム", "expectedHeadword": "ゲーム" },
+    { "id": "lemma-time", "language": "ja", "text": "時間", "expectedHeadword": "時間" },
+    { "id": "lemma-word", "language": "ja", "text": "言葉", "expectedHeadword": "言葉" },
+    { "id": "lemma-study", "language": "ja", "text": "勉強", "expectedHeadword": "勉強" },
+    { "id": "lemma-eat", "language": "ja", "text": "食べる", "expectedHeadword": "食べる" },
+    { "id": "lemma-read", "language": "ja", "text": "読む", "expectedHeadword": "読む" },
+    { "id": "lemma-go", "language": "ja", "text": "行く", "expectedHeadword": "行く" },
+    { "id": "lemma-drink", "language": "ja", "text": "飲む", "expectedHeadword": "飲む" },
+    { "id": "lemma-new", "language": "ja", "text": "新しい", "expectedHeadword": "新しい" },
+    { "id": "lemma-thanks", "language": "ja", "text": "ありがとう", "expectedHeadword": "ありがとう" },
+    { "id": "selection-newspaper", "language": "ja", "text": "新聞", "sentence": "朝、新聞を読みます。", "expectedHeadword": "新聞" },
+    { "id": "selection-new", "language": "ja", "text": "新しい", "sentence": "これは新しい言葉です。", "expectedHeadword": "新しい" },
+    { "id": "selection-language", "language": "ja", "text": "日本語", "sentence": "ゲームで日本語を勉強しています。", "expectedHeadword": "日本語" },
+    { "id": "selection-eat-past", "language": "ja", "text": "食べた", "sentence": "昨日、魚を食べた。", "expectedHeadword": "食べる" },
+    { "id": "selection-read-past", "language": "ja", "text": "読んだ", "sentence": "駅で本を読んだ。", "expectedHeadword": "読む" },
+    { "id": "selection-go-polite", "language": "ja", "text": "行きます", "sentence": "明日は学校に行きます。", "expectedHeadword": "行く" },
+    { "id": "selection-drink-polite", "language": "ja", "text": "飲みます", "sentence": "毎朝、水を飲みます。", "expectedHeadword": "飲む" },
+    { "id": "selection-teacher", "language": "ja", "text": "先生", "sentence": "先生に言葉の意味を聞きました。", "expectedHeadword": "先生" }
+  ]
+}

@@ -155,7 +155,12 @@ export class OfflinePacks {
       if (results.length >= 30) break
       try {
         const db = this.connect(pack), seen = new Set<string>()
-        const direct = db.prepare('SELECT id,headword,language,readings_json,pos,forms_json FROM entries WHERE language=? AND (headword=? OR headword_nfc=?) LIMIT 30').all(pack.manifest.sourceLanguage, input.text, normalized)
+        // Keep both predicates as complete value-index lookups. Factoring language
+        // outside OR made SQLite scan every entry of that language in real packs.
+        const exact = db.prepare('SELECT rowid AS lookup_order,id,headword,language,readings_json,pos,forms_json FROM entries WHERE language=? AND headword=? ORDER BY rowid LIMIT 30').all(pack.manifest.sourceLanguage, input.text)
+        const canonical = db.prepare('SELECT rowid AS lookup_order,id,headword,language,readings_json,pos,forms_json FROM entries WHERE language=? AND headword_nfc=? ORDER BY rowid LIMIT 30').all(pack.manifest.sourceLanguage, normalized)
+        const direct = [...new Map([...exact, ...canonical].map(row => [String(row.id), row])).values()]
+          .sort((a, b) => Number(a.lookup_order) - Number(b.lookup_order)).slice(0, 30)
         for (const row of direct) {
           const entry = this.entry(db, row)
           if (!entry.senses.length || seen.has(entry.id)) continue

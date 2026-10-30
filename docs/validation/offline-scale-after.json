@@ -1,0 +1,1608 @@
+{
+  "schemaVersion": 1,
+  "startedAt": "2026-10-30T19:19:22.834Z",
+  "runtime": {
+    "node": "24.19.0",
+    "sqlite": "3.53.3",
+    "platform": "linux",
+    "arch": "x64"
+  },
+  "scope": "Actual production OfflinePacks + DictionaryLearning + DictionaryStore + export modules in Node; no Electron/renderer/native hardware measurement.",
+  "cacheBoundary": "Cold means a new production manager/SQLite connection. Copying, hashing and OS filesystem caches are not flushed; this is not a cold-disk benchmark.",
+  "qualityBoundary": "Hits and expected-headword candidates are lexical retrieval observations, not semantic correctness or representative language coverage.",
+  "fixture": {
+    "path": "test/fixtures/offline-scale-cases.json",
+    "sha256": "6873b8f34e65c17910c5ba8a20bbbb91706e56c05f6852986600c694d266f0c7",
+    "description": "Fixed public, self-written Japanese lookup and sentence-selection cases for scale measurement. These are not copied source definitions, a representative vocabulary corpus, expert semantic labels, or a semantic accuracy benchmark. They are separate from the first eight-language sample validation.",
+    "count": 24,
+    "rounds": 20
+  },
+  "scriptSha256": "72f21ddb82c0b7c1f3cf9fc85dace092c24492c09db850b23eb26052dfc6863f",
+  "installs": [
+    {
+      "manifestPath": "packs/kaikki-enwiktionary-ja-en/manifest.json",
+      "manifest": {
+        "schemaVersion": 1,
+        "packId": "kaikki-enwiktionary-ja-en",
+        "version": "2026-10-25-text-1",
+        "sourceLanguage": "ja",
+        "glossLanguage": "en",
+        "sourceName": "Wiktionary via Kaikki.org — Japanese, English definitions",
+        "sourceUrl": "https://kaikki.org/dictionary/Japanese/kaikki.org-dictionary-Japanese.jsonl",
+        "sourceRevision": "Extracted2026-10-25 from enwiktionary dump2026-10-01; Wiktextractf9fe161/wikitextprocessor6f96ddf",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://en.wiktionary.org/wiki/<headword>#Japanese and its page history. The text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license.",
+        "dbSha256": "4a3b45b0b5bb984f43b314133cbc852252b81980642fdbdd728fd74b392affdb",
+        "counts": {
+          "entries": 145548,
+          "senses": 183505,
+          "forms": 1168354
+        }
+      },
+      "databaseBytes": 246419456,
+      "manifestBytes": 1177,
+      "installMs": 1749.978302
+    },
+    {
+      "manifestPath": "packs/kaikki-zhwiktionary-ja-zh-hans-label/manifest.json",
+      "manifest": {
+        "schemaVersion": 1,
+        "packId": "kaikki-zhwiktionary-ja-zh-hans-label",
+        "version": "2026-10-29-text-1",
+        "sourceLanguage": "ja",
+        "glossLanguage": "zh",
+        "sourceName": "Wiktionary via Kaikki.org — 日语 label partition, Chinese definitions",
+        "sourceUrl": "https://kaikki.org/zhwiktionary/%E6%97%A5%E8%AF%AD/kaikki.org-dictionary-%E6%97%A5%E8%AF%AD.jsonl",
+        "sourceRevision": "Source page extraction 2026-10-27; zhwiktionary dump 2026-10-01; file Last-Modified 2026-10-29; Wiktextract19f9a30/wikitextprocessor6f96ddf",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 日语 label partition, not all Japanese entries. The text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license.",
+        "dbSha256": "63937e85805032552ab12431d0670c1f65356109d01c342d6d8798843a0de0d3",
+        "counts": {
+          "entries": 77728,
+          "senses": 91637,
+          "forms": 35461
+        }
+      },
+      "databaseBytes": 27901952,
+      "manifestBytes": 1322,
+      "installMs": 56.08398299999999
+    },
+    {
+      "manifestPath": "packs/kaikki-zhwiktionary-ja-zh-hant-label/manifest.json",
+      "manifest": {
+        "schemaVersion": 1,
+        "packId": "kaikki-zhwiktionary-ja-zh-hant-label",
+        "version": "2026-10-29-text-1",
+        "sourceLanguage": "ja",
+        "glossLanguage": "zh",
+        "sourceName": "Wiktionary via Kaikki.org — 日語 label partition, Chinese definitions",
+        "sourceUrl": "https://kaikki.org/zhwiktionary/%E6%97%A5%E8%AA%9E/kaikki.org-dictionary-%E6%97%A5%E8%AA%9E.jsonl",
+        "sourceRevision": "Source page extraction 2026-10-27; zhwiktionary dump 2026-10-01; file Last-Modified 2026-10-29; Wiktextract19f9a30/wikitextprocessor6f96ddf",
+        "license": "CC-BY-SA-4.0 for retained dictionary text (separate from application license)",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Wiktionary contributors, extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entry and author histories are at https://zh.wiktionary.org/wiki/<headword> and its page history. This source is the 日語 label partition, not all Japanese entries. The text projection omits all examples/quotations, audio/media, etymology and unrelated fields. Dictionary data is not relicensed under the application CC BY-NC4.0 license.",
+        "dbSha256": "5faf05465573d21451ca8fc12ea2235e832ff36161e92a7b8b6d533b721b7cd8",
+        "counts": {
+          "entries": 43025,
+          "senses": 55924,
+          "forms": 153146
+        }
+      },
+      "databaseBytes": 34738176,
+      "manifestBytes": 1323,
+      "installMs": 66.26267899999993
+    }
+  ],
+  "checks": [
+    "Each requested source is installed as its own versioned package",
+    "At least one fixed public test selection has a local result for the learning-chain check",
+    "Explicit public source receives a production user-input snapshot without a provider",
+    "Selected source/sense results are separate immutable encounters, never merged across editions",
+    "English and Chinese entries keep their own source, selected sense and license",
+    "Committed local definition is readable without the live package result",
+    "Committed local definition is readable without the live package result",
+    "Production JSON export contains only the saved offline source snapshots",
+    "Production Markdown export retains the actual source licenses",
+    "Production review sends source prompts without an unrevealed definition",
+    "Explicit reveal reads the committed source/sense version",
+    "Explicit self-report commits one review event without a provider",
+    "Full installed source packages can be uninstalled after connections are used",
+    "Uninstalling every package leaves the selected definition/license/context snapshots unchanged",
+    "Saved full-pack snapshot cards remain reviewable after uninstall",
+    "Production query, learning, export and review attempted zero network/provider requests"
+  ],
+  "network": {
+    "attempts": 0,
+    "providerCalls": 0
+  },
+  "memory": {
+    "samples": [
+      {
+        "label": "before-install",
+        "rssBytes": 36446208,
+        "heapUsedBytes": 6315920,
+        "maxRssKiB": 35592
+      },
+      {
+        "label": "installed-kaikki-enwiktionary-ja-en",
+        "rssBytes": 39358464,
+        "heapUsedBytes": 6574456,
+        "maxRssKiB": 40328
+      },
+      {
+        "label": "installed-kaikki-zhwiktionary-ja-zh-hans-label",
+        "rssBytes": 40677376,
+        "heapUsedBytes": 6649232,
+        "maxRssKiB": 41508
+      },
+      {
+        "label": "installed-kaikki-zhwiktionary-ja-zh-hant-label",
+        "rssBytes": 43823104,
+        "heapUsedBytes": 6733496,
+        "maxRssKiB": 42796
+      },
+      {
+        "label": "after-warm-query-matrix",
+        "rssBytes": 57110528,
+        "heapUsedBytes": 9084928,
+        "maxRssKiB": 55772
+      },
+      {
+        "label": "after-learning-and-uninstall",
+        "rssBytes": 60780544,
+        "heapUsedBytes": 8082888,
+        "maxRssKiB": 59356
+      }
+    ],
+    "sampledPeakRssBytes": 60780544,
+    "sampledPeakIncreaseFromBeforeInstallBytes": 24334336
+  },
+  "bundledProductionSha256": "79c065d256753a00ba6dd553128082db34d9bd7315ea403c82fd59945f9b2836",
+  "installedCoverage": {
+    "entries": 266301,
+    "senses": 331066,
+    "forms": 1356961,
+    "chineseEntries": 120753,
+    "chineseSenses": 147561,
+    "entryDenominator": 266301,
+    "senseDenominator": 331066,
+    "chineseEntryShare": 0.4534455371928757,
+    "chineseSenseShare": 0.4457147517413446,
+    "meaning": "Share of installed source records whose declared gloss language is Chinese. Sources overlap and are not deduplicated or sense-aligned; this is not translation quality or all-Japanese vocabulary coverage."
+  },
+  "queries": [
+    {
+      "id": "lemma-dog",
+      "text": "犬",
+      "language": "ja",
+      "selectedSource": {
+        "text": "犬",
+        "span": {
+          "start": 0,
+          "end": 1,
+          "exact": "犬"
+        }
+      },
+      "lookupMs": 53.03772200000003,
+      "hitCount": 4,
+      "expectedHeadword": "犬",
+      "expectedCandidateFound": true,
+      "hits": [
+        {
+          "packId": "kaikki-zhwiktionary-ja-zh-hant-label",
+          "packVersion": "2026-10-29-text-1",
+          "glossLanguage": "zh",
+          "entryId": "line:29107",
+          "headword": "犬",
+          "matchPath": "exact",
+          "senseCount": 2
+        },
+        {
+          "packId": "kaikki-zhwiktionary-ja-zh-hant-label",
+          "packVersion": "2026-10-29-text-1",
+          "glossLanguage": "zh",
+          "entryId": "line:29108",
+          "headword": "犬",
+          "matchPath": "exact",
+          "senseCount": 3
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:17",
+          "headword": "犬",
+          "matchPath": "exact",
+          "senseCount": 2
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:18",
+          "headword": "犬",
+          "matchPath": "exact",
+          "senseCount": 3
+        }
+      ],
+      "message": ""
+    },
+    {
+      "id": "lemma-water",
+      "text": "水",
+      "language": "ja",
+      "selectedSource": {
+        "text": "水",
+        "span": {
+          "start": 0,
+          "end": 1,
+          "exact": "水"
+        }
+      },
+      "lookupMs": 1.5729400000000169,
+      "hitCount": 12,
+      "expectedHeadword": "水",
+      "expectedCandidateFound": true,
+      "hits": [
+        {
+          "packId": "kaikki-zhwiktionary-ja-zh-hant-label",
+          "packVersion": "2026-10-29-text-1",
+          "glossLanguage": "zh",
+          "entryId": "line:29037",
+          "headword": "水",
+          "matchPath": "exact",
+          "senseCount": 4
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:356",
+          "headword": "水",
+          "matchPath": "exact",
+          "senseCount": 6
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:357",
+          "headword": "水",
+          "matchPath": "exact",
+          "senseCount": 1
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:358",
+          "headword": "水",
+          "matchPath": "exact",
+          "senseCount": 2
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:359",
+          "headword": "水",
+          "matchPath": "exact",
+          "senseCount": 1
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:360",
+          "headword": "水",
+          "matchPath": "exact",
+          "senseCount": 3
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:361",
+          "headword": "水",
+          "matchPath": "exact",
+          "senseCount": 4
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:362",
+          "headword": "水",
+          "matchPath": "exact",
+          "senseCount": 1
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:363",
+          "headword": "水",
+          "matchPath": "exact",
+          "senseCount": 1
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:5761",
+          "headword": "川",
+          "matchPath": "form",
+          "senseCount": 1
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:24784",
+          "headword": "みず",
+          "matchPath": "form",
+          "senseCount": 1
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:24785",
+          "headword": "みず",
+          "matchPath": "form",
+          "senseCount": 1
+        }
+      ],
+      "message": ""
+    },
+    {
+      "id": "lemma-school",
+      "text": "学校",
+      "language": "ja",
+      "selectedSource": {
+        "text": "学校",
+        "span": {
+          "start": 0,
+          "end": 2,
+          "exact": "学校"
+        }
+      },
+      "lookupMs": 9.048888000000261,
+      "hitCount": 2,
+      "expectedHeadword": "学校",
+      "expectedCandidateFound": true,
+      "hits": [
+        {
+          "packId": "kaikki-zhwiktionary-ja-zh-hant-label",
+          "packVersion": "2026-10-29-text-1",
+          "glossLanguage": "zh",
+          "entryId": "line:31094",
+          "headword": "学校",
+          "matchPath": "exact",
+          "senseCount": 1
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:24863",
+          "headword": "学校",
+          "matchPath": "exact",
+          "senseCount": 1
+        }
+      ],
+      "message": ""
+    },
+    {
+      "id": "lemma-teacher",
+      "text": "先生",
+      "language": "ja",
+      "selectedSource": {
+        "text": "先生",
+        "span": {
+          "start": 0,
+          "end": 2,
+          "exact": "先生"
+        }
+      },
+      "lookupMs": 4.7514299999998,
+      "hitCount": 4,
+      "expectedHeadword": "先生",
+      "expectedCandidateFound": true,
+      "hits": [
+        {
+          "packId": "kaikki-zhwiktionary-ja-zh-hant-label",
+          "packVersion": "2026-10-29-text-1",
+          "glossLanguage": "zh",
+          "entryId": "line:2848",
+          "headword": "先生",
+          "matchPath": "exact",
+          "senseCount": 3
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:25568",
+          "headword": "先生",
+          "matchPath": "exact",
+          "senseCount": 5
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:25569",
+          "headword": "先生",
+          "matchPath": "exact",
+          "senseCount": 1
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:25570",
+          "headword": "先生",
+          "matchPath": "exact",
+          "senseCount": 1
+        }
+      ],
+      "message": ""
+    },
+    {
+      "id": "lemma-japanese",
+      "text": "日本語",
+      "language": "ja",
+      "selectedSource": {
+        "text": "日本語",
+        "span": {
+          "start": 0,
+          "end": 3,
+          "exact": "日本語"
+        }
+      },
+      "lookupMs": 0.590563000000202,
+      "hitCount": 2,
+      "expectedHeadword": "日本語",
+      "expectedCandidateFound": true,
+      "hits": [
+        {
+          "packId": "kaikki-zhwiktionary-ja-zh-hant-label",
+          "packVersion": "2026-10-29-text-1",
+          "glossLanguage": "zh",
+          "entryId": "line:1367",
+          "headword": "日本語",
+          "matchPath": "exact",
+          "senseCount": 1
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:998",
+          "headword": "日本語",
+          "matchPath": "exact",
+          "senseCount": 1
+        }
+      ],
+      "message": ""
+    },
+    {
+      "id": "lemma-news",
+      "text": "新聞",
+      "language": "ja",
+      "selectedSource": {
+        "text": "新聞",
+        "span": {
+          "start": 0,
+          "end": 2,
+          "exact": "新聞"
+        }
+      },
+      "lookupMs": 1.3918640000001687,
+      "hitCount": 4,
+      "expectedHeadword": "新聞",
+      "expectedCandidateFound": true,
+      "hits": [
+        {
+          "packId": "kaikki-zhwiktionary-ja-zh-hans-label",
+          "packVersion": "2026-10-29-text-1",
+          "glossLanguage": "zh",
+          "entryId": "line:236",
+          "headword": "新聞",
+          "matchPath": "exact",
+          "senseCount": 1
+        },
+        {
+          "packId": "kaikki-zhwiktionary-ja-zh-hans-label",
+          "packVersion": "2026-10-29-text-1",
+          "glossLanguage": "zh",
+          "entryId": "line:237",
+          "headword": "新聞",
+          "matchPath": "exact",
+          "senseCount": 1
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:22368",
+          "headword": "新聞",
+          "matchPath": "exact",
+          "senseCount": 1
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:22369",
+          "headword": "新聞",
+          "matchPath": "exact",
+          "senseCount": 1
+        }
+      ],
+      "message": ""
+    },
+    {
+      "id": "lemma-game",
+      "text": "ゲーム",
+      "language": "ja",
+      "selectedSource": {
+        "text": "ゲーム",
+        "span": {
+          "start": 0,
+          "end": 3,
+          "exact": "ゲーム"
+        }
+      },
+      "lookupMs": 1.1547190000001137,
+      "hitCount": 2,
+      "expectedHeadword": "ゲーム",
+      "expectedCandidateFound": true,
+      "hits": [
+        {
+          "packId": "kaikki-zhwiktionary-ja-zh-hant-label",
+          "packVersion": "2026-10-29-text-1",
+          "glossLanguage": "zh",
+          "entryId": "line:79",
+          "headword": "ゲーム",
+          "matchPath": "exact",
+          "senseCount": 3
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:75000",
+          "headword": "ゲーム",
+          "matchPath": "exact",
+          "senseCount": 2
+        }
+      ],
+      "message": ""
+    },
+    {
+      "id": "lemma-time",
+      "text": "時間",
+      "language": "ja",
+      "selectedSource": {
+        "text": "時間",
+        "span": {
+          "start": 0,
+          "end": 2,
+          "exact": "時間"
+        }
+      },
+      "lookupMs": 1.420165999999881,
+      "hitCount": 8,
+      "expectedHeadword": "時間",
+      "expectedCandidateFound": true,
+      "hits": [
+        {
+          "packId": "kaikki-zhwiktionary-ja-zh-hans-label",
+          "packVersion": "2026-10-29-text-1",
+          "glossLanguage": "zh",
+          "entryId": "line:74973",
+          "headword": "時間",
+          "matchPath": "exact",
+          "senseCount": 3
+        },
+        {
+          "packId": "kaikki-zhwiktionary-ja-zh-hans-label",
+          "packVersion": "2026-10-29-text-1",
+          "glossLanguage": "zh",
+          "entryId": "line:74974",
+          "headword": "時間",
+          "matchPath": "exact",
+          "senseCount": 1
+        },
+        {
+          "packId": "kaikki-zhwiktionary-ja-zh-hans-label",
+          "packVersion": "2026-10-29-text-1",
+          "glossLanguage": "zh",
+          "entryId": "line:74975",
+          "headword": "時間",
+          "matchPath": "exact",
+          "senseCount": 3
+        },
+        {
+          "packId": "kaikki-zhwiktionary-ja-zh-hans-label",
+          "packVersion": "2026-10-29-text-1",
+          "glossLanguage": "zh",
+          "entryId": "line:74976",
+          "headword": "時間",
+          "matchPath": "exact",
+          "senseCount": 1
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:23588",
+          "headword": "時間",
+          "matchPath": "exact",
+          "senseCount": 3
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:23589",
+          "headword": "時間",
+          "matchPath": "exact",
+          "senseCount": 1
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:23590",
+          "headword": "時間",
+          "matchPath": "exact",
+          "senseCount": 3
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:23591",
+          "headword": "時間",
+          "matchPath": "exact",
+          "senseCount": 1
+        }
+      ],
+      "message": ""
+    },
+    {
+      "id": "lemma-word",
+      "text": "言葉",
+      "language": "ja",
+      "selectedSource": {
+        "text": "言葉",
+        "span": {
+          "start": 0,
+          "end": 2,
+          "exact": "言葉"
+        }
+      },
+      "lookupMs": 0.4180879999998979,
+      "hitCount": 2,
+      "expectedHeadword": "言葉",
+      "expectedCandidateFound": true,
+      "hits": [
+        {
+          "packId": "kaikki-zhwiktionary-ja-zh-hant-label",
+          "packVersion": "2026-10-29-text-1",
+          "glossLanguage": "zh",
+          "entryId": "line:20565",
+          "headword": "言葉",
+          "matchPath": "exact",
+          "senseCount": 2
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:21490",
+          "headword": "言葉",
+          "matchPath": "exact",
+          "senseCount": 2
+        }
+      ],
+      "message": ""
+    },
+    {
+      "id": "lemma-study",
+      "text": "勉強",
+      "language": "ja",
+      "selectedSource": {
+        "text": "勉強",
+        "span": {
+          "start": 0,
+          "end": 2,
+          "exact": "勉強"
+        }
+      },
+      "lookupMs": 1.6386680000000524,
+      "hitCount": 4,
+      "expectedHeadword": "勉強",
+      "expectedCandidateFound": true,
+      "hits": [
+        {
+          "packId": "kaikki-zhwiktionary-ja-zh-hant-label",
+          "packVersion": "2026-10-29-text-1",
+          "glossLanguage": "zh",
+          "entryId": "line:60",
+          "headword": "勉強",
+          "matchPath": "exact",
+          "senseCount": 1
+        },
+        {
+          "packId": "kaikki-zhwiktionary-ja-zh-hant-label",
+          "packVersion": "2026-10-29-text-1",
+          "glossLanguage": "zh",
+          "entryId": "line:61",
+          "headword": "勉強",
+          "matchPath": "exact",
+          "senseCount": 3
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:23426",
+          "headword": "勉強",
+          "matchPath": "exact",
+          "senseCount": 1
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:23427",
+          "headword": "勉強",
+          "matchPath": "exact",
+          "senseCount": 2
+        }
+      ],
+      "message": ""
+    },
+    {
+      "id": "lemma-eat",
+      "text": "食べる",
+      "language": "ja",
+      "selectedSource": {
+        "text": "食べる",
+        "span": {
+          "start": 0,
+          "end": 3,
+          "exact": "食べる"
+        }
+      },
+      "lookupMs": 2.112162999999782,
+      "hitCount": 2,
+      "expectedHeadword": "食べる",
+      "expectedCandidateFound": true,
+      "hits": [
+        {
+          "packId": "kaikki-zhwiktionary-ja-zh-hant-label",
+          "packVersion": "2026-10-29-text-1",
+          "glossLanguage": "zh",
+          "entryId": "line:6439",
+          "headword": "食べる",
+          "matchPath": "exact",
+          "senseCount": 3
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:843",
+          "headword": "食べる",
+          "matchPath": "exact",
+          "senseCount": 3
+        }
+      ],
+      "message": ""
+    },
+    {
+      "id": "lemma-read",
+      "text": "読む",
+      "language": "ja",
+      "selectedSource": {
+        "text": "読む",
+        "span": {
+          "start": 0,
+          "end": 2,
+          "exact": "読む"
+        }
+      },
+      "lookupMs": 0.8313429999998334,
+      "hitCount": 2,
+      "expectedHeadword": "読む",
+      "expectedCandidateFound": true,
+      "hits": [
+        {
+          "packId": "kaikki-zhwiktionary-ja-zh-hant-label",
+          "packVersion": "2026-10-29-text-1",
+          "glossLanguage": "zh",
+          "entryId": "line:6295",
+          "headword": "読む",
+          "matchPath": "exact",
+          "senseCount": 4
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:23424",
+          "headword": "読む",
+          "matchPath": "exact",
+          "senseCount": 4
+        }
+      ],
+      "message": ""
+    },
+    {
+      "id": "lemma-go",
+      "text": "行く",
+      "language": "ja",
+      "selectedSource": {
+        "text": "行く",
+        "span": {
+          "start": 0,
+          "end": 2,
+          "exact": "行く"
+        }
+      },
+      "lookupMs": 1.955536999999822,
+      "hitCount": 2,
+      "expectedHeadword": "行く",
+      "expectedCandidateFound": true,
+      "hits": [
+        {
+          "packId": "kaikki-zhwiktionary-ja-zh-hans-label",
+          "packVersion": "2026-10-29-text-1",
+          "glossLanguage": "zh",
+          "entryId": "line:56809",
+          "headword": "行く",
+          "matchPath": "exact",
+          "senseCount": 7
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:505",
+          "headword": "行く",
+          "matchPath": "exact",
+          "senseCount": 10
+        }
+      ],
+      "message": ""
+    },
+    {
+      "id": "lemma-drink",
+      "text": "飲む",
+      "language": "ja",
+      "selectedSource": {
+        "text": "飲む",
+        "span": {
+          "start": 0,
+          "end": 2,
+          "exact": "飲む"
+        }
+      },
+      "lookupMs": 3.8071659999995973,
+      "hitCount": 2,
+      "expectedHeadword": "飲む",
+      "expectedCandidateFound": false,
+      "hits": [
+        {
+          "packId": "kaikki-zhwiktionary-ja-zh-hant-label",
+          "packVersion": "2026-10-29-text-1",
+          "glossLanguage": "zh",
+          "entryId": "line:6316",
+          "headword": "のむ",
+          "matchPath": "form",
+          "senseCount": 8
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:24491",
+          "headword": "のむ",
+          "matchPath": "form",
+          "senseCount": 6
+        }
+      ],
+      "message": ""
+    },
+    {
+      "id": "lemma-new",
+      "text": "新しい",
+      "language": "ja",
+      "selectedSource": {
+        "text": "新しい",
+        "span": {
+          "start": 0,
+          "end": 3,
+          "exact": "新しい"
+        }
+      },
+      "lookupMs": 0.7568700000001627,
+      "hitCount": 2,
+      "expectedHeadword": "新しい",
+      "expectedCandidateFound": true,
+      "hits": [
+        {
+          "packId": "kaikki-zhwiktionary-ja-zh-hans-label",
+          "packVersion": "2026-10-29-text-1",
+          "glossLanguage": "zh",
+          "entryId": "line:244",
+          "headword": "新しい",
+          "matchPath": "exact",
+          "senseCount": 1
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:324",
+          "headword": "新しい",
+          "matchPath": "exact",
+          "senseCount": 4
+        }
+      ],
+      "message": ""
+    },
+    {
+      "id": "lemma-thanks",
+      "text": "ありがとう",
+      "language": "ja",
+      "selectedSource": {
+        "text": "ありがとう",
+        "span": {
+          "start": 0,
+          "end": 5,
+          "exact": "ありがとう"
+        }
+      },
+      "lookupMs": 0.4946909999998752,
+      "hitCount": 2,
+      "expectedHeadword": "ありがとう",
+      "expectedCandidateFound": true,
+      "hits": [
+        {
+          "packId": "kaikki-zhwiktionary-ja-zh-hans-label",
+          "packVersion": "2026-10-29-text-1",
+          "glossLanguage": "zh",
+          "entryId": "line:213",
+          "headword": "ありがとう",
+          "matchPath": "exact",
+          "senseCount": 1
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:22582",
+          "headword": "ありがとう",
+          "matchPath": "exact",
+          "senseCount": 1
+        }
+      ],
+      "message": ""
+    },
+    {
+      "id": "selection-newspaper",
+      "text": "新聞",
+      "language": "ja",
+      "selectedSource": {
+        "text": "朝、新聞を読みます。",
+        "span": {
+          "start": 2,
+          "end": 4,
+          "exact": "新聞"
+        }
+      },
+      "lookupMs": 0.4396200000001045,
+      "hitCount": 4,
+      "expectedHeadword": "新聞",
+      "expectedCandidateFound": true,
+      "hits": [
+        {
+          "packId": "kaikki-zhwiktionary-ja-zh-hans-label",
+          "packVersion": "2026-10-29-text-1",
+          "glossLanguage": "zh",
+          "entryId": "line:236",
+          "headword": "新聞",
+          "matchPath": "exact",
+          "senseCount": 1
+        },
+        {
+          "packId": "kaikki-zhwiktionary-ja-zh-hans-label",
+          "packVersion": "2026-10-29-text-1",
+          "glossLanguage": "zh",
+          "entryId": "line:237",
+          "headword": "新聞",
+          "matchPath": "exact",
+          "senseCount": 1
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:22368",
+          "headword": "新聞",
+          "matchPath": "exact",
+          "senseCount": 1
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:22369",
+          "headword": "新聞",
+          "matchPath": "exact",
+          "senseCount": 1
+        }
+      ],
+      "message": ""
+    },
+    {
+      "id": "selection-new",
+      "text": "新しい",
+      "language": "ja",
+      "selectedSource": {
+        "text": "これは新しい言葉です。",
+        "span": {
+          "start": 3,
+          "end": 6,
+          "exact": "新しい"
+        }
+      },
+      "lookupMs": 1.0934769999998935,
+      "hitCount": 2,
+      "expectedHeadword": "新しい",
+      "expectedCandidateFound": true,
+      "hits": [
+        {
+          "packId": "kaikki-zhwiktionary-ja-zh-hans-label",
+          "packVersion": "2026-10-29-text-1",
+          "glossLanguage": "zh",
+          "entryId": "line:244",
+          "headword": "新しい",
+          "matchPath": "exact",
+          "senseCount": 1
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:324",
+          "headword": "新しい",
+          "matchPath": "exact",
+          "senseCount": 4
+        }
+      ],
+      "message": ""
+    },
+    {
+      "id": "selection-language",
+      "text": "日本語",
+      "language": "ja",
+      "selectedSource": {
+        "text": "ゲームで日本語を勉強しています。",
+        "span": {
+          "start": 4,
+          "end": 7,
+          "exact": "日本語"
+        }
+      },
+      "lookupMs": 0.540903999999955,
+      "hitCount": 2,
+      "expectedHeadword": "日本語",
+      "expectedCandidateFound": true,
+      "hits": [
+        {
+          "packId": "kaikki-zhwiktionary-ja-zh-hant-label",
+          "packVersion": "2026-10-29-text-1",
+          "glossLanguage": "zh",
+          "entryId": "line:1367",
+          "headword": "日本語",
+          "matchPath": "exact",
+          "senseCount": 1
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:998",
+          "headword": "日本語",
+          "matchPath": "exact",
+          "senseCount": 1
+        }
+      ],
+      "message": ""
+    },
+    {
+      "id": "selection-eat-past",
+      "text": "食べた",
+      "language": "ja",
+      "selectedSource": {
+        "text": "昨日、魚を食べた。",
+        "span": {
+          "start": 5,
+          "end": 8,
+          "exact": "食べた"
+        }
+      },
+      "lookupMs": 0.9917430000000422,
+      "hitCount": 3,
+      "expectedHeadword": "食べる",
+      "expectedCandidateFound": true,
+      "hits": [
+        {
+          "packId": "kaikki-zhwiktionary-ja-zh-hant-label",
+          "packVersion": "2026-10-29-text-1",
+          "glossLanguage": "zh",
+          "entryId": "line:6439",
+          "headword": "食べる",
+          "matchPath": "form",
+          "senseCount": 3
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:164827",
+          "headword": "食べた",
+          "matchPath": "exact",
+          "senseCount": 1
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:843",
+          "headword": "食べる",
+          "matchPath": "form",
+          "senseCount": 3
+        }
+      ],
+      "message": ""
+    },
+    {
+      "id": "selection-read-past",
+      "text": "読んだ",
+      "language": "ja",
+      "selectedSource": {
+        "text": "駅で本を読んだ。",
+        "span": {
+          "start": 4,
+          "end": 7,
+          "exact": "読んだ"
+        }
+      },
+      "lookupMs": 1.0915380000001278,
+      "hitCount": 3,
+      "expectedHeadword": "読む",
+      "expectedCandidateFound": true,
+      "hits": [
+        {
+          "packId": "kaikki-zhwiktionary-ja-zh-hant-label",
+          "packVersion": "2026-10-29-text-1",
+          "glossLanguage": "zh",
+          "entryId": "line:6295",
+          "headword": "読む",
+          "matchPath": "form",
+          "senseCount": 4
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:176610",
+          "headword": "読んだ",
+          "matchPath": "exact",
+          "senseCount": 1
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:23424",
+          "headword": "読む",
+          "matchPath": "form",
+          "senseCount": 4
+        }
+      ],
+      "message": ""
+    },
+    {
+      "id": "selection-go-polite",
+      "text": "行きます",
+      "language": "ja",
+      "selectedSource": {
+        "text": "明日は学校に行きます。",
+        "span": {
+          "start": 6,
+          "end": 10,
+          "exact": "行きます"
+        }
+      },
+      "lookupMs": 1.0925949999996192,
+      "hitCount": 3,
+      "expectedHeadword": "行く",
+      "expectedCandidateFound": true,
+      "hits": [
+        {
+          "packId": "kaikki-zhwiktionary-ja-zh-hans-label",
+          "packVersion": "2026-10-29-text-1",
+          "glossLanguage": "zh",
+          "entryId": "line:56809",
+          "headword": "行く",
+          "matchPath": "form",
+          "senseCount": 7
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:505",
+          "headword": "行く",
+          "matchPath": "form",
+          "senseCount": 10
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:26037",
+          "headword": "いきます",
+          "matchPath": "form",
+          "senseCount": 1
+        }
+      ],
+      "message": ""
+    },
+    {
+      "id": "selection-drink-polite",
+      "text": "飲みます",
+      "language": "ja",
+      "selectedSource": {
+        "text": "毎朝、水を飲みます。",
+        "span": {
+          "start": 5,
+          "end": 9,
+          "exact": "飲みます"
+        }
+      },
+      "lookupMs": 0.5482279999996535,
+      "hitCount": 1,
+      "expectedHeadword": "飲む",
+      "expectedCandidateFound": false,
+      "hits": [
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:24491",
+          "headword": "のむ",
+          "matchPath": "form",
+          "senseCount": 6
+        }
+      ],
+      "message": "本机已安装词库暂无中文释义，当前显示英语／原语言；具体语言见每个来源。"
+    },
+    {
+      "id": "selection-teacher",
+      "text": "先生",
+      "language": "ja",
+      "selectedSource": {
+        "text": "先生に言葉の意味を聞きました。",
+        "span": {
+          "start": 0,
+          "end": 2,
+          "exact": "先生"
+        }
+      },
+      "lookupMs": 0.6569789999998648,
+      "hitCount": 4,
+      "expectedHeadword": "先生",
+      "expectedCandidateFound": true,
+      "hits": [
+        {
+          "packId": "kaikki-zhwiktionary-ja-zh-hant-label",
+          "packVersion": "2026-10-29-text-1",
+          "glossLanguage": "zh",
+          "entryId": "line:2848",
+          "headword": "先生",
+          "matchPath": "exact",
+          "senseCount": 3
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:25568",
+          "headword": "先生",
+          "matchPath": "exact",
+          "senseCount": 5
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:25569",
+          "headword": "先生",
+          "matchPath": "exact",
+          "senseCount": 1
+        },
+        {
+          "packId": "kaikki-enwiktionary-ja-en",
+          "packVersion": "2026-10-25-text-1",
+          "glossLanguage": "en",
+          "entryId": "line:25570",
+          "headword": "先生",
+          "matchPath": "exact",
+          "senseCount": 1
+        }
+      ],
+      "message": ""
+    }
+  ],
+  "connectionColdFirstLookup": {
+    "caseId": "lemma-dog",
+    "milliseconds": 53.03772200000003,
+    "scope": "Cold means a new production manager/SQLite connection. Copying, hashing and OS filesystem caches are not flushed; this is not a cold-disk benchmark."
+  },
+  "warmQueries": {
+    "count": 480,
+    "minMs": 0.2353859999998349,
+    "medianMs": 0.6057079999995949,
+    "p95Ms": 1.8995350000000144,
+    "maxMs": 4.5044779999998354,
+    "hitsOnly": {
+      "count": 480,
+      "minMs": 0.2353859999998349,
+      "medianMs": 0.6057079999995949,
+      "p95Ms": 1.8995350000000144,
+      "maxMs": 4.5044779999998354
+    },
+    "byCase": [
+      {
+        "id": "lemma-dog",
+        "count": 20,
+        "minMs": 0.3455380000000332,
+        "medianMs": 0.5155419999996411,
+        "p95Ms": 1.4397280000002866,
+        "maxMs": 2.4464129999996658
+      },
+      {
+        "id": "lemma-water",
+        "count": 20,
+        "minMs": 0.6881189999999151,
+        "medianMs": 0.9925459999999475,
+        "p95Ms": 1.800738999999794,
+        "maxMs": 1.9903449999997065
+      },
+      {
+        "id": "lemma-school",
+        "count": 20,
+        "minMs": 0.2788690000002134,
+        "medianMs": 0.4226939999998649,
+        "p95Ms": 0.892978000000312,
+        "maxMs": 1.1053040000001602
+      },
+      {
+        "id": "lemma-teacher",
+        "count": 20,
+        "minMs": 0.31676400000014837,
+        "medianMs": 0.3774309999998877,
+        "p95Ms": 1.4096709999998893,
+        "maxMs": 1.6466999999997824
+      },
+      {
+        "id": "lemma-japanese",
+        "count": 20,
+        "minMs": 0.25766299999986586,
+        "medianMs": 0.3025790000001507,
+        "p95Ms": 0.6169150000000627,
+        "maxMs": 0.7999159999999392
+      },
+      {
+        "id": "lemma-news",
+        "count": 20,
+        "minMs": 0.2984240000000682,
+        "medianMs": 0.3843160000001262,
+        "p95Ms": 0.9738939999997456,
+        "maxMs": 1.1192360000000008
+      },
+      {
+        "id": "lemma-game",
+        "count": 20,
+        "minMs": 0.2353859999998349,
+        "medianMs": 0.32348599999977523,
+        "p95Ms": 0.725104999999985,
+        "maxMs": 0.8848299999999654
+      },
+      {
+        "id": "lemma-time",
+        "count": 20,
+        "minMs": 0.44878300000027593,
+        "medianMs": 0.7532049999999799,
+        "p95Ms": 1.8856370000003153,
+        "maxMs": 2.484915000000001
+      },
+      {
+        "id": "lemma-word",
+        "count": 20,
+        "minMs": 0.25086200000032477,
+        "medianMs": 0.30406300000004194,
+        "p95Ms": 1.0513670000000275,
+        "maxMs": 1.9567489999999452
+      },
+      {
+        "id": "lemma-study",
+        "count": 20,
+        "minMs": 0.42223399999966205,
+        "medianMs": 0.6939189999998234,
+        "p95Ms": 1.3715659999998024,
+        "maxMs": 1.7656200000001263
+      },
+      {
+        "id": "lemma-eat",
+        "count": 20,
+        "minMs": 0.8366019999998571,
+        "medianMs": 1.0675630000000638,
+        "p95Ms": 1.7846809999996367,
+        "maxMs": 2.860826999999972
+      },
+      {
+        "id": "lemma-read",
+        "count": 20,
+        "minMs": 0.39031699999986813,
+        "medianMs": 0.5994519999999284,
+        "p95Ms": 1.2327330000002803,
+        "maxMs": 3.917424999999639
+      },
+      {
+        "id": "lemma-go",
+        "count": 20,
+        "minMs": 0.9986650000000736,
+        "medianMs": 1.5788539999998648,
+        "p95Ms": 2.8400910000000295,
+        "maxMs": 4.5044779999998354
+      },
+      {
+        "id": "lemma-drink",
+        "count": 20,
+        "minMs": 0.49415499999986423,
+        "medianMs": 0.7887539999996989,
+        "p95Ms": 2.0915399999998954,
+        "maxMs": 2.5843589999999494
+      },
+      {
+        "id": "lemma-new",
+        "count": 20,
+        "minMs": 0.4123290000002271,
+        "medianMs": 0.5745510000001559,
+        "p95Ms": 1.3274400000000242,
+        "maxMs": 2.966985999999906
+      },
+      {
+        "id": "lemma-thanks",
+        "count": 20,
+        "minMs": 0.2565359999998691,
+        "medianMs": 0.41014099999983955,
+        "p95Ms": 1.045140000000174,
+        "maxMs": 1.6204149999998663
+      },
+      {
+        "id": "selection-newspaper",
+        "count": 20,
+        "minMs": 0.2964630000001307,
+        "medianMs": 0.407694999999876,
+        "p95Ms": 1.1838849999999184,
+        "maxMs": 1.27398200000016
+      },
+      {
+        "id": "selection-new",
+        "count": 20,
+        "minMs": 0.37552499999992506,
+        "medianMs": 0.640969000000041,
+        "p95Ms": 1.7709279999999126,
+        "maxMs": 3.089903999999933
+      },
+      {
+        "id": "selection-language",
+        "count": 20,
+        "minMs": 0.2590220000001864,
+        "medianMs": 0.3888050000000476,
+        "p95Ms": 0.8050109999999222,
+        "maxMs": 2.4759830000002694
+      },
+      {
+        "id": "selection-eat-past",
+        "count": 20,
+        "minMs": 0.5885840000000826,
+        "medianMs": 0.8798730000003161,
+        "p95Ms": 2.613076000000092,
+        "maxMs": 2.642072999999982
+      },
+      {
+        "id": "selection-read-past",
+        "count": 20,
+        "minMs": 0.3696669999999358,
+        "medianMs": 0.6292819999998756,
+        "p95Ms": 0.993413000000146,
+        "maxMs": 1.043934999999692
+      },
+      {
+        "id": "selection-go-polite",
+        "count": 20,
+        "minMs": 0.5816099999997277,
+        "medianMs": 0.7388190000001487,
+        "p95Ms": 2.0523229999998875,
+        "maxMs": 2.2956060000001344
+      },
+      {
+        "id": "selection-drink-polite",
+        "count": 20,
+        "minMs": 0.3415460000001076,
+        "medianMs": 0.5373479999998381,
+        "p95Ms": 1.1841640000002371,
+        "maxMs": 1.4695119999996678
+      },
+      {
+        "id": "selection-teacher",
+        "count": 20,
+        "minMs": 0.3510440000000017,
+        "medianMs": 0.5458370000001196,
+        "p95Ms": 1.4877689999998438,
+        "maxMs": 1.7937459999998282
+      }
+    ]
+  },
+  "retrievalSummary": {
+    "cases": 24,
+    "withAnyResult": 24,
+    "withExpectedHeadwordCandidate": 22,
+    "expectedCandidateDenominator": 24,
+    "withChineseResult": 23,
+    "chineseQueryDenominator": 24,
+    "matchPaths": {
+      "exact": 65,
+      "form": 13
+    },
+    "semanticAccuracyMeasured": false
+  },
+  "learningChain": {
+    "sourceCaseId": "lemma-dog",
+    "chosenSources": [
+      {
+        "encounterId": "42829d44-c2cf-4b9b-9dc2-54cd6608bf37",
+        "packId": "kaikki-zhwiktionary-ja-zh-hant-label",
+        "glossLanguage": "zh",
+        "senseId": "line:29107:s1"
+      },
+      {
+        "encounterId": "4a343b50-a4d7-43c1-9bbd-0cb559bf5e73",
+        "packId": "kaikki-enwiktionary-ja-en",
+        "glossLanguage": "en",
+        "senseId": "line:17:s1"
+      }
+    ],
+    "exportEntries": 2,
+    "reviewEvents": 1,
+    "snapshotsSurviveUninstall": true
+  },
+  "finishedAt": "2026-10-30T19:19:25.283Z",
+  "status": "passed",
+  "reportPathNote": "Portable copy of the completed local report; workspace paths made relative. Measurements and observations unchanged."
+}

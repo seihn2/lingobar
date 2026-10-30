@@ -36,6 +36,10 @@ lists actual entries, senses, forms, hits, Chinese-gloss denominator, file sizes
 and local query timings. Small warm-cache timings do not establish full-dataset
 performance, linguistic accuracy, or a real-device latency guarantee.
 
+The [next practical-size Japanese batch](offline-dictionary-scale.md) adds full
+text builds of the pinned single-language English and Chinese-edition exports.
+It does not turn the other seven sample languages into full-scale packs.
+
 The engine accepts explicit language codes; it is not limited to eight hardcoded
 languages. Exact headwords, Unicode NFC equivalents, supplied `forms`, and
 `form_of` links to present lemmas are indexed. Match paths are shown. No generic
