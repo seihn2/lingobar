@@ -39,7 +39,10 @@ Object.assign(window, { __authTest: {
     check(document.documentElement.scrollWidth <= innerWidth, 'Mobile layout overflow')
     const checkbox = document.querySelector<HTMLInputElement>('input[type=checkbox]')!.getBoundingClientRect()
     check(checkbox.width <= 24 && checkbox.height <= 24, 'Consent checkbox must not inherit full-width password styling')
-    return { checks: ['anonymous no bootstrap', 'guest consent', '375px fits'], calls }
+    const consentStyle = getComputedStyle(document.querySelector('.web-key-consent')!)
+    check(parseFloat(consentStyle.fontSize) >= 13 && parseFloat(consentStyle.lineHeight) >= 19.5, 'Billing consent must be readable')
+    check(getComputedStyle(document.querySelector('.web-key-settings a')!).color === 'rgb(160, 222, 215)', 'Owner link must use high-contrast theme accent')
+    return { checks: ['anonymous no bootstrap', 'guest consent', '375px fits', 'readable consent and owner link'], calls }
   },
   async interruption() {
     await mount('anonymous'); fill('#web-account-name', 'synthetic-user'); fill('#web-account-password', 'synthetic-password-not-real'); await wait()
