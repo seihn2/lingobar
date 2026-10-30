@@ -81,7 +81,7 @@ export class BrowserSession {
     this.credentialsAvailable = options.credentialsBackend === '/api/settings/translation-key' && options.disabledReason !== 'unauthorized'
     this.socket = options.socket || (url => new WebSocket(url))
     this.capture = options.capture || ((chunk, error, signal) => startMicrophone(chunk, error, { signal, platform: 'other' }))
-    this.state = { settings: structuredClone(WEB_SETTINGS), state: 'idle', message: this.configured ? '尚未连接' : this.textConfigured ? '文字翻译可用' : options.disabledReason === 'unauthorized' ? '服务未授权' : '后端未配置', captions: [], partial: {}, collapsed: false }
+    this.state = { settings: structuredClone(WEB_SETTINGS), state: 'idle', message: this.configured ? '尚未连接' : this.textConfigured ? '文字翻译可用' : this.credentialsAvailable ? '请在字幕设置中配置翻译密钥' : options.disabledReason === 'unauthorized' ? '服务未授权' : '后端未配置', captions: [], partial: {}, collapsed: false }
   }
   snapshot(): Snapshot { return structuredClone(this.state) }
   subscribe(listener: (snapshot: Snapshot) => void): () => void { this.listeners.add(listener); return () => { this.listeners.delete(listener) } }
@@ -236,7 +236,7 @@ export class BrowserSession {
     this.cancelAnnotations()
     const owner = this.owner
     if (owner) { if (owner.socket.readyState === 1) this.send(owner, { version: 1, type: 'stop', sessionId: owner.id }); this.release(owner) }
-    this.state = { ...this.state, state: 'idle', message: this.configured ? '已暂停' : this.textConfigured ? '文字翻译可用' : this.options.disabledReason === 'unauthorized' ? '服务未授权' : '后端未配置' }; this.publish()
+    this.state = { ...this.state, state: 'idle', message: this.configured ? '已暂停' : this.textConfigured ? '文字翻译可用' : this.credentialsAvailable ? '请在字幕设置中配置翻译密钥' : this.options.disabledReason === 'unauthorized' ? '服务未授权' : '后端未配置' }; this.publish()
   }
   saveSettings(input: SettingsInput): Settings {
     const allowed = ['targetLanguages', 'showOriginal', 'showFurigana', 'fontSize', 'opacity']

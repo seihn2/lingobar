@@ -4,7 +4,7 @@ import { loadWebConfig, parseWebConfig } from '../src/web/config'
 
 const DUMMY = 'synthetic-only-not-an-actual-provider-key'
 const sessions = new Set<BrowserSession>()
-function fixture(transport: typeof fetch, options: { credentialsBackend?: '/api/settings/translation-key' | null; origin?: string; disabledReason?: 'unauthorized' } = {}) {
+function fixture(transport: typeof fetch, options: { textBackend?: '/api/translate' | null; credentialsBackend?: '/api/settings/translation-key' | null; origin?: string; disabledReason?: 'unauthorized' } = {}) {
   const socket = vi.fn(() => { throw new Error('Audio socket forbidden') })
   const capture = vi.fn(async () => { throw new Error('Real microphone forbidden') })
   const session = new BrowserSession({ backend: null, textBackend: null,
@@ -19,6 +19,24 @@ afterEach(() => {
 })
 
 describe('explicit owner DeepSeek configuration', () => {
+  it('distinguishes owner setup from missing service routes before and after suspension', async () => {
+    const transport = vi.fn()
+    for (const [options, message, settingsAvailable] of [
+      [{}, '请在字幕设置中配置翻译密钥', true],
+      [{ textBackend: '/api/translate' as const }, '文字翻译可用', true],
+      [{ credentialsBackend: null }, '后端未配置', false],
+      [{ disabledReason: 'unauthorized' as const }, '服务未授权', false]
+    ] as const) {
+      const f = fixture(transport, options)
+      expect(f.session.snapshot().message).toBe(message)
+      expect(f.session.credentialsAvailable).toBe(settingsAvailable)
+      f.session.stop()
+      expect(f.session.snapshot().message).toBe(message)
+      await expect(f.session.start()).rejects.toThrow('暂不能开始录音')
+      expect(f.socket).not.toHaveBeenCalled(); expect(f.capture).not.toHaveBeenCalled()
+    }
+    expect(transport).not.toHaveBeenCalled()
+  })
   it('keeps legacy public config compatible and accepts only the fixed optional owner route', async () => {
     expect(parseWebConfig({ version: 1, backend: null })).toEqual({ backend: null })
     const publicConfig = { version: 1, backend: null, textBackend: null, credentialsBackend: '/api/settings/translation-key' }
@@ -56,6 +74,8 @@ describe('explicit owner DeepSeek configuration', () => {
     expect(JSON.parse(init.body as string)).toEqual({ apiKey: DUMMY })
     expect(f.session.textConfigured).toBe(true); expect(f.session.configured).toBe(false)
     expect(f.session.snapshot().message).toBe('文字翻译可用')
+    f.session.stop()
+    expect(f.session.snapshot().message).toBe('文字翻译可用')
     expect(JSON.stringify(f.session.snapshot()) + updates.join('')).not.toContain(DUMMY)
     expect(storage.getItem).not.toHaveBeenCalled(); expect(storage.setItem).not.toHaveBeenCalled()
     expect(log).not.toHaveBeenCalled(); expect(f.socket).not.toHaveBeenCalled(); expect(f.capture).not.toHaveBeenCalled()
@@ -72,6 +92,7 @@ describe('explicit owner DeepSeek configuration', () => {
       expect(error).toBeInstanceOf(Error); expect(error.message).not.toContain(DUMMY)
       expect(['密钥保存未完成。', '密钥配置未授权。']).toContain(error.message)
       expect(f.session.textConfigured).toBe(false); expect(transport).toHaveBeenCalledOnce()
+      expect(f.session.snapshot().message).toBe('请在字幕设置中配置翻译密钥')
     }
   })
   it('rejects invalid input and duplicate saves without a second request', async () => {
