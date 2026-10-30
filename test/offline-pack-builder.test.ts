@@ -110,20 +110,17 @@ describe('local Kaikki-shaped JSONL language-pack builder', () => {
     await expect(buildDictionaryPack({ input: f.source, output: f.output, manifest: metadata })).rejects.toThrow('No source-language entries')
     expect(existsSync(f.output)).toBe(false)
   })
-  it('rejects runtime-overflow records with their source line instead of producing unusable or truncated entries', async () => {
-    const cases = [
-      { forms: Array.from({ length: 501 }, (_, i) => ({ form: `authored-${i}` })) },
-      { senses: Array.from({ length: 101 }, (_, i) => ({ glosses: [`Authored sense ${i}.`] })) },
-      { senses: [{ glosses: Array.from({ length: 101 }, (_, i) => `Authored gloss ${i}.`) }] },
-      { senses: [{ glosses: ['Authored gloss.'], examples: Array.from({ length: 21 }, (_, i) => ({ text: `Authored example ${i}.` })) }] },
-      { senses: [{ glosses: ['x'.repeat(16001)] }] },
-      { pos: 'x'.repeat(257) }
-    ]
-    for (const extra of cases) {
-      const f = input([{ word: 'authored', lang_code: 'en', senses: [{ glosses: ['Authored fixture.'] }], ...extra }])
-      await expect(buildDictionaryPack({ input: f.source, output: f.output, manifest: metadata })).rejects.toThrow(/Source line 1.*runtime limit/)
-      expect(existsSync(f.output)).toBe(false)
-    }
+  it.each([
+    { name: '501 forms', extra: { forms: Array.from({ length: 501 }, (_, i) => ({ form: `authored-${i}` })) } },
+    { name: '101 senses', extra: { senses: Array.from({ length: 101 }, (_, i) => ({ glosses: [`Authored sense ${i}.`] })) } },
+    { name: '101 glosses', extra: { senses: [{ glosses: Array.from({ length: 101 }, (_, i) => `Authored gloss ${i}.`) }] } },
+    { name: '21 examples', extra: { senses: [{ glosses: ['Authored gloss.'], examples: Array.from({ length: 21 }, (_, i) => ({ text: `Authored example ${i}.` })) }] } },
+    { name: 'overlong gloss', extra: { senses: [{ glosses: ['x'.repeat(16001)] }] } },
+    { name: 'overlong part of speech', extra: { pos: 'x'.repeat(257) } }
+  ])('rejects $name with its source line instead of producing unusable or truncated entries', async ({ extra }) => {
+    const f = input([{ word: 'authored', lang_code: 'en', senses: [{ glosses: ['Authored fixture.'] }], ...extra }])
+    await expect(buildDictionaryPack({ input: f.source, output: f.output, manifest: metadata })).rejects.toThrow(/Source line 1.*runtime limit/)
+    expect(existsSync(f.output)).toBe(false)
   })
   it('preserves all senses at the runtime boundary', async () => {
     const f = input([{ word: 'authored', lang_code: 'en', senses: Array.from({ length: 100 }, (_, i) => ({ glosses: [`Authored sense ${i + 1}.`] })) }])

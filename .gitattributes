@@ -1,0 +1,2 @@
+# These source projections have published byte hashes; keep identical bytes on Windows.
+test/fixtures/offline-dictionaries/*.jsonl text eol=lf
