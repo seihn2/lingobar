@@ -18,7 +18,7 @@ function captionText(caption: Caption, settings: Settings): string {
   return lines.join('\n')
 }
 
-function TranslationKeySettings({ session }: { session: BrowserSession }) {
+function TranslationKeySettings({ session, asr = false }: { session: BrowserSession; asr?: boolean }) {
   const [apiKey, setApiKey] = useState('')
   const [pending, setPending] = useState(false)
   const [status, setStatus] = useState('')
@@ -38,10 +38,10 @@ function TranslationKeySettings({ session }: { session: BrowserSession }) {
     const current = ++generation.current
     submitting.current = true; setPending(true); setStatus('')
     try {
-      await session.configureTranslationKey(apiKey)
+      await (asr ? session.configureAsrKey(apiKey) : session.configureTranslationKey(apiKey))
       if (current !== generation.current) return
       setApiKey(''); if (input.current) input.current.value = ''
-      setStatus('已保存')
+      setStatus(asr ? '已保存，尚未验证供应商密钥；请刷新页面查看语音状态。' : '已保存')
     } catch {
       if (current === generation.current) setStatus('密钥保存未完成。')
     } finally {
@@ -49,9 +49,9 @@ function TranslationKeySettings({ session }: { session: BrowserSession }) {
     }
   }
   return <fieldset className="web-key-settings">
-    <legend>翻译服务</legend>
-    <label htmlFor="web-translation-key">DeepSeek API Key</label>
-    <input ref={input} id="web-translation-key" type="password" value={apiKey} onChange={event => setApiKey(event.target.value)} disabled={pending} maxLength={4096} autoComplete="new-password" autoCapitalize="none" autoCorrect="off" spellCheck={false} aria-describedby="web-key-status"
+    <legend>{asr ? '语音识别服务' : '翻译服务'}</legend>
+    <label htmlFor={asr ? "web-asr-key" : "web-translation-key"}>{asr ? "阿里云百炼 DashScope API Key（北京）" : "DeepSeek API Key"}</label>
+    <input ref={input} id={asr ? "web-asr-key" : "web-translation-key"} type="password" value={apiKey} onChange={event => setApiKey(event.target.value)} disabled={pending} maxLength={4096} autoComplete="new-password" autoCapitalize="none" autoCorrect="off" spellCheck={false} aria-describedby={asr ? "web-asr-key-status" : "web-key-status"}
       onCompositionStart={() => { composing.current = true }} onCompositionEnd={() => { composing.current = false }}
       onKeyDown={event => {
         if (event.key === 'Enter' && !event.nativeEvent.isComposing && !composing.current && event.keyCode !== 229) {
@@ -59,7 +59,8 @@ function TranslationKeySettings({ session }: { session: BrowserSession }) {
         }
       }} />
     <button type="button" onClick={() => void saveKey()} disabled={pending || !apiKey.trim()}>{pending ? '正在保存…' : '保存密钥'}</button>
-    <p id="web-key-status" role="status">{status || (session.textConfigured ? '已配置' : '')}</p>
+    <p id={asr ? "web-asr-key-status" : "web-key-status"} role="status">{status || (asr ? session.audioStatusMessage : session.textConfigured ? '已配置' : '')}</p>
+    {asr && <p>语音发送至百炼北京端点，识别文字交由 DeepSeek 翻译。保存密钥不会录音或调用模型。</p>}
   </fieldset>
 }
 
@@ -188,6 +189,7 @@ export default function WebApp({ session }: { session: BrowserSession }) {
       <span role="status">{!session.configured ? snapshot.message : snapshot.state === 'starting' ? '正在连接' : snapshot.state === 'listening' ? '正在聆听' : snapshot.state === 'error' ? '连接中断' : '已暂停'}</span>
       <button type="button" className="listen-button" disabled={!session.configured} onClick={() => void toggle()}>{snapshot.state === 'starting' ? '取消' : active ? '暂停' : '开始聆听'}</button>
     </div>
+    {!session.configured && <p className="web-notice" role="status">{session.audioStatusMessage}</p>}
     {message && <p className="web-notice" role="alert">{message}</p>}
     <div className="web-reading" hidden={panel !== null}>
       {snapshot.captions.length ? compact
@@ -201,6 +203,7 @@ export default function WebApp({ session }: { session: BrowserSession }) {
         <LanguageSettings draft={draft} onChange={next => setDraft(previous => ({ ...previous, ...next }))} />
         <label className="web-font" htmlFor="web-font">字号 {draft.fontSize}px<input id="web-font" type="range" min="14" max="24" value={draft.fontSize} onChange={event => setDraft(previous => ({ ...previous, fontSize: Number(event.target.value) }))} /></label>
         {session.credentialsAvailable && <TranslationKeySettings session={session} />}
+        {session.asrCredentialsAvailable && <TranslationKeySettings session={session} asr />}
         <button type="submit" className="primary-button">保存设置</button>
       </form> : panel === 'text' ? <form className="web-text-form" onSubmit={event => { event.preventDefault(); void submitText() }}>
         <label htmlFor="web-text-input">原文</label>

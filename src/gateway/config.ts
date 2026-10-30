@@ -1,4 +1,4 @@
-import { isAbsolute } from 'node:path'
+import { isAbsolute, resolve } from 'node:path'
 import { openSync, fstatSync, readFileSync, closeSync, constants } from 'node:fs'
 import type { RelayConfig } from '../worker/types'
 
@@ -13,6 +13,9 @@ export interface GatewayConfig extends RelayConfig {
   audioEnabled?: boolean
   text?: { ledgerDirectory: string }
   credentialsFile?: string
+  asrCredentialsFile?: string
+  audioRequested?: boolean
+  audioLedgerDirectory?: string
 }
 const invalid = (): never => { throw new Error('Invalid gateway configuration') }
 const credential = (v: string | undefined): string => {
@@ -20,11 +23,11 @@ const credential = (v: string | undefined): string => {
   return v!.trim()
 }
 /** Optional existing JSON credential file; never exported to browser/config responses. */
-function translationCredential(env: Record<string, string | undefined>): string {
-  const filename = env.TRANSLATION_API_KEY_FILE
-  if (!filename) return credential(env.TRANSLATION_API_KEY)
+function serverCredential(env: Record<string, string | undefined>, kind: 'TRANSLATION' | 'ASR'): string {
+  const filename = env[`${kind}_API_KEY_FILE`]
+  if (!filename) return kind === 'ASR' && !env.ASR_API_KEY ? '' : credential(env[`${kind}_API_KEY`])
   if (!isAbsolute(filename)) invalid()
-  const ownerSetup = env.WEB_TEXT_ENABLED === '1'
+  const ownerSetup = env.WEB_TEXT_ENABLED === '1' || kind === 'ASR'
   let descriptor: number | undefined
   try {
     descriptor = openSync(filename, constants.O_RDONLY | constants.O_NOFOLLOW)
@@ -52,8 +55,7 @@ const integer = (v: string | undefined, max: number): number => {
 export function gatewayConfig(env: Record<string, string | undefined>): GatewayConfig | null {
   const audio = env.WEB_ENABLED === '1', text = env.WEB_TEXT_ENABLED === '1'
   if (!audio && !text) return null
-  // The current cumulative budget covers text only; never enable unpriced ASR beside it.
-  if (audio && text) invalid()
+  // Mixed operation is supported; monetary admission is separate from daily counts.
   let origin: URL
   try { origin = new URL(env.GATEWAY_PUBLIC_ORIGIN || '') } catch { return invalid() }
   if (origin.protocol !== 'https:' || origin.href !== origin.origin + '/' || origin.username || origin.password) invalid()
@@ -65,12 +67,16 @@ export function gatewayConfig(env: Record<string, string | undefined>): GatewayC
   if (audio && !isAbsolute(stateDirectory)) invalid()
   const ledgerDirectory = env.GATEWAY_TEXT_LEDGER_DIRECTORY || ''
   if (text && !isAbsolute(ledgerDirectory)) invalid()
-  const model = env.ASR_MODEL || 'qwen-audio-3.1-asr-flash-streaming'
+  const audioLedgerDirectory = env.GATEWAY_AUDIO_LEDGER_DIRECTORY || ''
+  if (audio && (!isAbsolute(audioLedgerDirectory) || audioLedgerDirectory === ledgerDirectory || audioLedgerDirectory === stateDirectory)) invalid()
+  if (env.ASR_API_KEY_FILE && env.TRANSLATION_API_KEY_FILE && resolve(env.ASR_API_KEY_FILE) === resolve(env.TRANSLATION_API_KEY_FILE)) invalid()
+  const model = env.ASR_MODEL || 'qwen3-asr-flash-realtime'
   if (!['qwen-audio-3.1-asr-flash-streaming', 'qwen-audio-3.0-asr-flash-streaming', 'qwen3-asr-flash-realtime'].includes(model)) invalid()
   return { origin: origin.origin, issuer, audience, email: email.toLowerCase(), stateDirectory,
     dailySessions: audio ? integer(env.GATEWAY_DAILY_SESSIONS, 288) : 0,
     dailyCompletionRequests: audio ? integer(env.GATEWAY_DAILY_COMPLETION_REQUESTS, 10_000) : 0,
-    asrKey: audio ? credential(env.ASR_API_KEY) : '', translationKey: translationCredential(env), model: model as RelayConfig['model'],
-    ...(audio ? {} : { audioEnabled: false }), ...(text ? { text: { ledgerDirectory } } : {}),
+    asrKey: audio || env.ASR_API_KEY_FILE ? serverCredential(env, 'ASR') : '', translationKey: serverCredential(env, 'TRANSLATION'), model: model as RelayConfig['model'],
+    audioEnabled: audio, audioRequested: audio, ...(audio ? { audioLedgerDirectory } : {}), ...(text ? { text: { ledgerDirectory } } : {}),
+    ...(env.ASR_API_KEY_FILE ? { asrCredentialsFile: env.ASR_API_KEY_FILE } : {}),
     ...(text && env.TRANSLATION_API_KEY_FILE ? { credentialsFile: env.TRANSLATION_API_KEY_FILE } : {}) }
 }

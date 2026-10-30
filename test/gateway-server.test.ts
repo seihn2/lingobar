@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { request as httpRequest } from 'node:http'
@@ -10,6 +10,9 @@ import { configuration, jwks, now, token } from './gateway-fixture'
 import type { WorkerFetch } from '../src/worker/types'
 import type { Caption } from '../src/shared/types'
 
+// Synthetic pricing policy ONLY for protocol regressions; real default stays unverified.
+vi.mock('../src/gateway/audio-policy', () => ({ AUDIO_POLICY: { verified: true, model: 'qwen-audio-3.1-asr-flash-streaming', maxAudioBytes: 320000, maxSessionMs: 30000, asrReservationMicroCny: 3300, batch: 'lingobar-audio-test-2026-10-30', limitMicroCny: 1000000 } }))
+
 const cleanups: Array<() => Promise<void> | void> = []
 const forbidden = vi.fn(() => { throw new Error('Real service network forbidden') })
 beforeEach(() => { forbidden.mockClear(); vi.stubGlobal('fetch', forbidden) })
@@ -19,7 +22,9 @@ const annotation = { version: 1, type: 'annotation', requestId: 'synthetic-ruby'
 const reply = (content: unknown) => Response.json({ choices: [{ message: { content: JSON.stringify(content) }, finish_reason: 'stop' }] })
 async function fixture(options: { disabled?: boolean; upstream?: WorkerFetch; daily?: number } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'lingobar-synthetic-gateway-')); cleanups.push(() => rmSync(dir, { recursive: true, force: true }))
-  const config = { ...configuration(dir), ...(options.daily ? { dailySessions: options.daily } : {}) }
+  const audioLedgerDirectory = join(dir, 'audio'); mkdirSync(audioLedgerDirectory, { mode: 0o700 })
+  writeFileSync(join(audioLedgerDirectory, 'audio-budget.json'), JSON.stringify({ version: 1, batch: 'lingobar-audio-test-2026-10-30', reservedMicroCny: 0, attempts: 0 }), { mode: 0o600 })
+  const config = { ...configuration(dir), audioLedgerDirectory, ...(options.daily ? { dailySessions: options.daily } : {}) }
   const upstream = options.upstream || vi.fn<WorkerFetch>(async () => { throw new Error('Unrequested provider') })
   const gateway = createGateway(options.disabled ? null : config, { now: () => now, publicFetch: jwks, upstream })
   await new Promise<void>(resolve => gateway.server.listen(0, '127.0.0.1', resolve))
@@ -98,6 +103,13 @@ describe.skipIf(process.platform !== 'linux')('actual Linux loopback HTTP/ws, ge
     expect(response.text).not.toContain('synthetic-translation'); expect(upstream).toHaveBeenCalledOnce()
     expect(upstream.mock.calls[0][0]).toBe('https://api.deepseek.com/chat/completions')
     expect(JSON.parse(readFileSync(join(f.dir, 'budget.json'), 'utf8'))).toMatchObject({ sessions: 0, completions: 2 })
+  })
+  it('normalizes the separate audio annotation route and reserves its new batch before dispatch', async () => {
+    const upstream = vi.fn<WorkerFetch>(async () => reply({ readings: [{ id: 'h0', reading: 'がっこう' }] }))
+    const f = await fixture({ upstream })
+    const response = await f.http('/api/audio-annotation', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(annotation) })
+    expect(response.status).toBe(200); expect(upstream).toHaveBeenCalledOnce()
+    expect(JSON.parse(readFileSync(join(f.dir, 'audio/audio-budget.json'), 'utf8')).reservedMicroCny).toBeGreaterThan(0)
   })
   it.each([401, 429, 503])('does not leak provider bodies for annotation status %s or retry ASR', async status => {
     const upstream = vi.fn<WorkerFetch>(async () => new Response('synthetic-private-provider-message', { status })), f = await fixture({ upstream })

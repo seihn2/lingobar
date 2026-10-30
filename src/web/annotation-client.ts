@@ -11,7 +11,8 @@ export class AnnotationFailure extends Error {
 export function annotationCancelled(): Error { const error = new Error('已取消注音。'); error.name = 'AbortError'; return error }
 
 /** Fixed same-origin, text-only request. The deadline also bounds transports that ignore AbortSignal. */
-export async function requestAnnotation(input: AnnotationRequest, origin: string, parent: AbortSignal, transport: typeof fetch = fetch): Promise<AnnotationResponse> {
+export async function requestAnnotation(input: AnnotationRequest, origin: string, parent: AbortSignal, transport: typeof fetch = fetch, endpoint: '/api/annotation' | '/api/audio-annotation' = '/api/annotation'): Promise<AnnotationResponse> {
+  if (endpoint !== '/api/annotation' && endpoint !== '/api/audio-annotation') throw new AnnotationFailure('protocol')
   const request = parseAnnotationRequest(JSON.stringify(input))
   const abort = new AbortController()
   let reader: ReadableStreamDefaultReader<Uint8Array> | undefined
@@ -23,7 +24,7 @@ export async function requestAnnotation(input: AnnotationRequest, origin: string
   const timer = setTimeout(() => cancel(new AnnotationFailure('timeout')), ANNOTATION_TIMEOUT_MS)
   const work = async () => {
     if (parent.aborted) throw annotationCancelled()
-    const response = await transport(new URL('/api/annotation', origin), { method: 'POST', credentials: 'same-origin', redirect: 'error', cache: 'no-store', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request), signal: abort.signal })
+    const response = await transport(new URL(endpoint, origin), { method: 'POST', credentials: 'same-origin', redirect: 'error', cache: 'no-store', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request), signal: abort.signal })
     if (abort.signal.aborted) { void response.body?.cancel().catch(() => {}); throw annotationCancelled() }
     if (!response.body || (response.headers.has('Content-Length') && Number(response.headers.get('Content-Length')) > MAX_ANNOTATION_BYTES)) {
       void response.body?.cancel().catch(() => {}); throw new AnnotationFailure('protocol')
