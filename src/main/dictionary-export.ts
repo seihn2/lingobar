@@ -13,6 +13,16 @@ function sourceCopy(source: DictionarySource): DictionarySource {
   }
 }
 function explanationCopy(explanation: DictionaryExplanation): DictionaryExplanation {
+  if (explanation.providerKind === 'offline-dictionary') return {
+    schemaVersion: 1, encounterId: explanation.encounterId, explanationId: explanation.explanationId, version: explanation.version,
+    providerKind: 'offline-dictionary', providerLabel: explanation.providerLabel, createdAt: explanation.createdAt,
+    pack: { schemaVersion: 1, packId: explanation.pack.packId, version: explanation.pack.version, sourceLanguage: explanation.pack.sourceLanguage, glossLanguage: explanation.pack.glossLanguage,
+      sourceName: explanation.pack.sourceName, sourceUrl: explanation.pack.sourceUrl, sourceRevision: explanation.pack.sourceRevision, license: explanation.pack.license, licenseUrl: explanation.pack.licenseUrl, attribution: explanation.pack.attribution,
+      dbSha256: explanation.pack.dbSha256, counts: { entries: explanation.pack.counts.entries, senses: explanation.pack.counts.senses, forms: explanation.pack.counts.forms } },
+    entry: { id: explanation.entry.id, headword: explanation.entry.headword, language: explanation.entry.language, readings: [...explanation.entry.readings], partOfSpeech: explanation.entry.partOfSpeech, forms: explanation.entry.forms.map(form => ({ form: form.form, tags: [...form.tags] })) },
+    sense: { id: explanation.sense.id, glosses: [...explanation.sense.glosses], tags: [...explanation.sense.tags], examples: explanation.sense.examples.map(example => ({ text: example.text, translation: example.translation })) },
+    matchPath: explanation.matchPath, matchedText: explanation.matchedText
+  }
   const content = explanation.content
   return {
     schemaVersion: 1, encounterId: explanation.encounterId, explanationId: explanation.explanationId,
@@ -48,7 +58,8 @@ function committedExport(document: DictionaryDocument) {
   const identities = new Set(entries.map(entry => JSON.stringify([entry.encounterId, entry.explanation.explanationId])))
   return {
     schemaVersion: 1 as const, kind: 'lingobar-dictionary-learning-export' as const,
-    disclaimer: DISCLAIMER, readingNotice: READING_NOTICE, usageNotice: USAGE_NOTICE,
+    disclaimer: entries.some(entry => entry.explanation.providerKind === 'llm-generated') ? DISCLAIMER : '离线词典快照；释义来源及许可随各词条保留，不是AI生成解释。', readingNotice: READING_NOTICE, usageNotice: USAGE_NOTICE,
+    offlineNotice: '离线词条保留用户选择义项时的来源、许可与版本；更新或卸载词库不改变已收藏快照。AI声明仅适用于 llm-generated 条目。',
     entries, unexplainedEncounters,
     reviewEvents: document.reviews.filter(review => identities.has(JSON.stringify([review.encounterId, review.explanationId]))).map(reviewCopy),
   }
@@ -78,10 +89,10 @@ const provenance = {
 
 export function dictionaryMarkdown(document: DictionaryDocument): string {
   const exported = committedExport(document)
-  let result = '# LingoBar 个人学习历史\n\n' + DISCLAIMER + '\n\n' + READING_NOTICE + '\n\n' + USAGE_NOTICE + '\n\n'
+  const ai = exported.entries.some(entry => entry.explanation.providerKind === 'llm-generated')
+  let result = '# LingoBar 个人学习历史\n\n' + (ai ? 'AI条目声明：' + DISCLAIMER + '\n\n' + READING_NOTICE + '\n\n' + USAGE_NOTICE : '离线词典快照；每条保留收藏时的义项、来源与许可。') + '\n\n'
   for (const [index, entry] of exported.entries.entries()) {
     const { source, explanation } = entry
-    const content = explanation.content
     result += `## 结构化词条 ${index + 1}\n\n`
     result += field('Encounter ID', entry.encounterId) + field('创建时间（Unix毫秒）', entry.createdAt)
     result += field('收藏', entry.favorite) + field('用户笔记（用户内容）', entry.note)
@@ -90,6 +101,20 @@ export function dictionaryMarkdown(document: DictionaryDocument): string {
     result += field('来源类型', source.sourceType) + field('原字幕 ID', source.captionId)
     result += field('显示版本', source.displayedVersion) + field('对齐源文版本', source.sourceVersion)
     result += field('选中短语（原文引文）', source.span.exact) + field('UTF-16范围（起点含、终点不含）', `${source.span.start}–${source.span.end}`)
+    if (explanation.providerKind === 'offline-dictionary') {
+      result += '### 离线词典义项（收藏时快照）\n\n'
+      result += field('Explanation ID', explanation.explanationId) + field('提供者类型', explanation.providerKind) + field('词库来源', explanation.pack.sourceName)
+      result += field('Pack ID', explanation.pack.packId) + field('词库版本', explanation.pack.version) + field('数据快照', explanation.pack.sourceRevision)
+      result += field('词条语言', explanation.pack.sourceLanguage) + field('释义语言', explanation.pack.glossLanguage)
+      result += field('来源 URL（纯文本）', explanation.pack.sourceUrl) + field('许可', explanation.pack.license) + field('许可 URL（纯文本）', explanation.pack.licenseUrl) + field('署名', explanation.pack.attribution)
+      result += field('Entry ID', explanation.entry.id) + field('Sense ID', explanation.sense.id) + field('词头', explanation.entry.headword)
+      result += field('读音（词库记录）', explanation.entry.readings.join('\n') || null) + field('词性（词库记录）', explanation.entry.partOfSpeech)
+      result += field('选定义项', explanation.sense.glosses.join('\n')) + field('义项标签', explanation.sense.tags.join('\n') || null)
+      result += field('命中路径', explanation.matchPath) + field('命中文本', explanation.matchedText)
+      result += field('词库例句（非AI生成）', explanation.sense.examples.map(example => example.text + (example.translation === null ? '' : '\n' + example.translation)).join('\n\n') || null)
+      continue
+    }
+    const content = explanation.content
     result += '### AI 语境解释\n\n' + DISCLAIMER + '\n\n'
     result += field('Explanation ID', explanation.explanationId) + field('解释版本', explanation.version)
     result += field('提供者类型', explanation.providerKind) + field('服务显示名', explanation.providerLabel) + field('配置模型名', explanation.model)

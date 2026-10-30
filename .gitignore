@@ -28,3 +28,7 @@ learning-v1.json.*.tmp
 
 dictionary-learning-v1.json
 dictionary-learning-v1.json.*.tmp
+
+# Installed dictionaries live in the app profile, never in source/package archives.
+offline-dictionaries/
+!test/fixtures/offline-dictionaries/

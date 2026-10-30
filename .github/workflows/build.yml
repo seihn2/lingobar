@@ -27,6 +27,8 @@ jobs:
       - run: node scripts/test-windows-storage.cjs
       - run: npm run test:media-permissions
       - run: npm run package:win
+      - run: npm run build:dictionary-samples
+      - run: npm run test:offline-dictionaries
       - run: npm run test:windows-native
       - run: npm run verify:package
       - run: npm run checksums:win
@@ -57,6 +59,8 @@ jobs:
       - run: npm test
       - run: npm run test:media-permissions
       - run: npm run package:mac
+      - run: npm run build:dictionary-samples
+      - run: npm run test:offline-dictionaries
       - run: resources/native/system-audio-capture --self-test
       - run: npm run verify:package
       - run: npm run archive:mac
@@ -96,6 +100,8 @@ jobs:
       - run: npm run benchmark:snapshot:ipc -- --case reference --repeat 3 --output artifacts/snapshot-benchmark/reference-repeat
       - run: npm run test:ui
       - run: npm run test:dictionary-ui
+      - run: npm run build:dictionary-samples
+      - run: npm run test:offline-dictionaries
       - run: npm run test:media-permissions
       - uses: actions/upload-artifact@v4
         if: always()
@@ -104,6 +110,7 @@ jobs:
           path: |
             artifacts/ui-regression/
             artifacts/dictionary-ui/
+            artifacts/offline-dictionaries/
             artifacts/media-permissions/results.json
             artifacts/caption-benchmark/manifest.json
             artifacts/caption-benchmark/results.json
@@ -121,4 +128,10 @@ jobs:
             artifacts/snapshot-benchmark/reference-repeat/*.json
             artifacts/snapshot-benchmark/reference-repeat/*.csv
           if-no-files-found: warn
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eight-language-sample-packs-${{ github.event.pull_request.head.sha || github.sha }}
+          path: dist/offline-dictionaries/
+          if-no-files-found: error
           retention-days: 14

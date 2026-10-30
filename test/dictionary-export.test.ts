@@ -1,18 +1,19 @@
 import { describe, expect, it, vi } from 'vitest'
 import { dictionaryJson, dictionaryMarkdown } from '../src/main/dictionary-export'
-import type { DictionaryDocument, DictionaryEncounter, DictionaryExplanation } from '../src/shared/dictionary'
+import type { DictionaryDocument, DictionaryEncounter, GeneratedDictionaryExplanation } from '../src/shared/dictionary'
 
-const explanation = (id = 'explanation-1', version = 1): DictionaryExplanation => ({
+const explanation = (id = 'explanation-1', version = 1): GeneratedDictionaryExplanation => ({
   schemaVersion: 1, encounterId: 'encounter-1', explanationId: id, version, providerKind: 'llm-generated', providerLabel: 'Synthetic service', model: 'synthetic-model', promptVersion: 'dictionary-v1', createdAt: 12,
   requestedExplanationLanguage: 'zh', finishReason: 'stop', usage: { promptTokens: 50, completionTokens: 20, totalTokens: 70 }, readingScope: 'requested-surface-unverified',
   content: { schemaVersion: 1, status: 'ok', reasonCode: null, targetText: 'pick it up', headword: 'pick up', reading: { text: 'pɪk ɪt ʌp', notation: 'ipa' }, partOfSpeech: '动词短语', contextMeaning: '把它拿起来', usageNote: '保留代词位置', examples: [{ text: 'Please pick it up.', translation: '请把它拿起来。' }] }, validationWarnings: [],
 })
-const encounter = (): DictionaryEncounter => ({
+type GeneratedEncounter = Omit<DictionaryEncounter, 'explanations'> & { explanations: GeneratedDictionaryExplanation[] }
+const encounter = (): GeneratedEncounter => ({
   id: 'encounter-1', createdAt: 10, favorite: true, note: 'Synthetic personal note',
   source: { text: 'You should pick it up now.', language: 'English', sourceType: 'text', provenance: 'user-input', captionId: null, displayedVersion: null, sourceVersion: null, span: { start: 11, end: 21, exact: 'pick it up' } },
   explanations: [explanation()], attempts: [{ id: 'attempt-1', createdAt: 10, updatedAt: 12, dispatchState: 'may_have_started', status: 'ready', explanationId: 'explanation-1' }],
 })
-const document = (): DictionaryDocument => ({ schemaVersion: 1, encounters: [encounter()], reviews: [{ id: 'review-1', sessionId: 'session-1', encounterId: 'encounter-1', explanationId: 'explanation-1', createdAt: 20, response: 'recalled' }] })
+const document = (): Omit<DictionaryDocument, 'encounters'> & { encounters: GeneratedEncounter[] } => ({ schemaVersion: 1, encounters: [encounter()], reviews: [{ id: 'review-1', sessionId: 'session-1', encounterId: 'encounter-1', explanationId: 'explanation-1', createdAt: 20, response: 'recalled' }] })
 
 describe('committed structured dictionary exports without requests or writes', () => {
   it('exports an independent source/span and complete application envelope for each version', () => {

@@ -1,0 +1,12 @@
+{
+  "packId": "kaikki-enwiktionary-sample-ja-en",
+  "version": "2026-10-25-text-sample-1",
+  "sourceLanguage": "ja",
+  "glossLanguage": "en",
+  "sourceName": "Wiktionary via Kaikki.org (small text sample)",
+  "sourceUrl": "https://kaikki.org/dictionary/Japanese/",
+  "sourceRevision": "Kaikki 2026-10-25; enwiktionary 2026-10-01; text projection v1",
+  "license": "CC-BY-SA-4.0 (dictionary data; separate from application license)",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "attribution": "Wiktionary contributors; extracted by Tatu Ylonen and Wiktextract contributors via Kaikki.org. Original entries and author histories: https://en.wiktionary.org/wiki/%E7%8C%AB#Japanese (history https://en.wiktionary.org/w/index.php?title=%E7%8C%AB&action=history) https://en.wiktionary.org/wiki/%E9%A3%9F%E3%81%B9%E3%82%8B#Japanese (history https://en.wiktionary.org/w/index.php?title=%E9%A3%9F%E3%81%B9%E3%82%8B&action=history). Kaikki snapshot 2026-10-25 from enwiktionary 2026-10-01. This small derivative keeps lexical text, recorded forms and written pronunciations only; all examples, quotations, media, etymology and other fields removed. Original downloaded-file and line hashes are recorded in SOURCES.json. Dictionary data remains CC BY-SA 4.0; not relicensed under the application CC BY-NC 4.0 license."
+}

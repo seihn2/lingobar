@@ -215,8 +215,10 @@ schema source, dictionary dataset or media was copied/imported.
 - [DeepSeek JSON mode](https://api-docs.deepseek.com/guides/json_mode/) documents
   empty/truncated output risks. A provider format setting is not local validation.
 
-**Offline dictionary/Yomitan import is not delivered.** Only the generated
-provider interface is reserved for later extension. Also excluded: lemma merging,
+This document describes the original PR16 AI feature. The follow-up
+[offline dictionary implementation](offline-dictionaries.md) adds local Kaikki
+language-pack import and separately sourced learning snapshots. Direct Yomitan
+ZIP import is not delivered. Also excluded: lemma merging,
 audio/TTS, OCR/hooks, browser extensions, clipboard monitoring, Anki/sync, FSRS,
 auto-reminders, cloud sync, telemetry and new collection permissions.
 

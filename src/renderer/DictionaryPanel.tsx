@@ -3,6 +3,9 @@ import type { TargetLanguage } from '../shared/languages'
 import { LANGUAGES, languageInfo } from '../shared/languages'
 import { validPhrase, type Phrase } from '../shared/learning'
 import type { DictionaryAPI, DictionaryAvailability, DictionaryDetail, DictionaryEncounter, DictionaryExplanation, DictionaryHandleResult, DictionaryPage, DictionaryQuery, DictionaryReviewSession, DictionaryRunState, DictionarySource } from '../shared/dictionary'
+import OfflinePacksPanel from './OfflinePacksPanel'
+import OfflinePhraseLookup from './OfflinePhraseLookup'
+import { selectedPhrase } from './learning-selection'
 import './dictionary.css'
 
 const errorText = (error: unknown) => error instanceof Error ? error.message : '操作未完成，请重试。'
@@ -13,6 +16,12 @@ const attemptLabels = { persisting: '尚未发出', waiting: '等待服务', rea
 const finalStates = new Set(['ready', 'ambiguous', 'model_declined', 'schema_error', 'service_error', 'cancelled', 'interrupted', 'persist_error'])
 
 export function DictionaryExplanationView({ explanation }: { explanation: DictionaryExplanation }) {
+  if (explanation.providerKind === 'offline-dictionary') return <section className="dictionary-explanation dictionary-offline-explanation" aria-label="已收藏的离线词典义项">
+    <div className="dictionary-version">离线词典快照 · 版本 {explanation.version} · {explanation.providerLabel}</div>
+    <dl><div><dt>词头</dt><dd dir="auto">{explanation.entry.headword}</dd></div><div><dt>词库读音</dt><dd>{explanation.entry.readings.join(' · ') || '未提供'}</dd></div><div><dt>词性</dt><dd>{explanation.entry.partOfSpeech || '未提供'}</dd></div><div><dt>所选义项</dt><dd><ul>{explanation.sense.glosses.map((gloss, index) => <li key={index} dir="auto">{gloss}</li>)}</ul></dd></div><div><dt>词库例句</dt><dd>{explanation.sense.examples.length ? explanation.sense.examples.map((example, index) => <div className="dictionary-example" key={index}><p dir="auto">{example.text}</p>{example.translation && <p dir="auto">{example.translation}</p>}</div>) : '未提供'}</dd></div></dl>
+    <p>释义语言：{explanation.pack.glossLanguage} · 词库版本 {explanation.pack.version} · 来源快照 {explanation.pack.sourceRevision}</p>
+    <details><summary>来源与许可</summary><p>{explanation.pack.sourceUrl}</p><p>{explanation.pack.license} · {explanation.pack.licenseUrl}</p><p>{explanation.pack.attribution}</p></details>
+  </section>
   const content = explanation.content
   const status = content.status === 'ambiguous' ? '语境不明确' : content.status === 'declined' ? '模型未提供解释' : 'AI 语境解释'
   return <section className="dictionary-explanation" aria-label="已保存的 AI 解释">
@@ -128,7 +137,7 @@ export function PhraseExplanation({ api, handlePromise, source, phrases, default
   }
   const invalidSelection = !selectedPhrase || !validPhrase(source, selectedPhrase) || selectedPhrase.exact.length > 256 || source.length > 2000
   const latest = detail?.encounter.explanations.at(-1)
-  return <section className="dictionary-phrase-tool" aria-label="显式 AI 语境解释">
+  return <><OfflinePhraseLookup api={api} handle={handle} source={source} phrase={selectedPhrase} defaultLanguage={defaultLanguage} onOpenHistory={onOpenHistory} /><section className="dictionary-phrase-tool" aria-label="显式 AI 语境解释">
     <h3>AI语境解释</h3>
     <p className="dictionary-ai-warning">AI生成，可能不准确；不会查询权威词典。</p>
     <label>解释短语<select aria-label="解释短语" value={selectedKey} onChange={event => setSelected(event.target.value)} disabled={!phrases.length}>{!phrases.length && <option value="">请先加入一个原文短语</option>}{phrases.map(phrase => <option key={phraseKey(phrase)} value={phraseKey(phrase)}>{phrase.exact}</option>)}</select></label>
@@ -146,11 +155,46 @@ export function PhraseExplanation({ api, handlePromise, source, phrases, default
     {message && <p className="dictionary-error" role="alert">{message}</p>}
     {showResult && latest && <DictionaryExplanationView explanation={latest} />}
     {onOpenHistory && <button type="button" onClick={onOpenHistory}>查看独立学习历史</button>}
+  </section></>
+}
+
+function OfflineInputLookup({ api, defaultLanguage, onBack }: { api: DictionaryAPI; defaultLanguage: TargetLanguage; onBack: () => void }) {
+  const [text, setText] = useState(''), [language, setLanguage] = useState('')
+  const [opened, setOpened] = useState<{ text: string; promise: Promise<DictionaryHandleResult> } | null>(null)
+  const [phrase, setPhrase] = useState<Phrase | undefined>()
+  const [start, setStart] = useState('0'), [end, setEnd] = useState('0')
+  const [message, setMessage] = useState('')
+  const paragraph = useRef<HTMLParagraphElement>(null), input = useRef<HTMLTextAreaElement>(null)
+  const handle = useHandle(api, opened?.promise || null)
+  useLayoutEffect(() => { if (opened) paragraph.current?.focus(); else input.current?.focus() }, [opened])
+  const accept = (next: Phrase | null) => {
+    if (!next || !opened || !validPhrase(opened.text, next) || next.exact.length > 256) { setMessage('请选择不超过 256 个UTF-16单位的连续完整短语。'); return }
+    setPhrase(next); setStart(String(next.start)); setEnd(String(next.end)); setMessage('')
+  }
+  return <section className="dictionary-input-lookup">
+    <h3 className="dictionary-lookup-heading" tabIndex={-1}>输入原句，离线查词</h3>
+    <button type="button" onClick={onBack}>返回学习历史</button>
+    {!opened ? <form onSubmit={event => {
+      event.preventDefault()
+      if (!api.openInput || !text.trim() || !language.trim()) return
+      const promise = api.openInput({ text, language: language.trim() })
+      setOpened({ text, promise }); setMessage('')
+      const initial = { start: 0, end: text.length, exact: text }
+      setPhrase(text.length <= 256 && validPhrase(text, initial) ? initial : undefined); setStart('0'); setEnd(text.length <= 256 ? String(text.length) : '0')
+    }}><label>原句或单词<textarea ref={input} aria-label="离线查词原句" maxLength={2000} value={text} onChange={event => setText(event.target.value)} placeholder="主动粘贴或输入；不需要翻译服务密钥" /></label><label>原文语言<input aria-label="离线输入原文语言" list="offline-input-languages" maxLength={35} value={language} onChange={event => setLanguage(event.target.value)} /></label><datalist id="offline-input-languages">{LANGUAGES.map(item => <option key={item.code} value={item.code}>{item.nativeName}</option>)}</datalist><button type="submit" disabled={!api.openInput || !text.trim() || !language.trim()}>开始离线查词</button></form> : <>
+      <button type="button" onClick={() => { setOpened(null); setPhrase(undefined); setMessage('') }}>修改原句</button>
+      <p ref={paragraph} className="dictionary-source" dir="auto" tabIndex={0} aria-label="离线冻结原句，可选择连续短语">{opened.text}</p>
+      <button type="button" onPointerDown={event => event.preventDefault()} onClick={() => accept(paragraph.current ? selectedPhrase(paragraph.current, opened.text, window.getSelection()) : null)}>采用所选原文短语</button>
+      <fieldset className="study-range"><legend>连续短语范围（UTF-16 起点含、终点不含）</legend><label>起点<input aria-label="离线短语起点" type="number" min="0" max={opened.text.length} value={start} onChange={event => setStart(event.target.value)} /></label><label>终点<input aria-label="离线短语终点" type="number" min="0" max={opened.text.length} value={end} onChange={event => setEnd(event.target.value)} /></label><button type="button" onClick={() => accept({ start: Number(start), end: Number(end), exact: opened.text.slice(Number(start), Number(end)) })}>采用此范围</button></fieldset>
+      {!handle?.handle && <p role="status">{handle?.reason || '正在打开本机原句。'}</p>}
+      <OfflinePhraseLookup api={api} handle={handle} source={opened.text} phrase={phrase} defaultLanguage={defaultLanguage} onOpenHistory={onBack} />
+    </>}
+    {message && <p className="dictionary-error" role="alert">{message}</p>}
   </section>
 }
 
 export default function DictionaryPanel({ api, defaultLanguage, onClose, onOpenSettings }: { api: DictionaryAPI; defaultLanguage: TargetLanguage; onClose: () => void; onOpenSettings?: () => void }) {
-  const [mode, setMode] = useState<'history' | 'detail' | 'review'>('history')
+  const [mode, setMode] = useState<'history' | 'detail' | 'review' | 'packs' | 'lookup'>('history')
   const [page, setPage] = useState<DictionaryPage>(emptyPage)
   const [query, setQuery] = useState<DictionaryQuery>({ page: 1, pageSize: 20, incomplete: false })
   const [detail, setDetail] = useState<DictionaryDetail | null>(null)
@@ -169,6 +213,7 @@ export default function DictionaryPanel({ api, defaultLanguage, onClose, onOpenS
   const dirtyRef = useRef(dirty); dirtyRef.current = dirty
   const modeRef = useRef(mode); modeRef.current = mode
   const returnFocus = useRef<HTMLElement | null>(null)
+  const returnControl = useRef<'packs' | 'lookup' | null>(null)
   const confirmationFocus = useRef<HTMLElement | null>(null)
   const lastConfirmation = useRef(false)
   const confirm = (kind: 'leave' | 'delete') => { confirmationFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null; setConfirmation(kind) }
@@ -203,15 +248,17 @@ export default function DictionaryPanel({ api, defaultLanguage, onClose, onOpenS
       if (event.key !== 'Escape' || event.isComposing || composing.current || event.keyCode === 229) return
       event.preventDefault(); event.stopImmediatePropagation()
       if (actionsRef.current.cancelConfirmation()) return
-      if (modeRef.current === 'review') actionsRef.current.history(); else actionsRef.current.close()
+      if (modeRef.current === 'review' || modeRef.current === 'packs' || modeRef.current === 'lookup') actionsRef.current.history(); else actionsRef.current.close()
     }
     const begin = () => { composing.current = true }, finish = () => { composing.current = false }
     window.addEventListener('keydown', keyboard, true); window.addEventListener('compositionstart', begin); window.addEventListener('compositionend', finish)
     return () => { window.removeEventListener('keydown', keyboard, true); window.removeEventListener('compositionstart', begin); window.removeEventListener('compositionend', finish) }
   }, [])
   useLayoutEffect(() => {
-    if (mode === 'history' && returnFocus.current?.isConnected) returnFocus.current.focus()
-    else document.querySelector<HTMLElement>(mode === 'history' ? '.dictionary-query' : mode === 'review' ? '.dictionary-review-prompt' : '.dictionary-detail-heading')?.focus()
+    if (mode === 'history' && returnControl.current) {
+      document.querySelector<HTMLElement>(`[data-dictionary-return="${returnControl.current}"]`)?.focus(); returnControl.current = null
+    } else if (mode === 'history' && returnFocus.current?.isConnected) returnFocus.current.focus()
+    else document.querySelector<HTMLElement>(mode === 'history' ? '.dictionary-query' : mode === 'review' ? '.dictionary-review-prompt' : mode === 'packs' ? '.dictionary-packs-heading' : mode === 'lookup' ? '.dictionary-lookup-heading' : '.dictionary-detail-heading')?.focus()
   }, [mode, detail?.encounter.id])
   useEffect(() => {
     if (confirmation) { lastConfirmation.current = true; document.querySelector<HTMLElement>('.dictionary-confirm button')?.focus() }
@@ -268,7 +315,7 @@ export default function DictionaryPanel({ api, defaultLanguage, onClose, onOpenS
   const card = review?.cards[review.cursor]
   const explanation = detail?.encounter.explanations.find(value => value.explanationId === selectedVersion) || detail?.encounter.explanations.at(-1)
   return <div className="dictionary-workspace">
-    <div className="panel-heading"><h2>{mode === 'review' ? '复习收藏' : '个人学习历史'}</h2><button type="button" aria-label="关闭学习历史" onClick={close}>关闭</button></div>
+    <div className="panel-heading"><h2>{mode === 'review' ? '复习收藏' : mode === 'packs' ? '离线语言包' : mode === 'lookup' ? '离线查词' : '个人学习历史'}</h2><button type="button" aria-label="关闭学习历史" onClick={close}>关闭</button></div>
     {confirmation && <div className="dictionary-confirm" role="alert"><p>{confirmation === 'delete' ? '删除此学习条目及其解释、尝试和复习记录；未保存笔记或仅内存结果也会丢失。不会改变旧字幕收藏。' : '查词笔记尚未保存。继续编辑，或明确放弃后离开。'}</p><button type="button" onClick={() => setConfirmation(null)}>{confirmation === 'delete' ? '取消删除' : '继续编辑'}</button><button type="button" onClick={() => {
       if (confirmation === 'delete' && detail) { const id = detail.encounter.id; setConfirmation(null); void local(async () => { try { await api.remove(id) } catch (error) { throw new Error(`未删除：${errorText(error)}`) }; if (alive.current) { setDirty(false); dirtyRef.current = false; releaseCurrentHandle(); selectedId.current = null; setDetail(null); setMode('history'); setMessage('学习条目已删除；旧字幕收藏保留。') } }) }
       else { setConfirmation(null); setDirty(false); dirtyRef.current = false; leaveAction.current() }
@@ -276,6 +323,7 @@ export default function DictionaryPanel({ api, defaultLanguage, onClose, onOpenS
     {message && <p className="dictionary-error" role="status">{message}</p>}
     {mode === 'history' && <section className="dictionary-history">
       <p>独立保存在本机的查词、解释与复习记录。与旧字幕收藏／会话匣分别管理；取消旧收藏不会删除这里的原句。</p>
+      <div className="dictionary-toolbar">{api.openInput && api.offlineLookup && <button type="button" data-dictionary-return="lookup" onClick={() => { returnControl.current = 'lookup'; setMode('lookup') }}>离线查词</button>}{api.packs && <button type="button" data-dictionary-return="packs" onClick={() => { returnControl.current = 'packs'; setMode('packs') }}>管理语言包</button>}</div>
       <div className="dictionary-toolbar"><button type="button" disabled={pending} onClick={startReview}>复习收藏</button><button type="button" disabled={pending} onClick={() => exportFile('json')}>导出词典 JSON</button><button type="button" disabled={pending} onClick={() => exportFile('markdown')}>导出学习 Markdown</button></div>
       <label>查找原词、原句、释义或笔记<input className="dictionary-query" type="search" aria-label="学习历史查找" maxLength={500} value={query.query || ''} onChange={event => setFilter({ query: event.target.value })} /></label>
       <div className="dictionary-filters"><label>原文语言<input aria-label="筛选原文语言" maxLength={80} value={query.language || ''} onChange={event => setFilter({ language: event.target.value || undefined })} /></label><label>来源<select aria-label="筛选来源" value={query.provenance || ''} onChange={event => setFilter({ provenance: (event.target.value || undefined) as DictionaryQuery['provenance'] })}><option value="">全部来源</option><option value="main-verified">应用内核对源文</option><option value="saved-favorite">旧字幕收藏</option><option value="user-input">用户输入</option></select></label><label><input type="checkbox" aria-label="只看收藏" checked={query.favorite === true} onChange={event => setFilter({ favorite: event.target.checked ? true : undefined })} />只看收藏</label><label><input type="checkbox" aria-label="显示未完成" checked={query.incomplete === true} onChange={event => setFilter({ incomplete: event.target.checked })} />未完成</label></div>
@@ -284,6 +332,8 @@ export default function DictionaryPanel({ api, defaultLanguage, onClose, onOpenS
       <div className="dictionary-history-list">{page.items.map(encounter => <article key={encounter.id} data-encounter-id={encounter.id}><button type="button" className="dictionary-open" onClick={() => open(encounter)}><strong dir="auto">{encounter.source.span.exact}</strong><p dir="auto">{encounter.source.text}</p><small>{encounter.source.language} · {encounter.explanations.length} 个已保存解释 · {encounter.favorite ? '已收藏' : '未收藏'}</small>{encounter.note && <p className="dictionary-note-preview">笔记：{Array.from(encounter.note).slice(0, 80).join('')}</p>}</button><button type="button" aria-label="收藏学习条目" aria-pressed={encounter.favorite} disabled={pending || Boolean(page.warning)} onClick={() => changeFavorite(encounter)}>{encounter.favorite ? '取消学习收藏' : '收藏学习条目'}</button></article>)}{!page.items.length && <p className="dictionary-empty">没有符合条件的学习记录。请在句子详情中选择短语并显式解释。</p>}</div>
       <div className="dictionary-pages"><button type="button" aria-label="上一页" disabled={page.page <= 1} onClick={() => setQuery(previous => ({ ...previous, page: Math.max(1, page.page - 1) }))}>上一页</button><output>{page.page} / {Math.max(1, Math.ceil(page.total / page.pageSize))} · {page.total} 条</output><button type="button" aria-label="下一页" disabled={page.page * page.pageSize >= page.total} onClick={() => setQuery(previous => ({ ...previous, page: page.page + 1 }))}>下一页</button></div>
     </section>}
+    {mode === 'packs' && api.packs && <OfflinePacksPanel api={api.packs} onBack={history} />}
+    {mode === 'lookup' && <OfflineInputLookup api={api} defaultLanguage={defaultLanguage} onBack={history} />}
     {mode === 'detail' && detail && <section className="dictionary-detail" data-encounter-id={detail.encounter.id}>
       <h3 className="dictionary-detail-heading" tabIndex={-1}>结构化词条与查词笔记</h3><button type="button" onClick={history}>返回学习历史</button><SourceView source={detail.encounter.source} />
       <div className="dictionary-toolbar"><button type="button" aria-label="收藏学习条目" aria-pressed={detail.encounter.favorite} disabled={pending || Boolean(page.warning)} onClick={() => changeFavorite(detail.encounter)}>{detail.encounter.favorite ? '取消学习收藏' : '收藏学习条目'}</button><button type="button" disabled={pending} onClick={() => confirm('delete')}>删除学习条目</button></div>
@@ -295,7 +345,7 @@ export default function DictionaryPanel({ api, defaultLanguage, onClose, onOpenS
     </section>}
     {mode === 'review' && review && <section className="dictionary-review">
       <button type="button" onClick={history}>返回学习历史</button><p>本次自评 {review.completed} 条（个人记录）。查看、揭示和跳过不计自评，不代表掌握或记忆率。</p>
-      {card ? <><div className="dictionary-review-prompt" tabIndex={-1} aria-label="回忆原句中的短语"><SourceView source={card.source} /></div>{!revealed ? <button type="button" disabled={pending} onClick={() => void local(async () => { const value = await api.reveal(review.sessionId, card.encounterId, card.explanationId); if (alive.current && modeRef.current === 'review') setRevealed(value) })}>揭示已保存解释</button> : <><DictionaryExplanationView explanation={revealed.explanation} /><div className="dictionary-toolbar"><button type="button" disabled={pending} onClick={() => reviewAction(() => api.rate(review.sessionId, revealed.revealId, 'recalled'))}>记起了</button><button type="button" disabled={pending} onClick={() => reviewAction(() => api.rate(review.sessionId, revealed.revealId, 'not_recalled'))}>没记起</button></div></>}<button type="button" disabled={pending} onClick={() => reviewAction(() => api.skip(review.sessionId))}>跳过</button></> : <p>本次列表已结束。没有可用的已收藏、已保存ok解释时不会伪造答案。</p>}
+      {card ? <><div className="dictionary-review-prompt" tabIndex={-1} aria-label="回忆原句中的短语"><SourceView source={card.source} /></div>{!revealed ? <button type="button" disabled={pending} onClick={() => void local(async () => { const value = await api.reveal(review.sessionId, card.encounterId, card.explanationId); if (alive.current && modeRef.current === 'review') setRevealed(value) })}>揭示已保存解释</button> : <><DictionaryExplanationView explanation={revealed.explanation} /><div className="dictionary-toolbar"><button type="button" disabled={pending} onClick={() => reviewAction(() => api.rate(review.sessionId, revealed.revealId, 'recalled'))}>记起了</button><button type="button" disabled={pending} onClick={() => reviewAction(() => api.rate(review.sessionId, revealed.revealId, 'not_recalled'))}>没记起</button></div></>}<button type="button" disabled={pending} onClick={() => reviewAction(() => api.skip(review.sessionId))}>跳过</button></> : <p>本次列表已结束；没有更多可用的已收藏词条。</p>}
       <button type="button" disabled={pending || !review.lastEventId} onClick={() => { if (review.lastEventId) reviewAction(() => api.undo(review.sessionId, review.lastEventId!)) }}>撤销本次自评</button>
     </section>}
   </div>

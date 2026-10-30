@@ -2,10 +2,11 @@ import { createHash, randomUUID } from 'node:crypto'
 import type { Caption } from '../shared/types'
 import { isTargetLanguage } from '../shared/languages'
 import { learningOriginal, validPhrase } from '../shared/learning'
-import { dictionarySourceVersion, type DictionaryAvailability, type DictionaryDetail, type DictionaryEncounter, type DictionaryExplainInput, type DictionaryExplanation, type DictionaryHandleResult, type DictionaryOpen, type DictionaryReviewEvent, type DictionaryReviewSession, type DictionaryRunState, type DictionarySnapshot } from '../shared/dictionary'
+import { dictionarySourceVersion, usableDictionaryExplanation, type GeneratedDictionaryExplanation, type DictionaryOfflineInput, type DictionaryOfflineSaveInput, type DictionaryAvailability, type DictionaryDetail, type DictionaryEncounter, type DictionaryExplainInput, type DictionaryExplanation, type DictionaryHandleResult, type DictionaryOpen, type DictionaryReviewEvent, type DictionaryReviewSession, type DictionaryRunState, type DictionarySnapshot } from '../shared/dictionary'
 import { DictionarySchemaError, validateDictionaryModel, validDictionaryText } from '../shared/dictionary-model'
 import { DictionaryStore } from './dictionary-store'
 import type { explainDictionary } from './dictionary-provider'
+import type { OfflineLookupInput, OfflineLookupResult } from '../shared/offline-dictionary'
 
 type Result = Awaited<ReturnType<typeof explainDictionary>>
 type Provider = (input: { sourceText: string; targetText: string; requestedExplanationLanguage: import('../shared/languages').TargetLanguage }, signal: AbortSignal) => Promise<Result>
@@ -22,14 +23,14 @@ export class DictionaryLearning {
   private generations = new Map<string, number>()
   private runs = new Map<string, DictionaryRunState>()
   private flight: Context | null = null
-  private unsaved: { context: Context; explanation: DictionaryExplanation } | null = null
+  private unsaved: { context: Context; explanation: GeneratedDictionaryExplanation } | null = null
   private reviews = new Map<number, Review>()
   private closed = false
-  constructor(readonly store: DictionaryStore, private captions: () => Caption[], private descriptor: () => DictionaryAvailability, private provider: Provider, private changed: () => void) {}
+  constructor(readonly store: DictionaryStore, private captions: () => Caption[], private descriptor: () => DictionaryAvailability, private provider: Provider, private changed: () => void, private offline?: (input: OfflineLookupInput) => OfflineLookupResult) {}
   availability(): DictionaryAvailability {
     const result = this.descriptor()
     const model = typeof result.model === 'string' && result.model.length <= 200 && !/[\u0000-\u001f\u007f]|https?:\/\//i.test(result.model) ? result.model : '未配置有效模型'
-    return { configured: result.configured && model !== '未配置有效模型', providerLabel: result.providerLabel === 'DeepSeek' ? 'DeepSeek' : '兼容翻译服务', model, offlineDictionaryAvailable: false }
+    return { configured: result.configured && model !== '未配置有效模型', providerLabel: result.providerLabel === 'DeepSeek' ? 'DeepSeek' : '兼容翻译服务', model, offlineDictionaryAvailable: Boolean(this.offline) }
   }
   open(owner: number, value: unknown): DictionaryHandleResult {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return this.invalidHandle(owner)
@@ -50,6 +51,12 @@ export class DictionaryLearning {
     const token = randomUUID(); this.handles.set(owner, { token, source: clone(source), originEncounterId })
     return { handle: token, source: clone(source), reason: '' }
   }
+  openInput(owner: number, value: unknown): DictionaryHandleResult {
+    if (this.closed || !value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).some(key => !['text', 'language'].includes(key))) return this.invalidHandle(owner)
+    const input = value as { text: string; language: string }
+    if (!validDictionaryText(input.text, 2000) || !validDictionaryText(input.language, 80)) return this.invalidHandle(owner)
+    return this.issue(owner, { text: input.text, language: input.language, sourceType: 'text', provenance: 'user-input', captionId: null, displayedVersion: null, sourceVersion: null })
+  }
   openEncounter(owner: number, value: unknown): DictionaryHandleResult {
     if (!id(value)) return this.invalidHandle(owner)
     const encounter = this.store.get(value)
@@ -59,8 +66,40 @@ export class DictionaryLearning {
   }
   release(owner: number, token: unknown): void { if (typeof token === 'string' && this.handles.get(owner)?.token === token) this.handles.delete(owner) }
   releaseOwner(owner: number): void { this.handles.delete(owner); this.reviews.delete(owner) }
+  private offlineSource(owner: number, value: unknown): { input: DictionaryOfflineInput; source: DictionaryEncounter['source'] } {
+    if (this.closed || !this.offline) throw new Error('离线词典服务不可用。')
+    if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('离线查词请求无效。')
+    const input = value as DictionaryOfflineInput, handle = this.handles.get(owner)
+    if (!handle || handle.token !== input.handle || (handle.originEncounterId !== null && !this.store.get(handle.originEncounterId))) throw new Error('源文快照已失效，请重新选择。')
+    if (!validPhrase(handle.source.text, input.span) || !validDictionaryText(input.span.exact, 256) || Object.keys(input.span).some(key => !['start', 'end', 'exact'].includes(key))) throw new Error('请从冻结原文选择连续完整短语。')
+    if (typeof input.language !== 'string' || !/^[a-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$/.test(input.language) || (input.glossLanguage !== undefined && (typeof input.glossLanguage !== 'string' || !/^[a-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$/.test(input.glossLanguage)))) throw new Error('请选择词条语言和释义语言。')
+    return { input, source: { ...clone(handle.source), span: { start: input.span.start, end: input.span.end, exact: input.span.exact } } }
+  }
+  offlineLookup(owner: number, value: unknown): OfflineLookupResult {
+    const { input, source } = this.offlineSource(owner, value)
+    return clone(this.offline!({ text: source.span.exact, language: input.language, glossLanguage: input.glossLanguage }))
+  }
+  saveOffline(owner: number, value: unknown): DictionaryEncounter {
+    const { input, source } = this.offlineSource(owner, value)
+    const selection = value as DictionaryOfflineSaveInput
+    if (!id(selection.packId) || !id(selection.entryId) || !id(selection.senseId) || typeof selection.packVersion !== 'string' || !selection.packVersion || selection.packVersion.length > 200 || typeof selection.packSha256 !== 'string' || !/^[a-f0-9]{64}$/.test(selection.packSha256)) throw new Error('请选择离线词条的具体来源、版本和义项。')
+    // Re-read the enabled local pack; renderer content never becomes a trusted dictionary citation.
+    const result = this.offline!({ text: source.span.exact, language: input.language, glossLanguage: input.glossLanguage })
+    const hit = result.results.find(hit => hit.pack.packId === selection.packId && hit.entry.id === selection.entryId)
+    if (hit && (hit.pack.version !== selection.packVersion || hit.pack.dbSha256 !== selection.packSha256)) throw new Error('词库已更新，请重新查询选择。')
+    const sense = hit?.entry.senses.find(sense => sense.id === selection.senseId)
+    if (!hit || !sense) throw new Error('词库或义项已变化，请重新查词后选择。')
+    const encounterId = randomUUID(), createdAt = Date.now()
+    const { senses: _senses, ...entry } = hit.entry
+    const encounter: DictionaryEncounter = { id: encounterId, createdAt, source, favorite: true, note: '', attempts: [], explanations: [{
+      schemaVersion: 1, encounterId, explanationId: randomUUID(), version: 1, providerKind: 'offline-dictionary', providerLabel: hit.pack.sourceName,
+      createdAt, pack: clone(hit.pack), entry: clone(entry), sense: clone(sense), matchPath: hit.matchPath, matchedText: hit.matchedText
+    }] }
+    this.store.createEncounter(encounter); this.changed()
+    return clone(encounter)
+  }
   private live(context: Context): boolean { return !this.closed && this.generations.get(context.encounterId) === context.generation && Boolean(this.store.get(context.encounterId)) }
-  private update(context: Context, state: DictionaryRunState['state'], message: string, unsaved?: DictionaryExplanation): DictionaryRunState {
+  private update(context: Context, state: DictionaryRunState['state'], message: string, unsaved?: GeneratedDictionaryExplanation): DictionaryRunState {
     const attempt = this.store.get(context.encounterId)?.attempts.find(attempt => attempt.id === context.attemptId)
     const result: DictionaryRunState = { encounterId: context.encounterId, attemptId: context.attemptId, state, dispatchState: attempt?.dispatchState || 'not_started', message, ...(unsaved ? { unsaved: clone(unsaved) } : {}) }
     if (attempt) this.runs.set(context.encounterId, result)
@@ -115,7 +154,7 @@ export class DictionaryLearning {
       const validated = validateDictionaryModel(result.content, source.span.exact, source.text)
       if (result.finishReason !== 'stop') throw new DictionarySchemaError()
       const encounter = this.store.get(context.encounterId)!
-      const explanation: DictionaryExplanation = { schemaVersion: 1, encounterId: encounter.id, explanationId: randomUUID(), version: encounter.explanations.length + 1,
+      const explanation: GeneratedDictionaryExplanation = { schemaVersion: 1, encounterId: encounter.id, explanationId: randomUUID(), version: encounter.explanations.length + 1,
         providerKind: 'llm-generated', providerLabel: context.descriptor.providerLabel, model: context.descriptor.model, promptVersion: result.promptVersion, createdAt: Date.now(), requestedExplanationLanguage: language,
         finishReason: 'stop', usage: result.usage, readingScope: 'requested-surface-unverified', content: validated.content, validationWarnings: [...new Set([...validated.validationWarnings, ...result.validationWarnings])] }
       try { this.store.appendExplanation(encounter.id, context.attemptId, explanation) }
@@ -163,7 +202,7 @@ export class DictionaryLearning {
     try { this.store.appendExplanation(pending.context.encounterId, pending.context.attemptId, pending.explanation) }
     catch { return this.update(pending.context, 'ready_unsaved', '保存仍未完成，结果仅在内存；退出将丢失。没有再次调用服务。', pending.explanation) }
     this.unsaved = null
-    return this.update(pending.context, pending.explanation.content.status === 'ok' ? 'ready' : pending.explanation.content.status === 'ambiguous' ? 'ambiguous' : 'model_declined', '已保存内存结果，没有再次调用服务。AI 生成，可能不准确。')
+    return this.update(pending.context, usableDictionaryExplanation(pending.explanation) ? 'ready' : pending.explanation.content.status === 'ambiguous' ? 'ambiguous' : 'model_declined', '已保存内存结果，没有再次调用服务。AI 生成，可能不准确。')
   }
   discardUnsaved(encounterId: unknown, attemptId: unknown): void {
     const pending = this.unsaved
@@ -219,7 +258,7 @@ export class DictionaryLearning {
   private reviewSnapshot(review: Review): DictionaryReviewSession { return clone({ sessionId: review.sessionId, cards: review.cards, cursor: review.cursor, completed: review.completed, lastEventId: review.lastEventId }) }
   startReview(owner: number): DictionaryReviewSession {
     const cards = this.store.exportSnapshot().encounters.filter(encounter => encounter.favorite).flatMap(encounter => {
-      const explanation = encounter.explanations.filter(explanation => explanation.content.status === 'ok').at(-1)
+      const explanation = encounter.explanations.filter(explanation => usableDictionaryExplanation(explanation)).at(-1)
       return explanation ? [{ encounterId: encounter.id, explanationId: explanation.explanationId, source: clone(encounter.source) }] : []
     })
     const review: Review = { owner, sessionId: randomUUID(), cards, cursor: 0, completed: 0, lastEventId: null, history: [], rated: new Map(), undone: new Set(), reveal: null }
@@ -230,7 +269,7 @@ export class DictionaryLearning {
   reveal(owner: number, sessionId: unknown, encounterId: unknown, explanationId: unknown): { revealId: string; explanation: DictionaryExplanation } {
     const review = this.review(owner, sessionId), card = review.cards[review.cursor]
     if (!card || card.encounterId !== encounterId || card.explanationId !== explanationId) throw new Error('请揭示当前复习条目的已保存版本。')
-    const encounter = this.store.get(card.encounterId), explanation = encounter?.explanations.find(explanation => explanation.explanationId === card.explanationId && explanation.content.status === 'ok')
+    const encounter = this.store.get(card.encounterId), explanation = encounter?.explanations.find(explanation => explanation.explanationId === card.explanationId && usableDictionaryExplanation(explanation))
     if (!encounter?.favorite || !explanation) throw new Error('此条目已变化或删除，请跳过或重新进入复习。')
     if (!review.reveal || review.reveal.encounterId !== encounterId || review.reveal.explanationId !== explanationId) review.reveal = { id: randomUUID(), encounterId: card.encounterId, explanationId: card.explanationId }
     return { revealId: review.reveal.id, explanation: clone(explanation) }
@@ -242,7 +281,7 @@ export class DictionaryLearning {
     const revealed = review.reveal, current = review.cards[review.cursor]
     if (!current || current.encounterId !== revealed.encounterId) throw new Error('复习目标已变化。')
     const encounter = this.store.get(revealed.encounterId)
-    if (!encounter?.favorite || !encounter.explanations.some(explanation => explanation.explanationId === revealed.explanationId && explanation.content.status === 'ok')) throw new Error('复习条目已删除或不再可用。')
+    if (!encounter?.favorite || !encounter.explanations.some(explanation => explanation.explanationId === revealed.explanationId && usableDictionaryExplanation(explanation))) throw new Error('复习条目已删除或不再可用。')
     const event: DictionaryReviewEvent = { id: randomUUID(), sessionId: review.sessionId, encounterId: revealed.encounterId, explanationId: revealed.explanationId, createdAt: Date.now(), response }
     this.store.addReview(event)
     review.rated.set(revealed.id, event.id); review.history.push({ eventId: event.id, index: review.cursor }); review.completed = review.history.length; review.lastEventId = event.id; review.cursor++; review.reveal = null

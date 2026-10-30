@@ -19,6 +19,7 @@ import { DictionaryStore } from './dictionary-store'
 import { DictionaryLearning } from './dictionary-learning'
 import { explainDictionary } from './dictionary-provider'
 import { commitDictionaryExport } from './dictionary-file-export'
+import { OfflinePacks } from './offline-packs'
 
 app.setName('LingoBar')
 if (process.platform === 'win32') app.setAppUserModelId('com.lingobar.app')
@@ -31,6 +32,7 @@ let queue: CaptionQueue
 let audio: AudioEngine
 let learning: DesktopLearning
 let dictionary: DictionaryLearning
+let offlinePacks: OfflinePacks
 let dictionaryExporting = false
 let dictionaryQuitApproved = false
 let dictionaryQuitPrompt = false
@@ -157,6 +159,27 @@ function ownedHandle(channel: string, handler: (owner: number, ...args: any[]) =
   })
 }
 function wireDictionaryIPC(): void {
+  ownedHandle('lingo:dictionary-open-input', (owner, input) => dictionary.openInput(owner, input))
+  ownedHandle('lingo:dictionary-offline-lookup', (owner, input) => dictionary.offlineLookup(owner, input))
+  ownedHandle('lingo:dictionary-offline-save', (owner, input) => dictionary.saveOffline(owner, input))
+  ownedHandle('lingo:dictionary-packs-list', () => offlinePacks.list())
+  ownedHandle('lingo:dictionary-packs-install', async () => {
+    const result = await dialog.showOpenDialog(window!, { title: '安装或更新离线语言包', properties: ['openFile'], filters: [{ name: '语言包 manifest.json', extensions: ['json'] }] })
+    if (result.canceled || result.filePaths.length !== 1) return { installed: false, pack: null }
+    const pack = offlinePacks.install(result.filePaths[0])
+    window?.webContents.send('lingo:dictionary-changed')
+    return { installed: true, pack }
+  })
+  ownedHandle('lingo:dictionary-packs-enabled', (_owner, packId, enabled) => {
+    if (typeof packId !== 'string' || typeof enabled !== 'boolean') throw new Error('语言包设置无效。')
+    offlinePacks.setEnabled(packId, enabled)
+    window?.webContents.send('lingo:dictionary-changed')
+  })
+  ownedHandle('lingo:dictionary-packs-uninstall', (_owner, packId) => {
+    if (typeof packId !== 'string') throw new Error('请选择有效的语言包。')
+    offlinePacks.uninstall(packId)
+    window?.webContents.send('lingo:dictionary-changed')
+  })
   ownedHandle('lingo:dictionary-availability', () => dictionary.availability())
   ownedHandle('lingo:dictionary-open', (owner, input) => dictionary.open(owner, input))
   ownedHandle('lingo:dictionary-open-encounter', (owner, id) => dictionary.openEncounter(owner, id))
@@ -329,16 +352,17 @@ else {
       return { baseUrl: settings.translationBaseUrl, model: settings.translationModel, apiKey: storage.key('translation'), targetLanguages: [...settings.targetLanguages], generateFurigana: settings.showFurigana }
     }, publish, captions => storage.saveCaptions(captions))
     learning = new DesktopLearning(new LearningStore(app.getPath('userData')), queue, () => storage.settings(), () => Boolean(window && !window.isDestroyed() && window.isVisible() && !window.isMinimized()), publish)
+    offlinePacks = new OfflinePacks(join(app.getPath('userData'), 'offline-dictionaries'))
     dictionary = new DictionaryLearning(new DictionaryStore(app.getPath('userData')), () => queue.captions, () => {
       const settings = storage.settings()
       let providerLabel = '兼容翻译服务'
       try { if (new URL(settings.translationBaseUrl).hostname === 'api.deepseek.com') providerLabel = 'DeepSeek' } catch { /* Existing settings provide the endpoint; never disclose it here. */ }
-      return { configured: settings.hasTranslationKey, providerLabel, model: settings.translationModel.trim() || 'deepseek-flash', offlineDictionaryAvailable: false }
+      return { configured: settings.hasTranslationKey, providerLabel, model: settings.translationModel.trim() || 'deepseek-flash', offlineDictionaryAvailable: offlinePacks.list().some(pack => pack.enabled) }
     }, (input, signal) => {
       const settings = storage.settings()
       // This closure runs only after an explicit verified query and both durable outbound writes.
       return explainDictionary(input, { baseUrl: settings.translationBaseUrl, model: settings.translationModel, apiKey: storage.key('translation') }, signal)
-    }, () => { if (window && !window.isDestroyed()) window.webContents.send('lingo:dictionary-changed') })
+    }, () => { if (window && !window.isDestroyed()) window.webContents.send('lingo:dictionary-changed') }, input => offlinePacks.lookup(input))
     audio = new AudioEngine({
       onPartial(source, text, utteranceId) {
         trace('caption.partial', { source, id: utteranceId, chars: text.length })
@@ -410,6 +434,6 @@ else {
       }).catch(() => { /* Keep the app and in-memory result if the native quit prompt cannot be shown. */ }).finally(() => { dictionaryQuitPrompt = false })
       return
     }
-    quitting = true; dictionary?.close(); audio?.stop(); queue?.close(); globalShortcut.unregisterAll(); tray?.destroy()
+    quitting = true; dictionary?.close(); offlinePacks?.close(); audio?.stop(); queue?.close(); globalShortcut.unregisterAll(); tray?.destroy()
   })
 }
