@@ -30,7 +30,7 @@ async function body(request: Request): Promise<Record<string, unknown>> {
  * No cookie, body field or publicly elected first account can authorize bootstrap. */
 export function createAppAuthHandler(auth: AppAuth, options: { now?: () => number } | (() => number) = {}) {
   const now = typeof options === 'function' ? options : options.now || Date.now
-  let windowAt = now(), loginAttempts = 0
+  let windowAt = now(), loginAttempts = 0, guestWindowAt = now(), guestAttempts = 0
   return async (request: Request, ownerVerified: boolean | (() => boolean)): Promise<Response> => {
     const owner = () => typeof ownerVerified === 'function' ? ownerVerified() : ownerVerified
     try {
@@ -74,6 +74,8 @@ export function createAppAuthHandler(auth: AppAuth, options: { now?: () => numbe
       }
       if (path === '/api/auth/guest') {
         if (!shape(input, ['translationKey', 'acceptCharges'], ['asrKey']) || typeof input.translationKey !== 'string' || input.acceptCharges !== true || input.asrKey !== undefined && typeof input.asrKey !== 'string') return failure(400)
+        if (now() - guestWindowAt >= 60_000) { guestWindowAt = now(); guestAttempts = 0 }
+        if (++guestAttempts > 10) return failure(429)
         const session = auth.guest({ translationKey: input.translationKey, asrKey: input.asrKey as string | undefined, acceptCharges: true })
         // Replacing an existing browser session revokes its old key material/token.
         auth.logout(request.headers.get('Cookie') || undefined)

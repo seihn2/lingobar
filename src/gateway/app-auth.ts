@@ -131,7 +131,11 @@ export class AppAuth {
   }
   private prune(): void { for (const [key, p] of this.sessions) if (p.expiresAt <= this.now()) this.deleteSession(key) }
   private issue(principal: Principal, seconds: number): { cookie: string } {
-    this.ready(); this.prune(); if (this.sessions.size >= 256) unavailable()
+    this.ready(); this.prune()
+    // Anonymous BYOK sessions cannot consume account/admin login capacity.
+    const bucket = (p: Principal) => p.kind === 'guest' ? 'guest' : p.role
+    const group = bucket(principal), limit = group === 'guest' ? 128 : group === 'admin' ? 32 : 96
+    if ([...this.sessions.values()].filter(p => bucket(p) === group).length >= limit) unavailable()
     const token = randomBytes(32).toString('base64url')
     const key = hash(token)
     this.sessions.set(key, principal)

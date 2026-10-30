@@ -1,3 +1,4 @@
+import { webApiPath } from './routes'
 /** Public routing metadata only. Provider credentials never belong in this file. */
 export type AudioStatus = 'ready' | 'disabled' | 'missing-key' | 'budget-unverified' | 'quota'
 interface WebConfig { authBackend?: '/api/auth' | null; backend: '/api/session' | null; textBackend?: '/api/translate' | null; credentialsBackend?: '/api/settings/translation-key' | null; asrCredentialsBackend?: '/api/settings/asr-key' | null; audioStatus?: AudioStatus }
@@ -19,7 +20,7 @@ export async function loadWebConfig(): Promise<WebConfig & { disabledReason?: 'u
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 2000)
   try {
-    const response = await fetch('/app-config.json', { credentials: 'same-origin', cache: 'no-store', signal: controller.signal })
+    const response = await fetch(webApiPath('/app-config.json'), { credentials: 'same-origin', cache: 'no-store', signal: controller.signal })
     if (response.status === 401 || response.status === 403) return { backend: null, disabledReason: 'unauthorized' }
     if (!response.ok) return { backend: null }
     const text = await response.text()

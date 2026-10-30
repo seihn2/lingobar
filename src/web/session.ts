@@ -1,3 +1,4 @@
+import { webApiPath } from './routes'
 import type { AudioStatus } from './config'
 import type { Caption, Settings, SettingsInput, Snapshot } from '../shared/types'
 import { validTargetLanguages } from '../shared/languages'
@@ -114,7 +115,7 @@ export class BrowserSession {
     this.credentialRequest = controller
     const timer = setTimeout(() => controller.abort(), 15_000)
     try {
-      const response = await (this.options.credentialsFetch || fetch)(new URL(asr ? '/api/settings/asr-key' : '/api/settings/translation-key', this.options.origin).toString(), {
+      const response = await (this.options.credentialsFetch || fetch)(new URL(webApiPath(asr ? '/api/settings/asr-key' : '/api/settings/translation-key'), this.options.origin).toString(), {
         method: 'POST', credentials: 'same-origin', redirect: 'error', cache: 'no-store', signal: controller.signal,
         headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ apiKey })
       })
@@ -140,7 +141,7 @@ export class BrowserSession {
     if (!this.configured) return Promise.reject(new Error('后端未配置，暂不能开始录音。'))
     if (this.owner) return Promise.reject(new Error('请先暂停当前录音。'))
     this.cancelAnnotations()
-    const url = new URL('/api/session', this.options.origin)
+    const url = new URL(webApiPath('/api/session'), this.options.origin)
     url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
     return new Promise<void>((resolve, reject) => {
       const id = this.options.id?.() || crypto.randomUUID()
@@ -305,7 +306,7 @@ export class BrowserSession {
     let timedOut = false
     const timer = setTimeout(() => { timedOut = true; job.abort.abort() }, 60_000)
     try {
-      const response = await (this.options.textFetch || fetch)(new URL('/api/translate', this.options.origin).toString(), {
+      const response = await (this.options.textFetch || fetch)(new URL(webApiPath('/api/translate'), this.options.origin).toString(), {
         method: 'POST', credentials: 'same-origin', redirect: 'error', cache: 'no-store', signal: job.abort.signal,
         headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request)
       })
@@ -361,7 +362,7 @@ export class BrowserSession {
     this.annotations.set(id, job)
     this.state = { ...this.state, captions: this.state.captions.map(item => item.id === id ? { ...item, furiganaStatus: 'pending' } : item) }; this.publish()
     try {
-      const result = await requestAnnotation(job.request, this.options.origin, job.abort.signal, this.options.annotationFetch, caption.source === 'microphone' ? '/api/audio-annotation' : '/api/annotation')
+      const result = await requestAnnotation(job.request, this.options.origin, job.abort.signal, this.options.annotationFetch, webApiPath(caption.source === 'microphone' ? '/api/audio-annotation' : '/api/annotation'))
       if (!this.annotationCurrent(job)) throw annotationCancelled()
       this.state = { ...this.state, captions: this.state.captions.map(item => item.id === id ? { ...item, reading: result.reading, jaSegments: result.jaSegments, furiganaStatus: 'ready' } : item) }
     } catch (error) {

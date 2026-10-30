@@ -31,6 +31,10 @@ async function send(response: Response, target: ServerResponse): Promise<void> {
   target.writeHead(response.status, Object.fromEntries(response.headers))
   target.end(await response.text())
 }
+function ownerNamespace(req: IncomingMessage): boolean {
+  if (req.url === '/owner/app-config.json' || req.url?.startsWith('/owner/api/')) { req.url = req.url.slice(6); return true }
+  return false
+}
 function headers(req: IncomingMessage): Headers {
   const result = new Headers()
   for (const [name, value] of Object.entries(req.headers)) if (typeof value === 'string') result.set(name, value)
@@ -86,6 +90,7 @@ export function createGateway(config: GatewayConfig | null, dependencies: Depend
   }
   const server = createServer({ maxHeaderSize: 16_384, requestTimeout: 30_000, headersTimeout: 10_000 }, (req, res) => {
     const run = async () => {
+      const ownerRoute = ownerNamespace(req)
       if (req.url === '/healthz' && req.method === 'GET') return send(json({ status: config && !closing ? 'configured' : 'disabled' }, config && !closing ? 200 : 503), res)
       const authRoute = Boolean(appAuthHandler && req.url?.startsWith('/api/auth/'))
       if (!authRoute && !['/app-config.json', '/api/session', '/api/annotation', '/api/audio-annotation', '/api/translate', CREDENTIALS_PATH, ASR_CREDENTIALS_PATH].includes(req.url || '')) return send(error(404), res)
@@ -94,6 +99,7 @@ export function createGateway(config: GatewayConfig | null, dependencies: Depend
       const denied = boundary(req, false)
       if (denied) return send(error(denied), res)
       const claims = await identity(req)
+      if (ownerRoute && !claims) return send(error(401), res)
       if (authRoute) {
         const controller = new AbortController(); controllers.add(controller)
         const timer = setTimeout(() => controller.abort(), claims ? Math.min(30_000, claims.exp * 1000 - now()) : 30_000)
@@ -210,11 +216,13 @@ export function createGateway(config: GatewayConfig | null, dependencies: Depend
       if (!socket.destroyed) socket.end(`HTTP/1.1 ${status} Rejected\r\nConnection: close\r\nCache-Control: no-store\r\nContent-Length: 0\r\n\r\n`)
     }
     const run = async () => {
+      const ownerRoute = ownerNamespace(req)
       if (config?.audioEnabled === false && !appAuth) return reject(503)
       if (req.url !== '/api/session' || req.method !== 'GET' || req.headers.upgrade?.toLowerCase() !== 'websocket') return reject(400)
       const denied = boundary(req, true)
       if (denied) return reject(denied)
       const claims = await identity(req)
+      if (ownerRoute && !claims) return reject(401)
       const principal = !claims && appAuth ? appAuth.resolve(req.headers.cookie) : null
       if (principal && appService) {
         if (socket.destroyed || closing || appService.audioStatus(principal) !== 'ready') return reject(503)

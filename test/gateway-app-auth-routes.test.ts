@@ -103,6 +103,13 @@ describe.skipIf(process.platform === 'win32')('application auth HTTP boundary, g
     expect(blocked.status).toBe(429); expect(await blocked.text()).not.toContain(password)
     advance(); expect((await call('login', 'POST', { username: 'missinguser', password })).status).toBe(401)
   })
+  it('bounds anonymous guest creation without consuming login attempts', async () => {
+    const { auth, call, advance } = fixture(); await auth.bootstrap('adminuser', password)
+    for (let i = 0; i < 10; i++) expect((await call('guest', 'POST', { translationKey: key, acceptCharges: true })).status).toBe(200)
+    expect((await call('guest', 'POST', { translationKey: key, acceptCharges: true })).status).toBe(429)
+    expect((await call('login', 'POST', { username: 'adminuser', password })).status).toBe(200)
+    advance(); expect((await call('guest', 'POST', { translationKey: key, acceptCharges: true })).status).toBe(200)
+  })
   it('rejects methods, query aliases, wrong content type, extra fields and oversized bodies', async () => {
     const { call, handler } = fixture()
     expect((await call('status', 'POST', {})).status).toBe(405)

@@ -3,13 +3,13 @@ import { flushSync } from 'react-dom'
 import AuthSettings from '../../src/web/AuthSettings'
 import '../../src/renderer/style.css'
 import '../../src/web/style.css'
-let kind = 'anonymous', bootstrap = false, hanging = false, calls: Array<{ path: string; method: string }> = [], aborted = 0
+let kind = 'anonymous', bootstrap = false, hanging = false, calls: Array<{ path: string; method: string; rawPath: string }> = [], aborted = 0
 const root = createRoot(document.getElementById('root')!)
 const wait = () => new Promise(resolve => setTimeout(resolve, 30))
 const check = (value: unknown, message: string) => { if (!value) throw new Error(message) }
 Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { getUserMedia() { throw new Error('Forbidden media') } } })
 window.fetch = async (input, init) => {
-  const path = new URL(String(input)).pathname; calls.push({ path, method: init?.method || 'GET' })
+  const rawPath = new URL(String(input)).pathname, path = rawPath.replace(/^\/owner(?=\/api\/)/u, ''); calls.push({ path, rawPath, method: init?.method || 'GET' })
   if (path === '/api/auth/status') return Response.json({ kind, initialized: !bootstrap, bootstrapAllowed: bootstrap, ...(kind === 'owner' ? { role: 'admin' } : {}) })
   if (path === '/api/auth/accounts' && init?.method === 'GET') return Response.json({ accounts: [{ username: 'synthetic-user', role: 'user', limitMicroCny: 0 }] })
   if (!path.startsWith('/api/auth/')) throw new Error('Provider request forbidden')
@@ -37,6 +37,8 @@ Object.assign(window, { __authTest: {
     document.querySelector<HTMLInputElement>('input[type=checkbox]')!.click(); await wait()
     check(!button('使用自己的密钥').disabled, 'Explicit consent enables BYOK submit')
     check(document.documentElement.scrollWidth <= innerWidth, 'Mobile layout overflow')
+    const checkbox = document.querySelector<HTMLInputElement>('input[type=checkbox]')!.getBoundingClientRect()
+    check(checkbox.width <= 24 && checkbox.height <= 24, 'Consent checkbox must not inherit full-width password styling')
     return { checks: ['anonymous no bootstrap', 'guest consent', '375px fits'], calls }
   },
   async interruption() {
@@ -48,7 +50,9 @@ Object.assign(window, { __authTest: {
     return { checks: ['duplicate login blocked', 'close aborts', 'password cleared'] }
   },
   async owner() {
-    await mount('owner', true); check(Boolean(button('初始化管理员账号')), 'Owner bootstrap missing')
+    history.replaceState(null, '', '/owner')
+    await mount('owner', true);
+    check(calls.every(call => call.rawPath.startsWith('/owner/api/auth/')), 'Owner requests must keep Access namespace'); check(Boolean(button('初始化管理员账号')), 'Owner bootstrap missing')
     check(document.documentElement.scrollWidth <= innerWidth, 'Owner layout overflow')
     return { checks: ['owner bootstrap visible', 'zero quota shown', 'mobile owner fits'] }
   },

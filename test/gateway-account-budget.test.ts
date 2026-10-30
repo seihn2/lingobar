@@ -18,7 +18,8 @@ function request(patch: Record<string, unknown> = {}): RequestInit { return { me
 const QUOTE = quoteWebTextRequest(ENDPOINT, request()).reservationMicroCny
 beforeEach(() => { vi.stubGlobal('fetch', vi.fn(() => { throw new Error('Real fetch forbidden') })) })
 afterEach(() => { for (const b of budgets.splice(0)) b.close(); for (const d of directories.splice(0)) rmSync(d, { recursive: true, force: true }); vi.unstubAllGlobals(); vi.restoreAllMocks() })
-describe('shared account cumulative money reservations, synthetic upstream only', () => {
+// POSIX private gateway state is not a Windows desktop runtime.
+describe.skipIf(process.platform === 'win32')('shared account cumulative money reservations, synthetic upstream only', () => {
   it('initializes only with zero site allowance and blocks default-zero site/account quotas', async () => {
     const dir = directory(), upstream = vi.fn(async () => new Response('{}'))
     expect(() => new AccountBudget(dir, 1)).toThrow()

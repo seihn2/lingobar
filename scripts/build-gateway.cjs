@@ -8,6 +8,11 @@ async function main() {
   const result = await build({ entryPoints: [join(root, 'src/gateway/main.ts')], outfile: join(out, 'gateway.cjs'), bundle: true,
     platform: 'node', format: 'cjs', target: 'node22', sourcemap: false, minify: false, metafile: true, logLevel: 'warning',
     define: { 'process.env.WS_NO_BUFFER_UTIL': '"1"', 'process.env.WS_NO_UTF_8_VALIDATE': '"1"' } })
+  const once = await build({ entryPoints: [join(root, 'src/gateway/audio-test-main.ts')], outfile: join(out, 'audio-test.cjs'), bundle: true,
+    platform: 'node', format: 'cjs', target: 'node22', sourcemap: false, minify: false, metafile: true, logLevel: 'warning',
+    define: { 'process.env.WS_NO_BUFFER_UTIL': '"1"', 'process.env.WS_NO_UTF_8_VALIDATE': '"1"' } })
+  const onceInputs = Object.keys(once.metafile.inputs)
+  if (onceInputs.some(name => /node_modules\/(?!ws\/)/.test(name) || /(?:^|\/)src\/main\//.test(name))) throw new Error('Unexpected audio runner runtime dependency')
   const inputs = Object.keys(result.metafile.inputs)
   if (inputs.some(name => /node_modules\/(?!ws\/)/.test(name) || /(?:^|\/)src\/main\/(?!translation\.ts$|japanese\.ts$)/.test(name))) throw new Error('Unexpected gateway runtime dependency')
   for (const name of ['LICENSE', 'NOTICE.md', 'gateway.env.example', 'gateway-text.service.example']) copyFileSync(join(root, name), join(out, name))
@@ -16,6 +21,8 @@ async function main() {
   writeFileSync(join(out, 'web-text-deployment.md'), readFileSync(join(root, 'docs/web-text-deployment.md'), 'utf8').replaceAll('](../evidence/', '](evidence/'))
   copyFileSync(join(root, 'docs/web-audio-deployment.md'), join(out, 'web-audio-deployment.md'))
   copyFileSync(join(root, 'docs/web-accounts-deployment.md'), join(out, 'web-accounts-deployment.md'))
+  copyFileSync(join(root, 'docs/one-shot-audio-test.md'), join(out, 'one-shot-audio-test.md'))
+  copyFileSync(join(root, 'docs/web-rollout-approval.md'), join(out, 'web-rollout-approval.md'))
   const textGuide = readFileSync(join(root, 'docs/one-rmb-test.md'), 'utf8')
     .replaceAll('](../evidence/', '](evidence/').replaceAll('](../scripts/', '](scripts/')
   writeFileSync(join(out, 'one-rmb-test.md'), textGuide)
@@ -25,7 +32,7 @@ async function main() {
   const textTestInputs = ['scripts/plan-one-rmb-test.cjs', 'scripts/run-one-rmb-text-test.cjs', 'scripts/text-test-proof.cjs',
     'scripts/text-test-installation.json', 'evidence/text-test-proof.json']
   for (const name of textTestInputs) copyFileSync(join(root, name), join(out, name))
-  writeFileSync(join(out, 'BUILD-INPUTS.json'), JSON.stringify({ runtime: 'Node.js 22 Linux, loopback HTTP/ws, existing ws 8.22.0 (MIT), no runtime npm install', inputs, textTestInputs }, null, 2) + '\n')
+  writeFileSync(join(out, 'BUILD-INPUTS.json'), JSON.stringify({ runtime: 'Node.js 22 Linux, loopback HTTP/ws, existing ws 8.22.0 (MIT), no runtime npm install', inputs, textTestInputs, audioTestInputs: onceInputs }, null, 2) + '\n')
   console.log(`Disabled Node gateway built from ${inputs.length} project/ws inputs. No deployment or real service test.`)
 }
 main().catch(() => { console.error('Gateway build failed'); process.exitCode = 1 })

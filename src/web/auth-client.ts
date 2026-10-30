@@ -1,3 +1,4 @@
+import { webApiPath } from './routes'
 export interface AuthStatus { kind: 'anonymous' | 'owner' | 'account' | 'guest'; role?: 'admin' | 'user'; username?: string; initialized: boolean; bootstrapAllowed: boolean }
 export interface AccountSummary { username: string; role: 'admin' | 'user'; limitMicroCny: number }
 type AuthAction = 'status' | 'login' | 'guest' | 'logout' | 'bootstrap' | 'accounts'
@@ -11,7 +12,7 @@ export async function authRequest(origin: string, action: AuthAction, method: 'G
   const timer = setTimeout(abort, 15_000)
   try {
     if (signal.aborted) throw new Error()
-    const response = await transport(new URL('/api/auth/' + action, url.origin), { method, credentials: 'same-origin', redirect: 'error', cache: 'no-store', signal: controller.signal,
+    const response = await transport(new URL(webApiPath('/api/auth/' + action), url.origin), { method, credentials: 'same-origin', redirect: 'error', cache: 'no-store', signal: controller.signal,
       ...(method === 'GET' ? {} : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }) })
     if (!response.ok || controller.signal.aborted) throw new Error()
     const text = await response.text()

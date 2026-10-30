@@ -38,7 +38,8 @@ afterEach(() => {
   vi.unstubAllGlobals(); vi.restoreAllMocks()
 })
 
-describe('synthetic incremental audio batch reservations (not real billing verification)', () => {
+// POSIX private gateway state is not a Windows desktop runtime.
+describe.skipIf(process.platform === 'win32')('synthetic incremental audio batch reservations (not real billing verification)', () => {
   it('keeps production policy unverified despite the synthetic test override', async () => {
     const actual = await vi.importActual<typeof import('../src/gateway/audio-policy')>('../src/gateway/audio-policy')
     expect(actual.AUDIO_POLICY.verified).toBe(false)

@@ -11,8 +11,8 @@ export class AnnotationFailure extends Error {
 export function annotationCancelled(): Error { const error = new Error('已取消注音。'); error.name = 'AbortError'; return error }
 
 /** Fixed same-origin, text-only request. The deadline also bounds transports that ignore AbortSignal. */
-export async function requestAnnotation(input: AnnotationRequest, origin: string, parent: AbortSignal, transport: typeof fetch = fetch, endpoint: '/api/annotation' | '/api/audio-annotation' = '/api/annotation'): Promise<AnnotationResponse> {
-  if (endpoint !== '/api/annotation' && endpoint !== '/api/audio-annotation') throw new AnnotationFailure('protocol')
+export async function requestAnnotation(input: AnnotationRequest, origin: string, parent: AbortSignal, transport: typeof fetch = fetch, endpoint: '/api/annotation' | '/api/audio-annotation' | '/owner/api/annotation' | '/owner/api/audio-annotation' = '/api/annotation'): Promise<AnnotationResponse> {
+  if (!['/api/annotation', '/api/audio-annotation', '/owner/api/annotation', '/owner/api/audio-annotation'].includes(endpoint)) throw new AnnotationFailure('protocol')
   const request = parseAnnotationRequest(JSON.stringify(input))
   const abort = new AbortController()
   let reader: ReadableStreamDefaultReader<Uint8Array> | undefined

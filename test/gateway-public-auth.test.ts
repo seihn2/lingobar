@@ -62,6 +62,25 @@ describe.skipIf(process.platform !== 'linux')('public application authentication
     expect((await f.http('/api/translate', input)).status).toBe(401)
     expect(f.upstream).not.toHaveBeenCalled()
   })
+  it('preserves protected owner config, auth, key saves and text while ordinary cookies cannot enter owner paths', async () => {
+    const f = await fixture(), guest = await f.guest()
+    for (const path of ['/owner/app-config.json', '/owner/api/auth/status', '/owner/api/settings/asr-key']) {
+      expect((await f.http(path)).status).toBe(401)
+      expect((await f.http(path, undefined, guest)).status).toBe(401)
+      expect((await f.http(path, undefined, f.owner)).status).toBe(200)
+    }
+    expect(JSON.parse((await f.http('/owner/api/auth/status', undefined, f.owner)).text)).toMatchObject({ kind: 'owner', bootstrapAllowed: true })
+    expect((await f.http('/owner/api/auth/bootstrap', account, f.owner)).status).toBe(200)
+    const admin = await f.http('/api/auth/login', account)
+    expect((await f.http('/owner/app-config.json', undefined, { Cookie: cookie(admin) })).status).toBe(401)
+    for (const path of ['/owner/api/settings/translation-key', '/owner/api/settings/asr-key']) {
+      expect((await f.http(path, { apiKey: 'synthetic-new-owner-key' }, guest)).status).toBe(401)
+      expect((await f.http(path, { apiKey: 'synthetic-new-owner-key' }, f.owner)).status).toBe(200)
+      expect(JSON.parse((await f.http(path, undefined, f.owner)).text)).toEqual({ configured: true })
+    }
+    expect((await f.http('/owner/api/translate', input, f.owner)).status).toBe(200)
+    expect(JSON.parse((await f.http('/api/auth/status', undefined, guest)).text)).toMatchObject({ kind: 'guest' })
+  })
   it('requires cryptographically verified owner bootstrap and creates a secure login cookie', async () => {
     const f = await fixture()
     expect((await f.http('/api/auth/bootstrap', account)).status).toBe(403)

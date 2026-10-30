@@ -107,3 +107,19 @@ Revert matched frontend+gateway, set APP_AUTH_ENABLED=0, restore only the specif
 changed Access/wrapper rules, and retain private account and all budget/key files.
 Old gateway ignores new account files. Do not delete ledgers or enlarge quotas to
 make a rollback appear successful. Session restart/log-out requires signing in again.
+
+## Protected owner page after public opening
+
+Serve the same static entry at `/owner` and `/owner/`. Keep `/owner` and every
+`/owner/*` path under the existing owner-only Access application. The UI prefixes
+ALL of its fixed config/API routes while on this page: `/owner/app-config.json`,
+`/owner/api/auth/*`, `/owner/api/settings/translation-key`,
+`/owner/api/settings/asr-key`, and owner text/annotation/session routes. Forward
+these paths unchanged to gateway; gateway normalizes the fixed namespace only
+then independently verifies the owner JWT before any cookie fallback. A guest
+or ordinary/admin application cookie can never promote itself with this prefix.
+Public `/` remains the account/BYOK page. This is necessary because a public
+app-config/status request no longer automatically receives an Access assertion.
+The existing unprefixed key-setting and bootstrap routes must also remain
+Access-protected. Wrapper must forward Cookie and Set-Cookie for application
+sessions, and retain Host/Origin/Access assertion handling on owner paths.

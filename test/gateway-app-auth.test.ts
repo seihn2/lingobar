@@ -143,6 +143,14 @@ describe.skipIf(process.platform === 'win32')('private account and isolated vola
     auth.guest({ translationKey: KEY, acceptCharges: true }); auth.guest({ translationKey: KEY, acceptCharges: true })
     expect(vi.getTimerCount()).toBe(2); auth.close(); expect(vi.getTimerCount()).toBe(0)
   })
+  it('keeps account and administrator login capacity when anonymous guest capacity is exhausted', async () => {
+    const { auth } = fixture()
+    await auth.bootstrap('adminuser', PASSWORD); await auth.createAccount('normaluser', PASSWORD)
+    for (let i = 0; i < 128; i++) auth.guest({ translationKey: KEY, acceptCharges: true })
+    expect(() => auth.guest({ translationKey: KEY, acceptCharges: true })).toThrow()
+    expect(auth.resolve(header(await auth.login('normaluser', PASSWORD)))).toMatchObject({ kind: 'account', role: 'user' })
+    expect(auth.resolve(header(await auth.login('adminuser', PASSWORD)))).toMatchObject({ kind: 'account', role: 'admin' })
+  })
   it('does not issue an in-flight login after the service closes', async () => {
     const { auth } = fixture(); await auth.bootstrap('adminuser', PASSWORD)
     const login = auth.login('adminuser', PASSWORD); auth.close(); await expect(login).rejects.toThrow('Account service unavailable')

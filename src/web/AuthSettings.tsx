@@ -49,6 +49,7 @@ export default function AuthSettings({ stop, origin = location.origin }: { stop(
   </>
   return <fieldset className="web-key-settings" ref={fields} disabled={pending} onKeyDown={event => { if (event.key === 'Enter' && event.target instanceof HTMLInputElement) event.preventDefault() }}>
     <legend>账号与自带密钥</legend>
+    <a href="/owner">所有者管理（Cloudflare Access）</a>
     <p>{status ? status.kind === 'anonymous' ? '请登录或使用自己的 API Key' : `当前身份：${status.username || ({ owner: '所有者', account: '账号', guest: '临时访客' } as const)[status.kind]}` : '正在读取身份…'}</p>
     {(status?.kind === 'anonymous' || status?.bootstrapAllowed || administrator) && credentials}
     {status?.kind === 'anonymous' && <button type="button" disabled={!username.trim() || password.length < 12 || refresh} onClick={() => void call('login', { username, password })}>登录</button>}
@@ -64,7 +65,7 @@ export default function AuthSettings({ stop, origin = location.origin }: { stop(
     {status?.kind === 'anonymous' && <>
       <label htmlFor="web-guest-translation">自己的 DeepSeek API Key<input id="web-guest-translation" type="password" autoComplete="off" value={translationKey} maxLength={2048} onChange={event => setTranslationKey(event.target.value)} /></label>
       <label htmlFor="web-guest-asr">自己的百炼北京 ASR Key（可选）<input id="web-guest-asr" type="password" autoComplete="off" value={asrKey} maxLength={2048} onChange={event => setAsrKey(event.target.value)} /></label>
-      <label><input type="checkbox" checked={consent} onChange={event => setConsent(event.target.checked)} />我同意语音发送至百炼北京、文字发送至 DeepSeek，由自己的供应商账号计费。密钥只在服务器内存临时保留，1 小时后过期，不在浏览器持久保存。</label>
+      <label className="web-key-consent"><input type="checkbox" checked={consent} onChange={event => setConsent(event.target.checked)} />我同意语音发送至百炼北京、文字发送至 DeepSeek，由自己的供应商账号计费。密钥只在服务器内存临时保留，1 小时后过期，不在浏览器持久保存。</label>
       <button type="button" disabled={!translationKey.trim() || !consent || refresh} onClick={() => void call('guest', { translationKey, ...(asrKey ? { asrKey } : {}), acceptCharges: true })}>使用自己的密钥</button>
     </>}
     {status && status.kind !== 'anonymous' && <button type="button" disabled={refresh} onClick={() => void call('logout', {})}>退出应用会话</button>}
