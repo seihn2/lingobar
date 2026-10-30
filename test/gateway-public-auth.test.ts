@@ -32,7 +32,7 @@ async function fixture(siteLimitMicroCny = 0) {
   const initial = new AccountBudget(budgetDir, 0); initial.close()
   const config = { ...configuration(''), audioEnabled: false, text: { ledgerDirectory: ownerDir },
     credentialsFile: join(ownerDir, 'translation-key.json'), asrCredentialsFile: join(ownerDir, 'asr-key.json'),
-    app: { directory: appDir, budgetDirectory: budgetDir, siteLimitMicroCny, sharedAudioFreeStopVerified: false } }
+    app: { directory: appDir, budgetDirectory: budgetDir, siteLimitMicroCny } }
   const gateway = createGateway(config, { upstream, publicFetch: jwks, now: () => currentTime })
   await new Promise<void>(resolve => gateway.server.listen(0, '127.0.0.1', resolve)); cleanups.push(() => gateway.close())
   const port = (gateway.server.address() as { port: number }).port
@@ -227,6 +227,32 @@ describe.skipIf(process.platform !== 'linux')('public websocket and enabled shar
     expect(audio.peer.audioFrames).toBe(30)
     expect(audio.messages.at(-1)).toMatchObject({ type: 'error', code: 'quota' })
     expect(f.upstream).toHaveBeenCalledOnce()
+  })
+  it('opens paid shared ASR using stored keys and reserves before dispatch without touching owner ledgers', async () => {
+    const f = await fixture(1_000_000), beforeText = readFileSync(join(f.ownerDir, 'test-budget.json'), 'utf8')
+    await f.http('/api/auth/bootstrap', account, f.owner)
+    const user = { username: 'audiofunded', password: 'Synthetic-audio-password-123!' }
+    expect((await f.http('/api/auth/accounts', { ...user, limitMicroCny: 1_000_000 }, f.owner)).status).toBe(200)
+    const login = await f.http('/api/auth/login', user), session = { Cookie: cookie(login) }
+    expect(JSON.parse((await f.http('/app-config.json', undefined, session)).text).backend).toBe('/api/session')
+    const peer = new SyntheticAsr()
+    f.upstream.mockImplementation(async (url, init) => {
+      expect(String(url)).toBe('https://dashscope.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime')
+      expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer synthetic-asr')
+      expect(JSON.parse(readFileSync(join(f.budgetDir, 'accounts-budget.json'), 'utf8')).spentMicroCny).toBe(19_800)
+      return { status: 101, webSocket: peer } as unknown as Response
+    })
+    const ws = f.ws(session), messages: Array<{ type: string }> = []
+    ws.on('message', data => messages.push(JSON.parse(data.toString())))
+    await new Promise<void>((resolve, reject) => { ws.once('open', resolve); ws.once('error', reject) })
+    ws.send(JSON.stringify(start))
+    await vi.waitFor(() => expect(messages.some(m => m.type === 'ready')).toBe(true))
+    ws.send(Buffer.alloc(3200)); await vi.waitFor(() => expect(peer.audioFrames).toBe(1))
+    ws.close(); await vi.waitFor(() => expect(peer.readyState).toBe(3))
+    expect(f.upstream).toHaveBeenCalledOnce()
+    expect(JSON.parse(readFileSync(join(f.budgetDir, 'accounts-budget.json'), 'utf8')).spentMicroCny).toBe(19_800)
+    expect(readFileSync(join(f.ownerDir, 'test-budget.json'), 'utf8')).toBe(beforeText)
+    expect(readFileSync(join(f.ownerDir, 'audio-budget.json'), 'utf8')).toBe('untouched-owner-audio-marker')
   })
   it('charges configured shared accounts against only their independent site/account ledger', async () => {
     const f = await fixture(1_000_000), beforeText = readFileSync(join(f.ownerDir, 'test-budget.json'), 'utf8')

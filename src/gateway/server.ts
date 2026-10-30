@@ -233,7 +233,7 @@ export function createGateway(config: GatewayConfig | null, dependencies: Depend
           sockets.handleUpgrade(req, socket, head, ws => {
             handed = true
             const peer = new NodePeer(ws, () => { if (appService.valid(principal, req.headers.cookie)) return true; peer.close(); return false })
-            const session = new RelaySession(peer, appService.keys(principal), { fetch: appService.transport(principal, req.headers.cookie), hold, id: randomUUID, now, limits: APP_SESSION_LIMITS })
+            const session = new RelaySession(peer, appService.keys(principal), { fetch: appService.sessionTransport(principal, req.headers.cookie), hold, id: randomUUID, now, limits: APP_SESSION_LIMITS })
             sessions.add(session)
             const timer = setTimeout(() => session.stop(), Math.min(APP_SESSION_LIMITS.durationMs, principal.expiresAt - now()))
             const revoked = setInterval(() => { if (closing || !appService.valid(principal, req.headers.cookie)) session.stop() }, 1000)

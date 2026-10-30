@@ -16,7 +16,7 @@ export interface GatewayConfig extends RelayConfig {
   asrCredentialsFile?: string
   audioRequested?: boolean
   audioLedgerDirectory?: string
-  app?: { directory: string; budgetDirectory: string; siteLimitMicroCny: number; sharedAudioFreeStopVerified: boolean }
+  app?: { directory: string; budgetDirectory: string; siteLimitMicroCny: number }
 }
 const invalid = (): never => { throw new Error('Invalid gateway configuration') }
 const credential = (v: string | undefined): string => {
@@ -84,7 +84,7 @@ export function gatewayConfig(env: Record<string, string | undefined>): GatewayC
     [ledgerDirectory, audioLedgerDirectory, stateDirectory].some(p => p && resolve(p) === resolve(appBudgetDirectory)))) invalid()
   const model = env.ASR_MODEL || 'qwen3-asr-flash-realtime'
   if (!['qwen-audio-3.1-asr-flash-streaming', 'qwen-audio-3.0-asr-flash-streaming', 'qwen3-asr-flash-realtime'].includes(model)) invalid()
-  return { ...(app ? { app: { directory: appDirectory, budgetDirectory: appBudgetDirectory, siteLimitMicroCny: Number(appLimit), sharedAudioFreeStopVerified: env.APP_SHARED_ASR_FREE_STOP_VERIFIED === '1' } } : {}), origin: origin.origin, issuer, audience, email: email.toLowerCase(), stateDirectory,
+  return { ...(app ? { app: { directory: appDirectory, budgetDirectory: appBudgetDirectory, siteLimitMicroCny: Number(appLimit) } } : {}), origin: origin.origin, issuer, audience, email: email.toLowerCase(), stateDirectory,
     dailySessions: audio ? integer(env.GATEWAY_DAILY_SESSIONS, 288) : 0,
     dailyCompletionRequests: audio ? integer(env.GATEWAY_DAILY_COMPLETION_REQUESTS, 10_000) : 0,
     asrKey: audio || app || env.ASR_API_KEY_FILE ? serverCredential(env, 'ASR') : '', translationKey: serverCredential(env, 'TRANSLATION'), model: model as RelayConfig['model'],

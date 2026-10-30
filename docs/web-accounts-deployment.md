@@ -35,7 +35,6 @@ APP_AUTH_ENABLED=0
 APP_ACCOUNTS_DIRECTORY=/var/lib/lingobar-accounts/auth
 APP_SHARED_BUDGET_DIRECTORY=/var/lib/lingobar-accounts/budget
 APP_SHARED_LIMIT_MICRO_CNY=0
-APP_SHARED_ASR_FREE_STOP_VERIFIED=0
 ```
 
 Enable `APP_AUTH_ENABLED=1` only in the approved matched app+gateway deployment,
@@ -58,14 +57,33 @@ format retries. Cancel/failure/unknown results never refund. Deleting/recreating
 an account never clears site spend. Default per-account AND site limits are0.
 Positive limits are a separate spending authorization, not implied by this patch.
 Admin changes individual cumulative quotas; the deployment operator controls the
-hard site ceiling. Neither setting resets already reserved money.
+cumulative site reservation ceiling. Neither setting resets already reserved money.
 
-Shared-key ASR stays disabled unless the deployment operator independently verifies
-that the applicable provider model/account is in free-quota-stop mode and explicitly
-sets `APP_SHARED_ASR_FREE_STOP_VERIFIED=1`. This attestation is NOT inferred from a
-saved key or a free-credit balance. Unverified per-second billing minimum/rounding
-must not be represented as a proven amount cap. The new shared ledger bounds the
-DeepSeek portion; the verified provider stop guarantee must bound ASR at zero.
+Shared-key ASR supports normal paid service, not only free credits. The fixed Beijing
+`qwen3-asr-flash-realtime` model uses the published CNY0.00033 per input-audio second
+rate (checked 2026-10-30). Before the sole connection attempt, reserve the entire
+60-second allowance: **19800 micro-CNY (CNY0.0198)** from BOTH site and account.
+Opening is refused unless that amount plus the maximum first translation allowance
+81920 micro-CNY remains. Each actual translation/annotation attempt (including ruby
+format retries) then separately reserves its complete input/output bound before
+sending; no more than40 attempts per audio session. Input<=8192 tokens and
+output<=8192 tokens, uncached input CNY2/M and output CNY8/M: each<=CNY0.08192.
+Thus a full session's published-rate envelope is CNY3.2966, but smaller configured
+budgets stop subsequent requests before they exceed the remaining reservation cap.
+No ASR reconnect/retry within a session; a later user-started session must reserve
+anew. One principal cannot run two audio sessions. Durable writes and exclusive
+ledger locks prevent concurrency/restart from granting the same allowance twice.
+Failures, interruptions and unknown results retain the complete reservations.
+
+These are explicitly **published-rate formula allowances, not an absolute supplier
+invoice hard cap**. No unpublished minimum/rounding rule is invented. The ledger's
+`spentMicroCny` means cumulative reserved allowance, not actual billed usage; any
+free credits/shorter input do not cause refunds. Compare actual supplier usage and
+invoice against reserved allowances during acceptance; record differences separately
+without rewriting cumulative ledger history. Reverify prices before a later rollout.
+Sources: [Alibaba model pricing](https://help.aliyun.com/zh/model-studio/model-pricing)
+and [DeepSeek pricing](https://api-docs.deepseek.com/quick_start/pricing).
+The old `APP_SHARED_ASR_FREE_STOP_VERIFIED` flag is no longer required or used.
 
 BYOK uses the guest's own separately consented provider billing; no promise of the
 owner's CNY1 allowance applies. ASR/translation remain limited per session: 60s,
@@ -97,7 +115,7 @@ can manage users through app-role checks; it cannot use the owner key-setting pa
 The old all-site owner allowlist must not be silently deleted or broadly bypassed.
 
 A successful login/key save is not a real provider test. Production public rollout,
-real passwords/keys, free-stop evidence, supplier billing and actual microphone
+real passwords/keys, explicitly chosen site allowance, supplier billing and actual microphone
 quality remain deployment acceptance work requiring the relevant safe inputs.
 No real API calls or real audio were used for this implementation.
 

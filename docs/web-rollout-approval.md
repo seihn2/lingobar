@@ -42,17 +42,25 @@ before execution. Current observed production remains PR19
    retain both original write paths; keep web read-only and both current users.
 3. Preserve `WEB_TEXT_ENABLED=1`, original Access metadata, DeepSeek file and text
    ledger path/cumulative bytes. Keep `WEB_ENABLED=0`: owner streaming test guard
-   remains closed, while public BYOK has its separate60-second limit/policy.
+   remains closed, while public accounts/BYOK have their separate60-second limit/policy.
    Set `ASR_API_KEY_FILE=/var/lib/lingobar-text-test/credentials/dashscope.json`;
    saving this key is an explicit owner action via protected `/owner` form, never
    chat, code, logs or an automatic provider validation call.
 4. Set `APP_AUTH_ENABLED=1`,
    `APP_ACCOUNTS_DIRECTORY=/var/lib/lingobar-text-test/accounts`,
    `APP_SHARED_BUDGET_DIRECTORY=/var/lib/lingobar-text-test/shared-account-budget`,
-   `APP_SHARED_LIMIT_MICRO_CNY=0`, `APP_SHARED_ASR_FREE_STOP_VERIFIED=0`.
+   `APP_SHARED_LIMIT_MICRO_CNY=0`.
    Account and site shared quotas start0. No unlimited/common-key spending grant
    is implied. Initialize new shared budget only at0, and initialize the approved
    new audio batch only if truly absent/unspent. Never replace an existing ledger.
+   Login alone does not grant shared spending: user must choose a positive cumulative
+   site allowance before the operator changes this env value; owner/admin assigns
+   individual cumulative allowances in the UI. No site-budget editor is introduced.
+   Both text and paid shared ASR then work with stored keys under the separate
+   published-rate reservation policy in web-accounts-deployment.md. This policy
+   reserves CNY0.0198 before a<=60-second ASR attempt and fully quotes each of<=40
+   translations/annotations, never the owner's1CNY test batch. It is a formula
+   allowance, not a supplier invoice hard cap; reconcile actual billing separately.
 5. Update wrapper route allowlist/body limits and websocket relay (not currently
    implemented by the old wrapper): config GET, text POST8192, annotation POST65536,
    credentials/auth mutations8192; fixed paths listed in web-accounts-deployment.md.

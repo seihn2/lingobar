@@ -69,17 +69,28 @@ export class AccountBudget {
     return Math.max(0, Math.min(this.siteLimitMicroCny - this.ledger.spentMicroCny,
       accountLimitMicroCny - (this.ledger.accounts[id] || 0)))
   }
+  /** Reserve a server-computed provider allowance before opening its connection.
+   * This enforces configured formula allowances, not a supplier-side hard cap. */
+  reserve(id: string, accountLimitMicroCny: number, reservationMicroCny: number): void {
+    const available = this.remaining(id, accountLimitMicroCny)
+    if (!amount(reservationMicroCny) || reservationMicroCny === 0) throw new RelayError('protocol')
+    if (reservationMicroCny > available) throw new RelayError('quota')
+    const next: Ledger = { version: 1, spentMicroCny: this.ledger.spentMicroCny + reservationMicroCny,
+      accounts: { ...this.ledger.accounts, [id]: (this.ledger.accounts[id] || 0) + reservationMicroCny } }
+    // Synchronous read/check/write prevents concurrent reservations from admitting
+    // against the same remaining balance. Failures and unknown outcomes never refund.
+    try { this.persist(next); this.ledger = next }
+    catch { this.failed = true; throw new RelayError('unavailable') }
+  }
   fetch(id: string, accountLimitMicroCny: number, upstream: WorkerFetch): WorkerFetch {
     return async (input, init) => {
       if (init?.signal?.aborted) throw new RelayError('unavailable')
       const quote = quoteWebTextRequest(input, init)
-      if (quote.reservationMicroCny > this.remaining(id, accountLimitMicroCny)) return new Response('{"error":"quota"}', { status: 429 })
-      const next: Ledger = { version: 1, spentMicroCny: this.ledger.spentMicroCny + quote.reservationMicroCny,
-        accounts: { ...this.ledger.accounts, [id]: (this.ledger.accounts[id] || 0) + quote.reservationMicroCny } }
-      // Synchronous read/check/write reservation prevents concurrent requests from
-      // admitting against the same remaining balance before their first await.
-      try { this.persist(next); this.ledger = next }
-      catch { this.failed = true; throw new RelayError('unavailable') }
+      try { this.reserve(id, accountLimitMicroCny, quote.reservationMicroCny) }
+      catch (error) {
+        if (error instanceof RelayError && error.code === 'quota') return new Response('{"error":"quota"}', { status: 429 })
+        throw error
+      }
       if (init?.signal?.aborted) throw new RelayError('unavailable')
       return upstream('https://api.deepseek.com/chat/completions', quote.request)
     }
