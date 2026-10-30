@@ -16,6 +16,7 @@ export interface GatewayConfig extends RelayConfig {
   asrCredentialsFile?: string
   audioRequested?: boolean
   audioLedgerDirectory?: string
+  app?: { directory: string; budgetDirectory: string; siteLimitMicroCny: number }
 }
 const invalid = (): never => { throw new Error('Invalid gateway configuration') }
 const credential = (v: string | undefined): string => {
@@ -53,8 +54,10 @@ const integer = (v: string | undefined, max: number): number => {
 }
 /** Environment selects the explicit server credential source; no desktop/keychain lookup. */
 export function gatewayConfig(env: Record<string, string | undefined>): GatewayConfig | null {
+  const app = env.APP_AUTH_ENABLED === '1'
   const audio = env.WEB_ENABLED === '1', text = env.WEB_TEXT_ENABLED === '1'
-  if (!audio && !text) return null
+  if (!audio && !text && !app) return null
+  if (app && !text) invalid() // Keep the existing owner setup/management channel.
   // Mixed operation is supported; monetary admission is separate from daily counts.
   let origin: URL
   try { origin = new URL(env.GATEWAY_PUBLIC_ORIGIN || '') } catch { return invalid() }
@@ -75,12 +78,16 @@ export function gatewayConfig(env: Record<string, string | undefined>): GatewayC
     }
     if (target(env.ASR_API_KEY_FILE) === target(env.TRANSLATION_API_KEY_FILE)) invalid()
   }
+  const appDirectory = env.APP_ACCOUNTS_DIRECTORY || '', appBudgetDirectory = env.APP_SHARED_BUDGET_DIRECTORY || ''
+  const appLimit = env.APP_SHARED_LIMIT_MICRO_CNY || '0'
+  if (app && (!isAbsolute(appDirectory) || !isAbsolute(appBudgetDirectory) || !/^(0|[1-9]\d*)$/u.test(appLimit) || !Number.isSafeInteger(Number(appLimit)) || Number(appLimit) > 100_000_000 ||
+    [ledgerDirectory, audioLedgerDirectory, stateDirectory].some(p => p && resolve(p) === resolve(appBudgetDirectory)))) invalid()
   const model = env.ASR_MODEL || 'qwen3-asr-flash-realtime'
   if (!['qwen-audio-3.1-asr-flash-streaming', 'qwen-audio-3.0-asr-flash-streaming', 'qwen3-asr-flash-realtime'].includes(model)) invalid()
-  return { origin: origin.origin, issuer, audience, email: email.toLowerCase(), stateDirectory,
+  return { ...(app ? { app: { directory: appDirectory, budgetDirectory: appBudgetDirectory, siteLimitMicroCny: Number(appLimit) } } : {}), origin: origin.origin, issuer, audience, email: email.toLowerCase(), stateDirectory,
     dailySessions: audio ? integer(env.GATEWAY_DAILY_SESSIONS, 288) : 0,
     dailyCompletionRequests: audio ? integer(env.GATEWAY_DAILY_COMPLETION_REQUESTS, 10_000) : 0,
-    asrKey: audio || env.ASR_API_KEY_FILE ? serverCredential(env, 'ASR') : '', translationKey: serverCredential(env, 'TRANSLATION'), model: model as RelayConfig['model'],
+    asrKey: audio || app || env.ASR_API_KEY_FILE ? serverCredential(env, 'ASR') : '', translationKey: serverCredential(env, 'TRANSLATION'), model: model as RelayConfig['model'],
     audioEnabled: audio, audioRequested: audio, ...(audio ? { audioLedgerDirectory } : {}), ...(text ? { text: { ledgerDirectory } } : {}),
     ...(env.ASR_API_KEY_FILE ? { asrCredentialsFile: env.ASR_API_KEY_FILE } : {}),
     ...(text && env.TRANSLATION_API_KEY_FILE ? { credentialsFile: env.TRANSLATION_API_KEY_FILE } : {}) }

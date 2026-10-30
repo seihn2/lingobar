@@ -230,6 +230,28 @@ async function verifyTouch(before: TouchState) {
   const initial = { events: (surface as HTMLElement & { __touchEvents?: unknown }).__touchEvents, pageTop: document.scrollingElement?.scrollTop, top: surface.scrollTop, reviewing: Boolean(reviewing()), overflow: surface.scrollHeight - surface.clientHeight }
   check(Math.abs(surface.scrollTop - before.top) > 5 && ((surface as HTMLElement & { __touchEvents?: { move: number } }).__touchEvents?.move || 0) > 0, before.mode + ' native touch swipe actually scrolls captions')
   check(reviewing(), before.mode + ' native touch swipe pauses following')
+  // CDP touchEnd is followed by only a 50ms pause in test-web-ui.cjs;
+  // compositor momentum can still move this surface after that pause. Establish
+  // a settled pre-update baseline, rather than weakening the <2px regression.
+  const settlingStarted = performance.now()
+  let settledFrames = 0, unchangedSince = settlingStarted
+  let previousTop = surface.scrollTop, previousPageTop = document.scrollingElement?.scrollTop
+  const settled = await new Promise<boolean>(resolve => {
+    let animation = 0
+    const finish = (ok: boolean) => { clearTimeout(deadline); cancelAnimationFrame(animation); resolve(ok) }
+    const deadline = setTimeout(() => finish(false), 2500)
+    const observe = () => {
+      const currentTop = surface.scrollTop, currentPageTop = document.scrollingElement?.scrollTop
+      if (currentTop === previousTop && currentPageTop === previousPageTop) settledFrames++
+      else { settledFrames = 0; unchangedSince = performance.now() }
+      previousTop = currentTop; previousPageTop = currentPageTop
+      if (settledFrames >= 8 && performance.now() - unchangedSince >= 150) finish(true)
+      else animation = requestAnimationFrame(observe)
+    }
+    animation = requestAnimationFrame(observe)
+  })
+  assert(settled, before.mode + ' native touch inertia must settle before caption updates (2500ms deadline)')
+  const settledGesture = { top: surface.scrollTop, pageTop: document.scrollingElement?.scrollTop, settledFrames, elapsedMs: performance.now() - settlingStarted }
   const top = surface.scrollTop, peer = sockets.at(-1)!, id = 'touch-arrival-' + sockets.length
   const stable = () => before.mode === 'expanded' ? Math.abs(surface.scrollTop - top) < 2 : query('.compact-rows').getAttribute('data-caption-id') === before.id
   peer.packet('caption', { revision: 1, caption: row(id, { live: true, translationPending: true, furiganaStatus: 'pending' }) }); await frame()
@@ -240,7 +262,7 @@ async function verifyTouch(before: TouchState) {
   check(session.snapshot().state === 'listening', before.mode + ' review keeps the synthetic capture session active')
   const safety = (window as unknown as { __webSafety: { media: number; sockets: number } }).__webSafety
   check(safety.media === 0 && safety.sockets === 0, before.mode + ' touch test uses no real media or service sockets')
-  return { checks, failures, details: { before, afterGesture: initial, afterUpdates: { top: surface.scrollTop, reviewing: Boolean(reviewing()) } } }
+  return { checks, failures, details: { before, afterGesture: initial, settledGesture, afterUpdates: { top: surface.scrollTop, reviewing: Boolean(reviewing()) } } }
 }
 
 

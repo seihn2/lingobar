@@ -1,3 +1,4 @@
+import AuthSettings from './AuthSettings'
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import CaptionStream from '../renderer/CaptionStream'
 import CompactCaption from '../renderer/CompactCaption'
@@ -202,6 +203,7 @@ export default function WebApp({ session }: { session: BrowserSession }) {
       {panel === 'settings' ? <form className="settings-content" onSubmit={event => { event.preventDefault(); void run(() => { session.saveSettings({ targetLanguages: draft.targetLanguages, showOriginal: draft.showOriginal, showFurigana: draft.showFurigana, fontSize: draft.fontSize }); close() }) }}>
         <LanguageSettings draft={draft} onChange={next => setDraft(previous => ({ ...previous, ...next }))} />
         <label className="web-font" htmlFor="web-font">字号 {draft.fontSize}px<input id="web-font" type="range" min="14" max="24" value={draft.fontSize} onChange={event => setDraft(previous => ({ ...previous, fontSize: Number(event.target.value) }))} /></label>
+        {session.authAvailable && <AuthSettings stop={() => session.stop()} />}
         {session.credentialsAvailable && <TranslationKeySettings session={session} />}
         {session.asrCredentialsAvailable && <TranslationKeySettings session={session} asr />}
         <button type="submit" className="primary-button">保存设置</button>

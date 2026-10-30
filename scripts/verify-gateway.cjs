@@ -24,6 +24,15 @@ const temporary = mkdtempSync(join(tmpdir(), 'lingobar-packaged-test-denied-'))
 try {
   const attempted = join(temporary, 'network-attempted'), preload = join(temporary, 'deny-network.cjs')
   writeFileSync(preload, `const fs=require('node:fs');const deny=()=>{fs.writeFileSync(${JSON.stringify(attempted)},'denied');throw new Error('Synthetic network denied')};globalThis.fetch=deny;globalThis.WebSocket=class{constructor(){deny()}};for(const n of ['http','https']){const m=require('node:'+n);m.request=deny;m.get=deny}const net=require('node:net');net.connect=deny;net.createConnection=deny;net.Socket.prototype.connect=deny;require('node:tls').connect=deny;\n`)
+  for (const args of [[], ['--dry-run'], ['--execute']]) {
+    const child = spawnSync(process.execPath, ['--require', preload, join(root, 'audio-test.cjs'), ...args], { cwd: root, encoding: 'utf8', timeout: 5000, env: {} })
+    assert.equal(child.status, args.includes('--execute') ? 2 : 0)
+    const result = JSON.parse(child.stdout.trim())
+    assert.equal(result.status, args.includes('--execute') ? 'blocked' : 'dry-run')
+    assert.equal(result.asrAttempts, 0); assert.equal(result.translationAttempts, 0)
+    assert.equal(result.reservedMicroCny, 0)
+    assert.equal(existsSync(attempted), false, 'Default one-shot runner attempted network')
+  }
   for (const step of ['translation', 'ruby']) {
     const child = spawnSync(process.execPath, ['--require', preload, join(root, 'scripts/run-one-rmb-text-test.cjs'), step], {
       cwd: root, encoding: 'utf8', timeout: 5000,
