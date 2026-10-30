@@ -38,7 +38,7 @@ afterEach(() => {
   vi.unstubAllGlobals(); vi.restoreAllMocks()
 })
 
-// POSIX private gateway state is not a Windows desktop runtime.
+// Gateway monetary state relies on POSIX permissions; Windows desktop has no gateway runtime.
 describe.skipIf(process.platform === 'win32')('synthetic incremental audio batch reservations (not real billing verification)', () => {
   it('keeps production policy unverified despite the synthetic test override', async () => {
     const actual = await vi.importActual<typeof import('../src/gateway/audio-policy')>('../src/gateway/audio-policy')
