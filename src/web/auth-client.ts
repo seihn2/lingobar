@@ -1,18 +1,19 @@
 import { webApiPath } from './routes'
 export interface AuthStatus { kind: 'anonymous' | 'owner' | 'account' | 'guest'; role?: 'admin' | 'user'; username?: string; initialized: boolean; bootstrapAllowed: boolean }
 export interface AccountSummary { username: string; role: 'admin' | 'user'; limitMicroCny: number }
-type AuthAction = 'status' | 'login' | 'guest' | 'logout' | 'bootstrap' | 'accounts'
+type AuthAction = 'status' | 'login' | 'guest' | 'logout' | 'bootstrap' | 'accounts' | 'password'
 const object = (value: unknown): value is Record<string, unknown> => Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 /** Fixed same-origin endpoints, ephemeral request bodies, redacted errors. No browser persistence. */
 export async function authRequest(origin: string, action: AuthAction, method: 'GET' | 'POST' | 'DELETE' | 'PATCH', body: unknown, signal: AbortSignal, transport: typeof fetch = fetch): Promise<unknown> {
   const url = new URL(origin)
-  if (url.protocol !== 'https:' || url.username || url.password || !['status', 'login', 'guest', 'logout', 'bootstrap', 'accounts'].includes(action)) throw new Error('账号服务不可用。')
+  if (url.protocol !== 'https:' || url.username || url.password || !['status', 'login', 'guest', 'logout', 'bootstrap', 'accounts', 'password'].includes(action)) throw new Error('账号服务不可用。')
+  if (action === 'password' && method !== 'POST') throw new Error('账号服务不可用。')
   const controller = new AbortController(), abort = () => controller.abort()
   signal.addEventListener('abort', abort, { once: true })
   const timer = setTimeout(abort, 15_000)
   try {
     if (signal.aborted) throw new Error()
-    const response = await transport(new URL(webApiPath('/api/auth/' + action), url.origin), { method, credentials: 'same-origin', redirect: 'error', cache: 'no-store', signal: controller.signal,
+    const response = await transport(new URL(action === 'password' ? '/owner/api/auth/password' : webApiPath('/api/auth/' + action), url.origin), { method, credentials: 'same-origin', redirect: 'error', cache: 'no-store', signal: controller.signal,
       ...(method === 'GET' ? {} : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }) })
     if (!response.ok || controller.signal.aborted) throw new Error()
     const text = await response.text()

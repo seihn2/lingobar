@@ -19,10 +19,13 @@ function captionText(caption: Caption, settings: Settings): string {
   return lines.join('\n')
 }
 
-function TranslationKeySettings({ session, asr = false }: { session: BrowserSession; asr?: boolean }) {
+export function TranslationKeySettings({ session, asr = false }: { session: BrowserSession; asr?: boolean }) {
   const [apiKey, setApiKey] = useState('')
   const [pending, setPending] = useState(false)
   const [status, setStatus] = useState('')
+  const [configured, setConfigured] = useState<boolean | null>(null)
+  const [reading, setReading] = useState<'loading' | 'ready' | 'error'>('loading')
+  const readController = useRef<AbortController | null>(null)
   const input = useRef<HTMLInputElement>(null)
   const generation = useRef(0)
   const submitting = useRef(false)
@@ -30,21 +33,37 @@ function TranslationKeySettings({ session, asr = false }: { session: BrowserSess
   useLayoutEffect(() => {
     const field = input.current
     return () => {
-      generation.current++; submitting.current = false
+      generation.current++; submitting.current = false; readController.current?.abort()
       if (field) field.value = ''
     }
   }, [])
+  const readStatus = async () => {
+    if (submitting.current) return
+    readController.current?.abort()
+    const controller = new AbortController(); readController.current = controller
+    const current = ++generation.current; setReading('loading')
+    try {
+      const saved = await session.readProviderKeyStatus(asr, controller.signal)
+      if (current !== generation.current || controller.signal.aborted) return
+      setConfigured(saved); setReading('ready')
+    } catch {
+      if (current === generation.current && !controller.signal.aborted) setReading('error')
+    } finally { if (readController.current === controller) readController.current = null }
+  }
+  useEffect(() => { void readStatus(); return () => { generation.current++; readController.current?.abort() } }, [session, asr])
   const saveKey = async () => {
     if (submitting.current || !apiKey.trim()) return
+    readController.current?.abort(); readController.current = null
     const current = ++generation.current
     submitting.current = true; setPending(true); setStatus('')
     try {
       await (asr ? session.configureAsrKey(apiKey) : session.configureTranslationKey(apiKey))
       if (current !== generation.current) return
+      setConfigured(true); setReading('ready')
       setApiKey(''); if (input.current) input.current.value = ''
-      setStatus(asr ? '已保存，尚未验证供应商密钥；请刷新页面查看语音状态。' : '已保存')
+      setStatus('已保存到服务器，尚未验证供应商密钥；输入框已安全清空。')
     } catch {
-      if (current === generation.current) setStatus('密钥保存未完成。')
+      if (current === generation.current) { setStatus('密钥保存未完成，请重试；原已知配置状态不变。'); setReading(previous => previous === 'loading' ? 'error' : previous) }
     } finally {
       if (current === generation.current) { submitting.current = false; setPending(false) }
     }
@@ -60,8 +79,14 @@ function TranslationKeySettings({ session, asr = false }: { session: BrowserSess
         }
       }} />
     <button type="button" onClick={() => void saveKey()} disabled={pending || !apiKey.trim()}>{pending ? '正在保存…' : '保存密钥'}</button>
-    <p id={asr ? "web-asr-key-status" : "web-key-status"} role="status">{status || (asr ? session.audioStatusMessage : session.textConfigured ? '已配置' : '')}</p>
-    {asr && <p>语音发送至百炼北京端点，识别文字交由 DeepSeek 翻译。保存密钥不会录音或调用模型。</p>}
+    <p id={asr ? "web-asr-key-status" : "web-key-status"} role="status">{configured === true ? '已配置，输入框留空不会删除密钥；仅更换时填写' : configured === false ? '未配置，请填写密钥并保存。' : '尚未确认配置状态。'}</p>
+    {reading === 'loading' && <p role="status">正在读取配置状态…</p>}
+    {reading === 'error' && <p role="status">配置状态读取失败，不代表密钥未配置。<button type="button" disabled={pending} onClick={() => void readStatus()}>重试读取状态</button></p>}
+    {status && <p role="status">{status}</p>}
+    {asr && <>
+      <p>{configured === true ? session.configured ? '语音入口可用，开始聆听仍需主动点击。' : '密钥已保存；语音入口尚未启用（服务端开关或预算尚未开放），无需重复保存密钥。' : session.audioStatusMessage}</p>
+      <p>语音发送至百炼北京端点，识别文字交由 DeepSeek 翻译。保存密钥不会录音、验证供应商密钥或开启服务端开关与预算。</p>
+    </>}
   </fieldset>
 }
 

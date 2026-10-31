@@ -6,6 +6,25 @@ afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers() })
 const origin = 'https://lingobar.example', secret = 'synthetic-secret-not-real'
 const anonymous = { kind: 'anonymous', initialized: false, bootstrapAllowed: false }
 describe('ephemeral browser account and BYOK client', () => {
+  it('always sends password rotation to the protected owner route, including from public pages', async () => {
+    for (const pathname of ['/', '/owner']) {
+      vi.stubGlobal('location', { pathname })
+      const transport = vi.fn<typeof fetch>(async () => Response.json({ ok: true }))
+      const body = { username: 'synthetic-user', password: secret, confirmation: secret }
+      await authRequest(origin, 'password', 'POST', body, new AbortController().signal, transport)
+      expect(String(transport.mock.calls[0][0])).toBe(origin + '/owner/api/auth/password')
+      expect(transport.mock.calls[0][1]).toMatchObject({ method: 'POST', body: JSON.stringify(body), credentials: 'same-origin', cache: 'no-store', redirect: 'error' })
+      await expect(authRequest(origin, 'password', 'GET', body, new AbortController().signal, transport)).rejects.toThrow()
+      expect(transport).toHaveBeenCalledOnce()
+    }
+    vi.unstubAllGlobals()
+  })
+  it('redacts password rotation errors and refuses a password-echo response', async () => {
+    for (const transport of [async () => { throw new Error(secret) }, async () => Response.json({ ok: true, password: secret }), async () => new Response(secret, { status: 403 })]) {
+      const failure = await authRequest(origin, 'password', 'POST', { username: 'synthetic-user', password: secret, confirmation: secret }, new AbortController().signal, transport).catch(error => error)
+      expect(failure).toBeInstanceOf(Error); expect((failure as Error).message).not.toContain(secret)
+    }
+  })
   it('converts exact micro-CNY quotas without rounding and caps at 100 CNY', () => {
     for (const [value, expected] of [['0', 0], ['0.000001', 1], ['1.234567', 1234567], ['100', 100000000]] as const) expect(quotaMicroCny(value)).toBe(expected)
     for (const value of ['-1', '101', '100.000001', '1.0000001', '1e2', '', ' 1']) expect(quotaMicroCny(value)).toBe(null)

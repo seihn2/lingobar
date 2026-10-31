@@ -121,3 +121,52 @@ describe.skipIf(process.platform === 'win32')('application auth HTTP boundary, g
     expect((await handler(new Request('https://lingobar.example/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{broken' }), false)).status).toBe(400)
   })
 })
+
+describe('owner-only normalized password route', () => {
+  const replacement = 'Synthetic-replacement-834!'
+  const body = { username: 'targetadmin', password: replacement, confirmation: replacement }
+  it('rejects anonymous, ordinary and application-admin cookies while accepting verified owner', async () => {
+    const f = fixture(); await f.auth.bootstrap('targetadmin', password); await f.auth.createAccount('normaluser', password)
+    const admin = token(await f.call('login', 'POST', { username: 'targetadmin', password }))
+    const user = token(await f.call('login', 'POST', { username: 'normaluser', password }))
+    for (const cookie of [undefined, admin, user]) expect((await f.call('password', 'POST', body, false, cookie)).status).toBe(403)
+    expect((await f.call('password', 'GET', undefined, true)).status).toBe(405)
+    expect((await f.call('password', 'POST', body, true)).status).toBe(200)
+    expect(f.auth.resolve(admin)).toBeNull(); expect(f.auth.resolve(user)).not.toBeNull()
+  })
+  it('rejects malformed/weak replacements without changing stored data', async () => {
+    const f = fixture(); await f.auth.bootstrap('targetadmin', password)
+    const before = readFileSync(join(f.dir, 'accounts.json'), 'utf8')
+    const bad = [ { ...body, extra: true }, { ...body, confirmation: 'not-equal' }, { username: body.username, password: replacement },
+      ...['x'.repeat(129), '12345678901\nX', 'targetadmin', 'password1234', 'aaaaaaaaaaaa', 'short'].map(value => ({ username: body.username, password: value, confirmation: value })),
+      { username: 'longsyntheticusername', password: 'longsyntheticusername', confirmation: 'longsyntheticusername' } ]
+    for (const input of bad) expect((await f.call('password', 'POST', input, true)).status).toBe(400)
+    expect(readFileSync(join(f.dir, 'accounts.json'), 'utf8')).toBe(before)
+  })
+  it.each(['expiry', 'abort'])('does not persist when owner authorization is lost during body upload: %s', async reason => {
+    const f = fixture(); await f.auth.bootstrap('targetadmin', password)
+    const before = readFileSync(join(f.dir, 'accounts.json'), 'utf8'), abort = new AbortController()
+    let owner = true, stream!: ReadableStreamDefaultController<Uint8Array>
+    const request = new Request('https://lingobar.example/api/auth/password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: abort.signal,
+      body: new ReadableStream<Uint8Array>({ start(controller) { stream = controller } }), duplex: 'half' } as RequestInit)
+    const result = f.handler(request, () => owner)
+    await Promise.resolve()
+    if (reason === 'expiry') owner = false; else abort.abort()
+    stream.enqueue(new TextEncoder().encode(JSON.stringify(body))); stream.close()
+    expect([400, 403, 503]).toContain((await result).status)
+    expect(readFileSync(join(f.dir, 'accounts.json'), 'utf8')).toBe(before)
+  })
+  it.each(['expiry', 'abort'])('does not persist if authorization is lost inside scrypt: %s', async reason => {
+    const f = fixture(); await f.auth.bootstrap('targetadmin', password)
+    const before = readFileSync(join(f.dir, 'accounts.json'), 'utf8'), abort = new AbortController()
+    let checks = 0
+    const result = await f.handler(new Request('https://lingobar.example/api/auth/password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: abort.signal }), () => {
+      checks++
+      // First route check, post-body check, store pre-derive check, then pre-persist.
+      if (checks === 4 && reason === 'abort') abort.abort()
+      return !(checks >= 4 && reason === 'expiry')
+    })
+    expect(result.status).toBe(503); expect(checks).toBe(4)
+    expect(readFileSync(join(f.dir, 'accounts.json'), 'utf8')).toBe(before)
+  })
+})

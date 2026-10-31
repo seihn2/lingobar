@@ -1,4 +1,5 @@
 import { AppAuth } from './app-auth'
+import { replacementPasswordValid } from '../shared/account-password'
 
 const json = (value: unknown, status = 200, cookie?: string) => new Response(JSON.stringify(value), { status, headers: {
   'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...(cookie ? { 'Set-Cookie': cookie } : {})
@@ -37,7 +38,7 @@ export function createAppAuthHandler(auth: AppAuth, options: { now?: () => numbe
       const url = new URL(request.url), path = url.pathname
       const methods: Record<string, string[]> = {
         '/api/auth/status': ['GET'], '/api/auth/login': ['POST'], '/api/auth/guest': ['POST'], '/api/auth/logout': ['POST'],
-        '/api/auth/bootstrap': ['POST'], '/api/auth/accounts': ['GET', 'POST', 'PATCH', 'DELETE']
+        '/api/auth/bootstrap': ['POST'], '/api/auth/password': ['POST'], '/api/auth/accounts': ['GET', 'POST', 'PATCH', 'DELETE']
       }
       if (url.search || !Object.hasOwn(methods, path)) return failure(404)
       if (!methods[path].includes(request.method)) return failure(405)
@@ -48,7 +49,7 @@ export function createAppAuthHandler(auth: AppAuth, options: { now?: () => numbe
         ...(owner() ? { role: 'admin' } : principal ? { role: principal.role, ...(principal.kind === 'account' ? { username: principal.username } : {}) } : {}),
         initialized: auth.initialized, bootstrapAllowed: owner() && !auth.initialized
       })
-      if (path === '/api/auth/bootstrap' && !owner()) return failure(403)
+      if (['/api/auth/bootstrap', '/api/auth/password'].includes(path) && !owner()) return failure(403)
       if (path === '/api/auth/accounts' && !owner() && !(principal?.kind === 'account' && principal.role === 'admin')) return failure(403)
       if (path === '/api/auth/accounts' && request.method === 'GET') {
         return json({ accounts: auth.listAccounts().map(({ username, role, limitMicroCny }) => ({ username, role, limitMicroCny })) })
@@ -59,7 +60,7 @@ export function createAppAuthHandler(auth: AppAuth, options: { now?: () => numbe
       // Body upload can outlive logout, expiry or an administrator's revocation.
       // Re-authorize against the current session immediately before mutations.
       principal = auth.resolve(request.headers.get('Cookie') || undefined)
-      if (path === '/api/auth/bootstrap' && !owner()) return failure(403)
+      if (['/api/auth/bootstrap', '/api/auth/password'].includes(path) && !owner()) return failure(403)
       if (path === '/api/auth/accounts' && !owner() && !(principal?.kind === 'account' && principal.role === 'admin')) return failure(403)
       if (path === '/api/auth/login') {
         if (!shape(input, ['username', 'password']) || typeof input.username !== 'string' || typeof input.password !== 'string') return failure(400)
@@ -84,6 +85,15 @@ export function createAppAuthHandler(auth: AppAuth, options: { now?: () => numbe
       if (path === '/api/auth/logout') {
         if (!shape(input, [])) return failure(400)
         return json({ ok: true }, 200, auth.logout(request.headers.get('Cookie') || undefined).cookie)
+      }
+      if (path === '/api/auth/password') {
+        if (!shape(input, ['username', 'password', 'confirmation']) || typeof input.username !== 'string' ||
+          typeof input.password !== 'string' || typeof input.confirmation !== 'string' ||
+          input.password !== input.confirmation || !replacementPasswordValid(input.username, input.password)) return failure(400)
+        // Recheck owner expiry/cancellation after asynchronous password derivation,
+        // immediately before the durable mutation. Never create a new account.
+        await auth.updatePassword(input.username, input.password, () => owner() && !request.signal.aborted)
+        return json({ ok: true })
       }
       if (path === '/api/auth/bootstrap') {
         if (!shape(input, ['username', 'password']) || typeof input.username !== 'string' || typeof input.password !== 'string') return failure(400)

@@ -78,7 +78,7 @@ export class BrowserSession {
     if (this.options.disabledReason === 'unauthorized') return '服务未授权'
     if (this.configured) return ''
     if (this.authAvailable && !this.textConfigured) return '请登录或使用自己的 API Key'
-    return ({ ready: '语音入口尚未启用', disabled: '语音入口尚未启用', 'missing-key': '请在字幕设置中保存百炼语音密钥', 'budget-unverified': '语音费用上界尚未核实，暂不能开始聆听；文字翻译仍按独立配置使用', quota: '本次语音测试预算已用尽' })[this.options.audioStatus || 'disabled']
+    return ({ ready: '语音入口尚未启用；保存密钥不会自动开放聆听', disabled: '语音入口尚未启用（服务端未开放）；保存密钥不会自动开放聆听', 'missing-key': '请在字幕设置中保存百炼语音密钥', 'budget-unverified': '语音费用上界尚未核实，暂不能开始聆听；文字翻译仍按独立配置使用', quota: '本次语音测试预算已用尽' })[this.options.audioStatus || 'disabled']
   }
   get textConfigured(): boolean { return this.textServiceConfigured }
   constructor(private options: Options) {
@@ -103,6 +103,28 @@ export class BrowserSession {
   snapshot(): Snapshot { return structuredClone(this.state) }
   subscribe(listener: (snapshot: Snapshot) => void): () => void { this.listeners.add(listener); return () => { this.listeners.delete(listener) } }
   private publish(): void { for (const listener of this.listeners) listener(this.snapshot()) }
+
+  /** Read only the server's boolean presence flag. Never retrieve a key or mask. */
+  async readProviderKeyStatus(asr: boolean, signal: AbortSignal): Promise<boolean> {
+    if (!(asr ? this.asrCredentialsAvailable : this.credentialsAvailable) || new URL(this.options.origin).protocol !== 'https:') throw new Error('密钥状态服务不可用。')
+    const controller = new AbortController(), abort = () => controller.abort()
+    signal.addEventListener('abort', abort, { once: true })
+    const timer = setTimeout(abort, 15_000)
+    try {
+      if (signal.aborted) throw new Error()
+      const response = await (this.options.credentialsFetch || fetch)(new URL(webApiPath(asr ? '/api/settings/asr-key' : '/api/settings/translation-key'), this.options.origin).toString(), {
+        method: 'GET', credentials: 'same-origin', redirect: 'error', cache: 'no-store', signal: controller.signal
+      })
+      if (!response.ok || controller.signal.aborted) throw new Error()
+      const text = await response.text()
+      if (controller.signal.aborted || text.length > 64) throw new Error()
+      const result: unknown = JSON.parse(text)
+      if (!result || typeof result !== 'object' || Array.isArray(result) || Object.keys(result).join(',') !== 'configured' ||
+        typeof (result as Record<string, unknown>).configured !== 'boolean') throw new Error()
+      return (result as { configured: boolean }).configured
+    } catch { throw new Error('密钥状态读取失败，请重试；这不代表已保存的密钥被删除。') }
+    finally { clearTimeout(timer); signal.removeEventListener('abort', abort); controller.abort() }
+  }
 
   /** Explicit owner settings action; the key never enters snapshots or browser storage. */
   async configureTranslationKey(apiKey: string): Promise<void> { return this.configureProviderKey(apiKey, false) }

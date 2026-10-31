@@ -275,3 +275,49 @@ describe.skipIf(process.platform !== 'linux')('public websocket and enabled shar
     expect((await f.http('/api/translate', input, session)).status).toBe(401)
   })
 })
+
+describe.skipIf(process.platform !== 'linux')('owner-prefixed password rotation integration', () => {
+  const replacement = 'New-synthetic-owner-913!'
+  const change = { username: account.username, password: replacement, confirmation: replacement }
+  it('requires owner prefix, verified JWT, same origin and expected Host; app cookies never authorize', async () => {
+    const f = await fixture()
+    expect((await f.http('/owner/api/auth/bootstrap', account, f.owner)).status).toBe(200)
+    const admin = { Cookie: cookie(await f.http('/api/auth/login', account)) }
+    const user = { username: 'otherordinary', password: 'Synthetic-other-user-123!' }
+    expect((await f.http('/owner/api/auth/accounts', user, f.owner)).status).toBe(200)
+    const ordinary = { Cookie: cookie(await f.http('/api/auth/login', user)) }
+    const before = readFileSync(join(f.appDir, 'accounts.json'), 'utf8')
+    for (const headers of [{}, { 'Cf-Access-Jwt-Assertion': 'forged' }, admin, ordinary] as Array<Record<string, string>>) expect([401, 403]).toContain((await f.http('/owner/api/auth/password', change, headers)).status)
+    expect((await f.http('/api/auth/password', change, f.owner)).status).toBe(404)
+    for (const extra of [{ Origin: '' }, { Origin: 'https://evil.example' }, { Host: 'evil.example' }, { 'Sec-Fetch-Site': 'cross-site' }] as Array<Record<string, string>>) expect((await f.http('/owner/api/auth/password', change, { ...f.owner, ...extra })).status).toBe(403)
+    expect((await f.http('/owner/api/auth/password', undefined, f.owner, 'GET')).status).toBe(405)
+    expect(readFileSync(join(f.appDir, 'accounts.json'), 'utf8')).toBe(before)
+    expect(f.upstream).not.toHaveBeenCalled()
+  })
+  it('changes only the chosen password, revokes its sessions, and leaves keys/ledgers byte-identical', async () => {
+    const f = await fixture()
+    expect((await f.http('/owner/api/auth/bootstrap', account, f.owner)).status).toBe(200)
+    const first = { Cookie: cookie(await f.http('/api/auth/login', account)) }, second = { Cookie: cookie(await f.http('/api/auth/login', account)) }
+    const user = { username: 'unaffecteduser', password: 'Synthetic-unaffected-123!' }
+    expect((await f.http('/owner/api/auth/accounts', user, f.owner)).status).toBe(200)
+    const other = { Cookie: cookie(await f.http('/api/auth/login', user)) }, guest = await f.guest()
+    const keyPaths = ['translation-key.json', 'asr-key.json'].map(name => join(f.ownerDir, name))
+    for (const path of keyPaths) writeFileSync(path, JSON.stringify({ apiKey: 'synthetic-unchanged-provider-key' }), { mode: 0o600 })
+    const paths = [...keyPaths, join(f.ownerDir, 'test-budget.json'), join(f.ownerDir, 'audio-budget.json'), join(f.budgetDir, 'accounts-budget.json')]
+    const bytes = paths.map(path => readFileSync(path, 'utf8'))
+    const beforeAccounts = JSON.parse(readFileSync(join(f.appDir, 'accounts.json'), 'utf8')).accounts
+    const result = await f.http('/owner/api/auth/password', change, f.owner)
+    expect(result.status).toBe(200); expect(result.text).toBe('{"ok":true}')
+    for (const session of [first, second]) expect(JSON.parse((await f.http('/api/auth/status', undefined, session)).text).kind).toBe('anonymous')
+    expect(JSON.parse((await f.http('/api/auth/status', undefined, other)).text).kind).toBe('account')
+    expect(JSON.parse((await f.http('/api/auth/status', undefined, guest)).text).kind).toBe('guest')
+    expect((await f.http('/api/auth/login', account)).status).toBe(401)
+    expect((await f.http('/api/auth/login', { username: account.username, password: replacement })).status).toBe(200)
+    const afterAccounts = JSON.parse(readFileSync(join(f.appDir, 'accounts.json'), 'utf8')).accounts
+    expect(afterAccounts).toHaveLength(beforeAccounts.length)
+    expect(afterAccounts[0]).toMatchObject({ id: beforeAccounts[0].id, username: beforeAccounts[0].username, role: beforeAccounts[0].role, limitMicroCny: beforeAccounts[0].limitMicroCny })
+    expect(afterAccounts[1]).toEqual(beforeAccounts[1])
+    expect(paths.map(path => readFileSync(path, 'utf8'))).toEqual(bytes)
+    expect(f.upstream).not.toHaveBeenCalled()
+  })
+})

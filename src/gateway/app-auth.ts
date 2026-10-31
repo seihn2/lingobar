@@ -112,13 +112,13 @@ export class AppAuth {
     if (!account || account.role === 'admin' && this.state.accounts.filter(a => a.role === 'admin').length === 1) unavailable()
     this.persist({ ...this.state, accounts: this.state.accounts.filter(a => a.id !== account.id) }); this.revoke(account.id)
   }
-  async updatePassword(username: string, password: string): Promise<void> {
-    this.ready(); if (this.mutating || !usernameValid(username) || !passwordValid(password)) unavailable()
+  async updatePassword(username: string, password: string, authorized: () => boolean = () => true): Promise<void> {
+    this.ready(); if (!authorized() || this.mutating || !usernameValid(username) || !passwordValid(password)) unavailable()
     const account = this.account(username); if (!account) unavailable()
     this.mutating = true
     try {
       const salt = randomBytes(32).toString('hex'), passwordHash = (await derive(password, salt)).toString('hex')
-      this.ready()
+      this.ready(); if (!authorized()) unavailable()
       this.persist({ ...this.state, accounts: this.state.accounts.map(a => a.id === account.id ? { ...a, salt, passwordHash } : a) })
       this.revoke(account.id)
     } finally { this.mutating = false }
