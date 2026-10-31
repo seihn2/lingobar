@@ -34,7 +34,7 @@ function fill(id: string, value: string) {
 }
 async function mount(nextKind: string, allowed = false) {
   flushSync(() => root.render(null)); kind = nextKind; bootstrap = allowed; calls = []; hanging = false
-  flushSync(() => root.render(<main className="web-shell"><section className="web-panel"><div className="settings-content"><AuthSettings origin="https://lingobar.example" stop={() => {}} /></div></section></main>))
+  flushSync(() => root.render(<main className="app-shell web-shell"><section className="web-panel"><div className="settings-content"><AuthSettings origin="https://lingobar.example" stop={() => {}} /></div></section></main>))
   await wait()
 }
 Object.assign(window, { __authTest: {
@@ -94,7 +94,7 @@ Object.assign(window, { __authTest: {
     })
     const mountCredentials = async (asr = true) => {
       flushSync(() => root.render(null))
-      flushSync(() => root.render(<main className="web-shell"><section className="web-panel"><div className="settings-content"><TranslationKeySettings session={session} asr={asr} /></div></section></main>))
+      flushSync(() => root.render(<main className="app-shell web-shell"><section className="web-panel"><div className="settings-content"><TranslationKeySettings session={session} asr={asr} /></div></section></main>))
       await wait()
     }
     try {
@@ -172,6 +172,8 @@ Object.assign(window, { __authTest: {
       const box = element.getBoundingClientRect()
       check(box.left >= 0 && box.right <= innerWidth, 'Rotation field or input horizontally overflows mobile viewport')
     }
+    const submitBox = button('更改密码并撤销旧会话').getBoundingClientRect()
+    check(submitBox.top >= 0 && submitBox.bottom <= innerHeight, 'Password submit must be visible after scrolling')
     return { checks: ['nonowner and cookie admin hidden', 'initialized owner only', 'mismatch and weak password blocked', 'duplicate pending blocked', 'failed rotation retries', 'success clears both secrets', 'protected owner path from public page', '375px fits'] }
   },
   async quota() {

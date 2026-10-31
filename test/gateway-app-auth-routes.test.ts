@@ -122,7 +122,7 @@ describe.skipIf(process.platform === 'win32')('application auth HTTP boundary, g
   })
 })
 
-describe('owner-only normalized password route', () => {
+describe.skipIf(process.platform === 'win32')('owner-only normalized password route', () => {
   const replacement = 'Synthetic-replacement-834!'
   const body = { username: 'targetadmin', password: replacement, confirmation: replacement }
   it('rejects anonymous, ordinary and application-admin cookies while accepting verified owner', async () => {

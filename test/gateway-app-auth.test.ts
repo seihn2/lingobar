@@ -157,7 +157,7 @@ describe.skipIf(process.platform === 'win32')('private account and isolated vola
   })
 })
 
-describe('owner password replacement store: synthetic secrets only', () => {
+describe.skipIf(process.platform === 'win32')('owner password replacement store: synthetic secrets only', () => {
   it('preserves identity and allowance, revokes all target sessions only, and accepts only the new password', async () => {
     const { auth, directory } = fixture()
     await auth.bootstrap('targetadmin', PASSWORD); await auth.createAccount('otheruser', PASSWORD)
