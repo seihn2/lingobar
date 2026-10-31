@@ -91,6 +91,7 @@ export function createGateway(config: GatewayConfig | null, dependencies: Depend
   const server = createServer({ maxHeaderSize: 16_384, requestTimeout: 30_000, headersTimeout: 10_000 }, (req, res) => {
     const run = async () => {
       const ownerRoute = ownerNamespace(req)
+      if (req.url === '/api/auth/password' && !ownerRoute) return send(error(404), res)
       if (req.url === '/healthz' && req.method === 'GET') return send(json({ status: config && !closing ? 'configured' : 'disabled' }, config && !closing ? 200 : 503), res)
       const authRoute = Boolean(appAuthHandler && req.url?.startsWith('/api/auth/'))
       if (!authRoute && !['/app-config.json', '/api/session', '/api/annotation', '/api/audio-annotation', '/api/translate', CREDENTIALS_PATH, ASR_CREDENTIALS_PATH].includes(req.url || '')) return send(error(404), res)

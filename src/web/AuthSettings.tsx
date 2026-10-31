@@ -1,3 +1,4 @@
+import { replacementPasswordValid } from '../shared/account-password'
 import { useEffect, useRef, useState } from 'react'
 import { authRequest, quotaMicroCny, type AccountSummary, type AuthStatus } from './auth-client'
 
@@ -6,19 +7,26 @@ export default function AuthSettings({ stop, origin = location.origin }: { stop(
   const [quota, setQuota] = useState<Record<string, string>>({})
   const [accounts, setAccounts] = useState<AccountSummary[]>([])
   const [username, setUsername] = useState(''), [password, setPassword] = useState('')
+  const [replacementUsername, setReplacementUsername] = useState('')
+  const [replacementPassword, setReplacementPassword] = useState(''), [confirmation, setConfirmation] = useState('')
   const [translationKey, setTranslationKey] = useState(''), [asrKey, setAsrKey] = useState('')
   const [consent, setConsent] = useState(false), [pending, setPending] = useState(false)
   const [notice, setNotice] = useState(''), [refresh, setRefresh] = useState(false)
   const owner = useRef<AbortController | null>(null), fields = useRef<HTMLFieldSetElement>(null)
   const mounted = useRef(true)
-  const clearSecrets = () => { setPassword(''); setTranslationKey(''); setAsrKey(''); setConsent(false) }
-  const call = async (action: 'login' | 'guest' | 'logout' | 'bootstrap' | 'accounts', body: unknown, method: 'POST' | 'DELETE' | 'PATCH' = 'POST') => {
+  const clearSecrets = () => { setPassword(''); setTranslationKey(''); setAsrKey(''); setConsent(false); setReplacementPassword(''); setConfirmation('') }
+  const call = async (action: 'login' | 'guest' | 'logout' | 'bootstrap' | 'accounts' | 'password', body: unknown, method: 'POST' | 'DELETE' | 'PATCH' = 'POST') => {
     if (owner.current) return
     const controller = new AbortController(); owner.current = controller; setPending(true); setNotice('')
     try {
       if (action === 'logout') stop()
       await authRequest(origin, action, method, body, controller.signal)
       if (!mounted.current || controller.signal.aborted) return
+      if (action === 'password') {
+        setReplacementPassword(''); setConfirmation('')
+        setNotice('密码已更新，该账号全部旧会话已撤销。请使用新密码重新登录。')
+        return
+      }
       clearSecrets(); setNotice(action === 'accounts' ? '账号已更新；额度变更会撤销该账号会话，请刷新查看。' : '操作成功。请刷新页面加载当前身份及服务状态。')
       setRefresh(true)
     } catch { if (mounted.current && !controller.signal.aborted) setNotice('账号操作未完成，请检查输入、权限或服务配置。') }
@@ -62,6 +70,20 @@ export default function AuthSettings({ stop, origin = location.origin }: { stop(
         <button type="button" disabled={refresh || quotaMicroCny(quota[account.username] ?? String(account.limitMicroCny / 1_000_000)) === null} onClick={() => void call('accounts', { username: account.username, limitMicroCny: quotaMicroCny(quota[account.username] ?? String(account.limitMicroCny / 1_000_000)) }, 'PATCH')}>保存累计额度</button>
         {account.role !== 'admin' && <button type="button" disabled={refresh} onClick={() => { if (confirm(`撤销账号 ${account.username}？`)) void call('accounts', { username: account.username }, 'DELETE') }}>撤销账号</button>}</li>)}</ul>
     </>}
+    {status?.kind === 'owner' && status.initialized && <fieldset className="web-password-rotation">
+      <legend>更改账号密码（仅所有者）</legend>
+      <p>建议使用密码管理器生成至少 16 位的独立密码。更改后该账号全部旧会话将被撤销。</p>
+      <label htmlFor="web-replacement-account">已有账号</label>
+      <select id="web-replacement-account" value={replacementUsername} onChange={event => { setReplacementUsername(event.target.value); setReplacementPassword(''); setConfirmation('') }}>
+        <option value="">请选择账号</option>{accounts.map(account => <option key={account.username} value={account.username}>{account.username}</option>)}
+      </select>
+      <label htmlFor="web-replacement-password">新密码<input id="web-replacement-password" type="password" autoComplete="new-password" maxLength={128} value={replacementPassword} onChange={event => setReplacementPassword(event.target.value)} /></label>
+      <label htmlFor="web-replacement-confirmation">再次输入新密码<input id="web-replacement-confirmation" type="password" autoComplete="new-password" maxLength={128} value={confirmation} onChange={event => setConfirmation(event.target.value)} /></label>
+      <button type="button" disabled={pending || refresh || !accounts.some(account => account.username === replacementUsername) || !replacementPasswordValid(replacementUsername, replacementPassword) || replacementPassword !== confirmation} onClick={() => {
+        if (status.kind !== 'owner' || !status.initialized || !accounts.some(account => account.username === replacementUsername) || !replacementPasswordValid(replacementUsername, replacementPassword) || replacementPassword !== confirmation) return
+        void call('password', { username: replacementUsername, password: replacementPassword, confirmation })
+      }}>更改密码并撤销旧会话</button>
+    </fieldset>}
     {status?.kind === 'anonymous' && <>
       <label htmlFor="web-guest-translation">自己的 DeepSeek API Key<input id="web-guest-translation" type="password" autoComplete="off" value={translationKey} maxLength={2048} onChange={event => setTranslationKey(event.target.value)} /></label>
       <label htmlFor="web-guest-asr">自己的百炼北京 ASR Key（可选）<input id="web-guest-asr" type="password" autoComplete="off" value={asrKey} maxLength={2048} onChange={event => setAsrKey(event.target.value)} /></label>

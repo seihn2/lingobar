@@ -77,7 +77,7 @@ async function main() {
     }
     for (let i = 0; i < 100 && !await evaluate('Boolean(window.__authTest)'); i++) await pause()
     const results = []
-    for (const stage of ['anonymous', 'interruption', 'owner', 'quota']) {
+    for (const stage of ['anonymous', 'interruption', 'owner', 'quota', 'password', 'credentials']) {
       results.push({ stage, ...await evaluate(`window.__authTest.${stage}()`) })
       const screenshot = await send('Page.captureScreenshot', { format: 'png' })
       writeFileSync(join(output, stage + '-375.png'), Buffer.from(screenshot.data, 'base64'))

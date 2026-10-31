@@ -156,3 +156,42 @@ describe.skipIf(process.platform === 'win32')('private account and isolated vola
     const login = auth.login('adminuser', PASSWORD); auth.close(); await expect(login).rejects.toThrow('Account service unavailable')
   })
 })
+
+describe.skipIf(process.platform === 'win32')('owner password replacement store: synthetic secrets only', () => {
+  it('preserves identity and allowance, revokes all target sessions only, and accepts only the new password', async () => {
+    const { auth, directory } = fixture()
+    await auth.bootstrap('targetadmin', PASSWORD); await auth.createAccount('otheruser', PASSWORD)
+    auth.setAccountLimit('targetadmin', 123456)
+    const one = await auth.login('targetadmin', PASSWORD), two = await auth.login('targetadmin', PASSWORD)
+    const other = await auth.login('otheruser', PASSWORD), guest = auth.guest({ translationKey: KEY, acceptCharges: true })
+    const before = auth.listAccounts(), diskBefore = JSON.parse(readFileSync(join(directory, 'accounts.json'), 'utf8'))
+    await auth.updatePassword('targetadmin', OTHER, () => true)
+    expect(auth.listAccounts()).toEqual(before)
+    expect(auth.resolve(header(one))).toBeNull(); expect(auth.resolve(header(two))).toBeNull()
+    expect(auth.resolve(header(other))).not.toBeNull(); expect(auth.resolve(header(guest))).not.toBeNull()
+    await expect(auth.login('targetadmin', PASSWORD)).rejects.toThrow('Invalid account credentials')
+    expect(auth.resolve(header(await auth.login('targetadmin', OTHER)))).toMatchObject({ id: before[0].id, role: 'admin', limitMicroCny: 123456 })
+    const diskAfter = JSON.parse(readFileSync(join(directory, 'accounts.json'), 'utf8'))
+    expect(diskAfter.accounts[1]).toEqual(diskBefore.accounts[1]); expect(diskAfter.accounts[0].salt).not.toBe(diskBefore.accounts[0].salt)
+    expect(readFileSync(join(directory, 'accounts.json'), 'utf8')).not.toContain(OTHER)
+  })
+  it('rechecks owner authorization after asynchronous derivation without persisting or revoking on failure', async () => {
+    const { auth, directory } = fixture(); await auth.bootstrap('targetadmin', PASSWORD)
+    const session = await auth.login('targetadmin', PASSWORD), before = readFileSync(join(directory, 'accounts.json'), 'utf8')
+    let authorized = true, checks = 0
+    const changing = auth.updatePassword('targetadmin', OTHER, () => { checks++; return authorized })
+    authorized = false
+    await expect(changing).rejects.toThrow()
+    expect(checks).toBe(2); expect(readFileSync(join(directory, 'accounts.json'), 'utf8')).toBe(before)
+    expect(auth.resolve(header(session))).not.toBeNull()
+    await expect(auth.login('targetadmin', OTHER)).rejects.toThrow()
+    expect(auth.resolve(header(await auth.login('targetadmin', PASSWORD)))).not.toBeNull()
+  })
+  it('refuses denied and nonexistent-target changes without creating an account', async () => {
+    const { auth, directory } = fixture(); await auth.bootstrap('targetadmin', PASSWORD)
+    const before = readFileSync(join(directory, 'accounts.json'), 'utf8')
+    await expect(auth.updatePassword('targetadmin', OTHER, () => false)).rejects.toThrow()
+    await expect(auth.updatePassword('missinguser', OTHER, () => true)).rejects.toThrow()
+    expect(readFileSync(join(directory, 'accounts.json'), 'utf8')).toBe(before)
+  })
+})
