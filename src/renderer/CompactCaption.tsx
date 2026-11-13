@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
-import { ArrowDown, ChevronLeft, ChevronRight, LoaderCircle, RotateCcw } from 'lucide-react'
+import { ArrowDown, ChevronLeft, ChevronRight, LoaderCircle, Pause, RotateCcw } from 'lucide-react'
 import type { Caption, Settings } from '../shared/types'
 import { DEFAULT_LANGUAGES } from '../shared/languages'
 import { compactRows, incomingText, survivingCaptionId, untranslatedErrorSource } from './caption-text'
@@ -137,7 +137,12 @@ export default function CompactCaption({ captions, settings, preview, readingSes
         {caption && (caption.status === 'error' || missing || caption.furiganaStatus === 'error') && caption.status !== 'translating' && !caption.live && !caption.translationPending && <button type="button" className="compact-retry" aria-label="重新翻译这段" title="按当前语言重新翻译这段" disabled={preview || !updates.has(caption.id)} onClick={() => onRetry(caption)}><RotateCcw size={11} /></button>}
         <button type="button" title="上一段" aria-label="上一段" disabled={index <= 0} onClick={() => navigate(-1)}><ChevronLeft size={13} /></button>
         <button type="button" title="下一段" aria-label="下一段" disabled={index < 0 || index >= visible.length - 1} onClick={() => navigate(1)}><ChevronRight size={13} /></button>
-        <button type="button" className="compact-live" title={following ? '正在跟随；跳到最新一段' : '回到实时'} aria-label="回到实时" onClick={resume} disabled={!captions.length}><ArrowDown size={12} /></button>
+        {!preview && <button type="button" className="compact-live"
+          title={following ? '暂停自动换段；收音和本段译文更新仍继续' : '跳到最新字幕并恢复跟随'}
+          aria-label={following ? '暂停跟随，不停止收音' : '恢复跟随'}
+          onClick={following ? pause : resume} disabled={!captions.length}>
+          {following ? <Pause size={12} aria-hidden="true" /> : <ArrowDown size={12} aria-hidden="true" />}
+        </button>}
       </div>
       {controls}
     </div>
